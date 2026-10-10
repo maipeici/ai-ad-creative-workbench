@@ -1,0 +1,186 @@
+{
+  "notice": "★ 重要：本文件是广告事实依据的唯一来源。所有 status=pending 的条目均为占位模板，必须由业务方填入真实数据并标注来源后改为 confirmed，方可在广告中表达。系统不会自动补造任何金额、门槛或承诺。",
+  "updatedAt": "2026-09-21",
+  "version": "v1-template",
+  "facts": [
+    {
+      "id": "fact-feature-oneclick",
+      "type": "feature",
+      "status": "confirmed",
+      "title": "一键叫车",
+      "statement": "在花小猪打车 App 输入终点后可一键发起叫车",
+      "source": "产品基础功能",
+      "owner": "产品",
+      "validFrom": null,
+      "validTo": null,
+      "conditions": [],
+      "usageNote": "属产品通用功能描述，可直接使用"
+    },
+    {
+      "id": "fact-feature-price-preview",
+      "type": "feature",
+      "status": "confirmed",
+      "title": "行前预估价",
+      "statement": "下单前可查看本次行程的预估价格",
+      "source": "产品基础功能",
+      "owner": "产品",
+      "validFrom": null,
+      "validTo": null,
+      "conditions": [
+        "实际费用以行程结束后计费结果为准"
+      ],
+      "usageNote": "表达时需避免暗示费用固定不变"
+    },
+    {
+      "id": "fact-feature-coverage",
+      "type": "feature",
+      "status": "pending",
+      "title": "开通城市范围",
+      "statement": "[待补充] 花小猪打车已开通城市数量或范围",
+      "source": "[待补充] 需提供官方城市开通清单及更新日期",
+      "owner": "运营",
+      "validFrom": null,
+      "validTo": null,
+      "conditions": [
+        "仅可在已开通城市投放相关表述"
+      ],
+      "usageNote": "涉及城市数量必须与最新清单一致"
+    },
+    {
+      "id": "fact-campaign-newuser",
+      "type": "campaign",
+      "status": "confirmed",
+      "title": "新人首单活动",
+      "statement": "新人首单最高立减20元",
+      "couponAmount": "20元",
+      "threshold": "无门槛",
+      "claimPath": "[待补充] 领取路径，如首页弹窗 / 新人专区",
+      "source": "[待补充] 活动立项文档编号或运营确认记录",
+      "owner": "mm",
+      "validFrom": "[待补充]",
+      "validTo": "[待补充]",
+      "cities": "[待补充] 适用城市",
+      "audience": "new-user",
+      "conditions": [
+        "[待补充] 是否仅限新注册用户",
+        "[待补充] 是否限单笔使用",
+        "[待补充] 是否与其他优惠叠加"
+      ],
+      "usageNote": "金额、门槛、有效期三项缺一不可，必须同时出现在素材中",
+      "updatedAt": "2026-09-22T08:07:05.115Z"
+    },
+    {
+      "id": "fact-campaign-recall",
+      "type": "campaign",
+      "status": "pending",
+      "title": "老客召回活动",
+      "statement": "[待补充] 回流用户可享的具体权益描述",
+      "couponAmount": "[待补充]",
+      "threshold": "[待补充]",
+      "claimPath": "[待补充]",
+      "source": "[待补充]",
+      "owner": "用户增长",
+      "validFrom": "[待补充]",
+      "validTo": "[待补充]",
+      "cities": "[待补充]",
+      "audience": "churn-recall",
+      "conditions": [
+        "[待补充] 多久未下单可参与"
+      ],
+      "usageNote": "召回类权益不得暗示所有用户均可领取"
+    },
+    {
+      "id": "fact-campaign-daily",
+      "type": "campaign",
+      "status": "pending",
+      "title": "日常优惠 / 特价活动",
+      "statement": "[待补充] 常态化优惠机制描述",
+      "couponAmount": "[待补充]",
+      "threshold": "[待补充]",
+      "claimPath": "[待补充]",
+      "source": "[待补充]",
+      "owner": "运营",
+      "validFrom": "[待补充]",
+      "validTo": "[待补充]",
+      "cities": "[待补充]",
+      "audience": "low-frequency",
+      "conditions": [
+        "[待补充] 是否每日限量",
+        "[待补充] 是否分时段"
+      ],
+      "usageNote": "常态活动也需标注有效期，避免过期素材继续投放"
+    },
+    {
+      "id": "fact-path-order",
+      "type": "conversion-path",
+      "status": "confirmed",
+      "title": "标准下单路径",
+      "statement": "打开 App → 输入终点 → 查看预估价 → 确认叫车",
+      "source": "线上真实流程",
+      "owner": "产品",
+      "conditions": [
+        "素材中展示的路径不得省略确认环节"
+      ],
+      "usageNote": "如线上流程调整需同步更新本条并检查所有相关镜头"
+    },
+    {
+      "id": "fact-path-claim",
+      "type": "conversion-path",
+      "status": "pending",
+      "title": "优惠领取路径",
+      "statement": "[待补充] 用户领取优惠的真实操作路径",
+      "source": "[待补充]",
+      "owner": "运营",
+      "conditions": [],
+      "usageNote": "必须与 App 当前版本一致"
+    },
+    {
+      "id": "fact-safety-disclaimer",
+      "type": "compliance-note",
+      "status": "confirmed",
+      "title": "出行安全表述边界",
+      "statement": "可表达平台具备安全保障措施，但不得作绝对化安全承诺",
+      "source": "合规要求",
+      "owner": "法务",
+      "conditions": [
+        "禁用：绝对安全、零事故、保证准点"
+      ],
+      "usageNote": "涉及安全卖点时必须引用本条校验表述方式"
+    }
+  ],
+  "factTypes": [
+    {
+      "id": "feature",
+      "name": "产品功能与卖点"
+    },
+    {
+      "id": "campaign",
+      "name": "营销活动与权益"
+    },
+    {
+      "id": "conversion-path",
+      "name": "转化路径"
+    },
+    {
+      "id": "compliance-note",
+      "name": "合规边界说明"
+    }
+  ],
+  "statusTypes": [
+    {
+      "id": "confirmed",
+      "name": "已确认",
+      "usable": true
+    },
+    {
+      "id": "pending",
+      "name": "待补充",
+      "usable": false
+    },
+    {
+      "id": "expired",
+      "name": "已过期",
+      "usable": false
+    }
+  ]
+}

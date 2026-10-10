@@ -1,0 +1,549 @@
+{
+  "id": "hxz-ad-v1",
+  "name": "花小猪打车 广告短视频品牌规范 v1",
+  "owner": "花小猪用户增长与广告投放团队",
+  "updatedAt": "2026-09-21",
+  "notice": "本文件为工作流基线配置。品牌色、字体、Logo 使用规则必须以官方 VI 手册为准，落地前请由品牌方确认并替换标注 [待确认] 的项。",
+  "format": {
+    "aspectRatio": "9:16",
+    "resolution": "1080x1920",
+    "fps": 30,
+    "durationRange": [
+      10,
+      20
+    ],
+    "defaultDuration": 15
+  },
+  "brandIdentity": {
+    "productName": "花小猪打车",
+    "productNameEn": "Huaxiaozhu",
+    "category": "网约车 / 出行服务 App",
+    "positioning": "实惠出行，一键叫车",
+    "primaryColor": "#FF3E7F",
+    "primaryColorNote": "取自官网 Logo 粉玫主色（近似值）。Logo 实际为粉→紫渐变 #FF3E7F → #9B4DFF。正式投放前请以官方 VI 手册校准。",
+    "secondaryColor": "#FFD5E4",
+    "textOnBrand": "#FFFFFF",
+    "fontFamily": "思源黑体 / 苹方 / 微软雅黑",
+    "fontNote": "字幕与 CTA 统一使用无衬线黑体，字重 Medium 以上保证小屏可读",
+    "logoRules": [
+      "Logo 仅使用官方素材文件，禁止 AI 生成或临摹",
+      "Logo 不得变形、旋转、改色、加描边或投影",
+      "Logo 四周留出不小于 Logo 高度 50% 的净空",
+      "Logo 建议出现在结尾 CTA 画面，尺寸不小于画面宽度的 22%"
+    ],
+    "gradient": [
+      "#FF3E7F",
+      "#9B4DFF"
+    ],
+    "logoSource": "花小猪打车官网 hxz.didichuxing.com（滴滴出行科技有限公司）"
+  },
+  "visualStyle": {
+    "label": "真实生活感出行场景",
+    "promptFragments": [
+      "photorealistic real life footage",
+      "natural documentary style",
+      "shot on smartphone or mirrorless camera",
+      "authentic everyday Chinese urban setting",
+      "natural skin texture and real clothing fabric",
+      "shallow depth of field",
+      "true to life color grading"
+    ],
+    "description": "画面必须像真实拍摄的生活片段，贴近目标用户日常出行体验；不得呈现广告棚拍的过度修饰感，也不得出现插画、动漫、3D 渲染风格。"
+  },
+  "cameraStyle": {
+    "label": "生活化手持视角",
+    "defaultAngles": [
+      "eye-level medium shot",
+      "close-up on face",
+      "over-the-shoulder phone screen shot",
+      "low angle from curb",
+      "interior car passenger seat view",
+      "wide establishing shot",
+      "first person POV holding phone",
+      "waist-level following shot"
+    ],
+    "defaultMovements": [
+      "handheld follow",
+      "static lock-off",
+      "slow push in",
+      "slow pull out",
+      "pan to reveal",
+      "quick cut",
+      "tilt up to reveal"
+    ],
+    "promptFragments": [
+      "handheld camera with subtle natural shake",
+      "vertical 9:16 framing with subject centered",
+      "eye-level relatable perspective"
+    ]
+  },
+  "lighting": {
+    "presets": [
+      {
+        "id": "morning-commute",
+        "name": "清晨通勤",
+        "prompt": "early morning natural light, soft cool tone, long shadows, city waking up"
+      },
+      {
+        "id": "overcast-day",
+        "name": "阴天日常",
+        "prompt": "soft overcast daylight, even diffused light, neutral tone"
+      },
+      {
+        "id": "evening-rush",
+        "name": "傍晚下班",
+        "prompt": "golden hour evening light, warm tone, busy street atmosphere"
+      },
+      {
+        "id": "night-street",
+        "name": "夜晚街道",
+        "prompt": "night street lighting, shop signs and street lamps, warm practical lights, clean not gloomy"
+      },
+      {
+        "id": "rainy-day",
+        "name": "雨天出行",
+        "prompt": "rainy weather, wet pavement reflections, overcast soft light, umbrellas"
+      },
+      {
+        "id": "indoor-mall",
+        "name": "室内商场",
+        "prompt": "bright indoor mall lighting, clean commercial interior"
+      }
+    ],
+    "default": "evening-rush"
+  },
+  "toneOptions": [
+    {
+      "id": "relatable",
+      "name": "生活共鸣",
+      "prompt": "relatable everyday tone, warm and down to earth, speaks like a real user"
+    },
+    {
+      "id": "humorous",
+      "name": "轻松幽默",
+      "prompt": "light humorous tone, playful exaggeration of a small daily struggle"
+    },
+    {
+      "id": "direct-benefit",
+      "name": "直接利益",
+      "prompt": "straightforward benefit-first tone, clear and fast value delivery"
+    },
+    {
+      "id": "testimonial",
+      "name": "真实口碑",
+      "prompt": "authentic first person testimonial tone, casual spoken language"
+    },
+    {
+      "id": "urgent",
+      "name": "限时紧迫",
+      "prompt": "time sensitive tone driven by a confirmed campaign deadline"
+    }
+  ],
+  "audienceOptions": [
+    {
+      "id": "new-user",
+      "name": "新客（未注册/未首单）",
+      "painPoints": [
+        "不知道有更实惠的打车方式",
+        "担心价格不透明",
+        "没用过不敢试"
+      ]
+    },
+    {
+      "id": "low-frequency",
+      "name": "低频用户",
+      "painPoints": [
+        "只在急用时才想起打车",
+        "觉得打车贵不划算",
+        "忘记有优惠可用"
+      ]
+    },
+    {
+      "id": "churn-recall",
+      "name": "待召回用户",
+      "painPoints": [
+        "很久没打开App",
+        "已被其他平台习惯占据",
+        "不知道有新权益"
+      ]
+    },
+    {
+      "id": "commuter",
+      "name": "通勤人群",
+      "painPoints": [
+        "早晚高峰难叫车",
+        "通勤成本累积高",
+        "赶时间怕迟到"
+      ]
+    },
+    {
+      "id": "student-youth",
+      "name": "学生与年轻人",
+      "painPoints": [
+        "预算敏感",
+        "夜间回校不方便",
+        "多人出行想分摊"
+      ]
+    },
+    {
+      "id": "family-shopping",
+      "name": "家庭与购物人群",
+      "painPoints": [
+        "东西多不好拿",
+        "带小孩不方便挤公交",
+        "商场停车难"
+      ]
+    }
+  ],
+  "sceneOptions": [
+    {
+      "id": "commute-morning",
+      "name": "早高峰通勤",
+      "prompt": "busy morning street outside a residential compound, people heading to work"
+    },
+    {
+      "id": "commute-evening",
+      "name": "下班返程",
+      "prompt": "evening sidewalk outside an office building, tired office workers leaving"
+    },
+    {
+      "id": "shopping-return",
+      "name": "购物返程",
+      "prompt": "shopping mall exit with shopping bags in hands, busy plaza"
+    },
+    {
+      "id": "party-end",
+      "name": "聚会散场",
+      "prompt": "night street outside a restaurant after a gathering, friends saying goodbye"
+    },
+    {
+      "id": "with-luggage",
+      "name": "携带行李",
+      "prompt": "train station or airport exit with a suitcase, travellers walking out"
+    },
+    {
+      "id": "rain-waiting",
+      "name": "雨天等车",
+      "prompt": "standing under an awning in the rain waiting for a ride, wet street"
+    },
+    {
+      "id": "late-night-home",
+      "name": "深夜回家",
+      "prompt": "quiet late night street, person walking alone wanting to get home safely"
+    },
+    {
+      "id": "hospital-errand",
+      "name": "办事就医",
+      "prompt": "outside a hospital or government service hall, person in a hurry"
+    }
+  ],
+  "ctaOptions": [
+    {
+      "id": "download-claim",
+      "name": "下载领券",
+      "text": "点击下载，领取新人券",
+      "action": "download"
+    },
+    {
+      "id": "open-claim",
+      "name": "打开领券",
+      "text": "打开花小猪打车，领取优惠",
+      "action": "open"
+    },
+    {
+      "id": "call-car",
+      "name": "立即叫车",
+      "text": "现在就叫一辆",
+      "action": "convert"
+    },
+    {
+      "id": "first-order",
+      "name": "完成首单",
+      "text": "下单体验实惠出行",
+      "action": "convert"
+    },
+    {
+      "id": "check-price",
+      "name": "查看价格",
+      "text": "打开看看到你家多少钱",
+      "action": "engage"
+    }
+  ],
+  "productDisplayRules": [
+    "App 界面、价格、券面额、活动文案一律使用已确认的真实截图或录屏，禁止由 AI 生成界面",
+    "涉及金额、折扣、门槛、时间的文字必须以后期叠加方式呈现，禁止交给视频模型绘制",
+    "展示的下单路径必须与线上真实流程一致，不得虚构按钮或简化关键步骤",
+    "手机型号与系统界面不得出现竞品标识",
+    "若展示司机端界面，需同步确认司机隐私信息已脱敏"
+  ],
+  "copyRules": [
+    "口播与字幕使用口语化中文，避免书面语与生硬广告腔",
+    "单条字幕不超过 14 字，保证竖屏一行可读",
+    "中文口播语速按 5 字/秒估算，需预留呼吸停顿",
+    "优惠表述必须包含必要条件（如适用城市、有效期、使用门槛），不得只讲金额",
+    "不得使用未经证实的对比表述贬低竞品",
+    "结尾 CTA 必须明确具体动作，避免只说品牌名"
+  ],
+  "restrictions": [
+    "禁止插画 / 动漫 / 3D 渲染 / 卡通风格",
+    "禁止出现真实明星、公众人物肖像及其相似形象",
+    "禁止出现任何竞品品牌标识、车身贴、App 界面",
+    "禁止出现危险驾驶行为：超速、闯红灯、司机低头看手机、乘客不系安全带",
+    "禁止出现真实车牌号，车牌须做模糊或使用虚拟号牌",
+    "禁止出现醉酒、争执、事故、违法场景",
+    "禁止出现儿童单独乘车",
+    "禁止出现具体医院病历、身份证、银行卡等敏感信息",
+    "禁止虚构优惠金额、用户评价、销量与服务承诺",
+    "禁止出现与出行安全承诺相关的绝对化表述"
+  ],
+  "negativePromptLibrary": {
+    "identity": [
+      "inconsistent character identity",
+      "face changing between shots",
+      "deformed face",
+      "distorted facial features",
+      "extra fingers",
+      "missing fingers",
+      "extra limbs",
+      "melted hands",
+      "wrong outfit",
+      "changing clothing color",
+      "celebrity likeness"
+    ],
+    "vehicle": [
+      "changing car color",
+      "changing car model",
+      "distorted car body",
+      "floating car",
+      "wrong steering wheel side",
+      "readable license plate",
+      "competitor car branding",
+      "damaged vehicle",
+      "luxury supercar"
+    ],
+    "style": [
+      "anime",
+      "cartoon",
+      "3d render",
+      "illustration",
+      "cgi look",
+      "stylized art",
+      "oil painting",
+      "overproduced studio commercial look",
+      "heavy beauty retouching",
+      "plastic skin"
+    ],
+    "text": [
+      "on-screen text",
+      "chinese characters rendered by model",
+      "garbled text",
+      "fake app interface",
+      "fake price tag",
+      "distorted logo",
+      "watermark",
+      "subtitles burned by model",
+      "unreadable ui text",
+      "green screen",
+      "chroma key green",
+      "blue screen",
+      "solid green phone display",
+      "coloured placeholder on screen"
+    ],
+    "quality": [
+      "blurry",
+      "low resolution",
+      "jpeg artifacts",
+      "oversaturated",
+      "flickering",
+      "morphing background",
+      "warped geometry",
+      "duplicated person",
+      "unnatural motion",
+      "jittery limbs"
+    ],
+    "safety": [
+      "dangerous driving",
+      "speeding",
+      "driver looking at phone while driving",
+      "no seatbelt",
+      "car accident",
+      "traffic violation",
+      "drunk person",
+      "physical conflict",
+      "child alone in car"
+    ],
+    "brand": [
+      "competitor logo",
+      "competitor app ui",
+      "real license plate",
+      "political symbol",
+      "religious symbol",
+      "gambling imagery"
+    ]
+  },
+  "shotRoles": [
+    {
+      "id": "hook",
+      "name": "开头钩子",
+      "desc": "0-3 秒内呈现具体出行问题或反常画面，抓住目标人群注意力"
+    },
+    {
+      "id": "scene",
+      "name": "场景共鸣",
+      "desc": "通过人物动作或口播建立痛点共鸣，让用户确认这是自己的处境"
+    },
+    {
+      "id": "product",
+      "name": "产品价值",
+      "desc": "展示花小猪的功能或已确认权益，说明如何解决前面的问题"
+    },
+    {
+      "id": "proof",
+      "name": "价值佐证",
+      "desc": "用真实界面或结果画面佐证卖点，增强可信度"
+    },
+    {
+      "id": "cta",
+      "name": "行动引导",
+      "desc": "呈现品牌信息与明确的下一步动作"
+    }
+  ],
+  "adStructures": [
+    {
+      "id": "problem-solution-cta",
+      "name": "痛点 → 解决 → 引导（15s 标准）",
+      "beats": [
+        {
+          "role": "hook",
+          "name": "痛点亮相",
+          "range": "0-3s"
+        },
+        {
+          "role": "scene",
+          "name": "场景共鸣",
+          "range": "3-7s"
+        },
+        {
+          "role": "product",
+          "name": "产品价值",
+          "range": "7-12s"
+        },
+        {
+          "role": "cta",
+          "name": "行动引导",
+          "range": "12-15s"
+        }
+      ]
+    },
+    {
+      "id": "benefit-first",
+      "name": "利益前置 → 场景验证 → 引导",
+      "beats": [
+        {
+          "role": "hook",
+          "name": "权益前置",
+          "range": "0-3s"
+        },
+        {
+          "role": "product",
+          "name": "怎么用",
+          "range": "3-8s"
+        },
+        {
+          "role": "proof",
+          "name": "真实结果",
+          "range": "8-12s"
+        },
+        {
+          "role": "cta",
+          "name": "行动引导",
+          "range": "12-15s"
+        }
+      ]
+    },
+    {
+      "id": "testimonial",
+      "name": "第一人称口碑",
+      "beats": [
+        {
+          "role": "hook",
+          "name": "一句结论",
+          "range": "0-3s"
+        },
+        {
+          "role": "scene",
+          "name": "我的处境",
+          "range": "3-8s"
+        },
+        {
+          "role": "product",
+          "name": "我怎么解决",
+          "range": "8-13s"
+        },
+        {
+          "role": "cta",
+          "name": "推荐动作",
+          "range": "13-16s"
+        }
+      ]
+    },
+    {
+      "id": "contrast",
+      "name": "对比反差（之前 vs 现在）",
+      "beats": [
+        {
+          "role": "hook",
+          "name": "之前有多难",
+          "range": "0-4s"
+        },
+        {
+          "role": "scene",
+          "name": "转折",
+          "range": "4-7s"
+        },
+        {
+          "role": "product",
+          "name": "现在怎么样",
+          "range": "7-12s"
+        },
+        {
+          "role": "cta",
+          "name": "行动引导",
+          "range": "12-15s"
+        }
+      ]
+    }
+  ],
+  "testVariableOptions": [
+    {
+      "id": "hook",
+      "name": "开头钩子",
+      "desc": "只替换 0-3 秒的钩子镜头，其余完全复用"
+    },
+    {
+      "id": "selling-point",
+      "name": "核心卖点",
+      "desc": "只替换产品价值段落表达的卖点"
+    },
+    {
+      "id": "cta",
+      "name": "结尾 CTA",
+      "desc": "只替换结尾行动引导的文案与画面"
+    },
+    {
+      "id": "audience",
+      "name": "人群演绎",
+      "desc": "只替换出镜人物设定，场景与信息不变"
+    },
+    {
+      "id": "scene",
+      "name": "出行场景",
+      "desc": "只替换出行场景，人物与卖点不变"
+    },
+    {
+      "id": "tone",
+      "name": "内容基调",
+      "desc": "只替换口播语气与表达方式"
+    }
+  ]
+}

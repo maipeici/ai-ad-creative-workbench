@@ -1,0 +1,40 @@
+{
+  "name": "hxz-ai-ad-video-workflow",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "花小猪打车 AI 广告短视频工作流 - 6 阶段信息流素材生产流水线",
+  "engines": {
+    "node": ">=18.18"
+  },
+  "scripts": {
+    "dev": "concurrently -n server,client -c cyan,magenta \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:server": "node server/index.js",
+    "dev:client": "vite",
+    "build": "vite build",
+    "start": "cross-env NODE_ENV=production node server/index.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "multer": "^1.4.5-lts.1",
+    "nanoid": "^5.0.7",
+    "sharp": "^0.35.4"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.19",
+    "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3",
+    "postcss": "^8.4.39",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwindcss": "^3.4.6",
+    "typescript": "^5.5.3",
+    "vite": "^5.3.4"
+  }
+}

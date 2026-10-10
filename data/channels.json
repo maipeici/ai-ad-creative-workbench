@@ -1,0 +1,90 @@
+{
+  "notice": "各投放平台的素材规格与安全区为工作流基线值，平台规则会调整，落地前请核对最新版官方素材规范。",
+  "channels": [
+    {
+      "id": "oceanengine-douyin",
+      "name": "巨量引擎 · 抖音",
+      "platform": "巨量引擎",
+      "aspectRatio": "9:16",
+      "resolution": "1080x1920",
+      "durationRange": [5, 60],
+      "recommendedDuration": [15, 20],
+      "safeArea": {
+        "top": 0.12,
+        "bottom": 0.22,
+        "left": 0.06,
+        "right": 0.22,
+        "note": "右侧 22% 为点赞/评论/分享互动栏，底部 22% 为账号名与文案区，关键信息与 CTA 不得进入"
+      },
+      "firstFrameRule": "首帧即封面，必须有清晰主体与可读信息，不得为黑帧或转场帧",
+      "audioRule": "默认静音播放场景多，关键信息必须有字幕承载",
+      "notes": [
+        "前 3 秒完播率决定后续分发，钩子必须在 3 秒内出现",
+        "字幕建议放在画面中部偏下、底部安全区之上"
+      ]
+    },
+    {
+      "id": "tencent-gdt",
+      "name": "腾讯广告 · 广点通",
+      "platform": "广点通",
+      "aspectRatio": "9:16",
+      "resolution": "1080x1920",
+      "durationRange": [5, 60],
+      "recommendedDuration": [15, 20],
+      "safeArea": {
+        "top": 0.1,
+        "bottom": 0.25,
+        "left": 0.06,
+        "right": 0.08,
+        "note": "视频号与朋友圈信息流底部有较高的操作与文案区，底部预留 25%"
+      },
+      "firstFrameRule": "封面可单独上传，建议单独产出封面图",
+      "audioRule": "朋友圈场景静音率高，字幕为必需",
+      "notes": [
+        "视频号生态偏真实生活感，过度广告腔转化更差",
+        "可同时需要 16:9 版本用于部分版位，本工作流仅产出 9:16"
+      ]
+    },
+    {
+      "id": "kuaishou-magnetic",
+      "name": "磁力智投 · 快手",
+      "platform": "磁力智投",
+      "aspectRatio": "9:16",
+      "resolution": "1080x1920",
+      "durationRange": [5, 60],
+      "recommendedDuration": [15, 20],
+      "safeArea": {
+        "top": 0.1,
+        "bottom": 0.24,
+        "left": 0.06,
+        "right": 0.18,
+        "note": "右侧互动栏与底部作者信息区需避让"
+      },
+      "firstFrameRule": "首帧需信息明确，快手用户滑动决策更快",
+      "audioRule": "有声播放比例较高，口播效果更好，但字幕仍需保留",
+      "notes": [
+        "偏好朴实真实的表达，方言与生活化口播接受度高",
+        "利益点前置的素材通常表现更稳定"
+      ]
+    },
+    {
+      "id": "wechat-channels",
+      "name": "微信视频号",
+      "platform": "视频号",
+      "aspectRatio": "9:16",
+      "resolution": "1080x1920",
+      "durationRange": [5, 60],
+      "recommendedDuration": [15, 20],
+      "safeArea": {
+        "top": 0.1,
+        "bottom": 0.26,
+        "left": 0.06,
+        "right": 0.1,
+        "note": "底部有较高的描述与跳转区域"
+      },
+      "firstFrameRule": "首帧建议与封面一致",
+      "audioRule": "静音率高，字幕必需",
+      "notes": ["生态偏真实与口碑，硬广感强的素材容易被划走"]
+    }
+  ]
+}

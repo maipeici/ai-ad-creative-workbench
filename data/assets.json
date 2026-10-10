@@ -1,0 +1,525 @@
+{
+  "version": 2,
+  "notice": "素材库是团队资产。人物、车辆、产品界面、品牌素材建议上传真实参考图后再投入生产；App 界面与 Logo 必须使用官方素材，禁止 AI 生成。",
+  "categories": [
+    {
+      "id": "person",
+      "name": "人物 Person",
+      "multi": true,
+      "aiGeneratable": true
+    },
+    {
+      "id": "outfit",
+      "name": "服装 Outfit",
+      "multi": true,
+      "aiGeneratable": true
+    },
+    {
+      "id": "vehicle",
+      "name": "车辆 Vehicle",
+      "multi": true,
+      "aiGeneratable": true
+    },
+    {
+      "id": "scene",
+      "name": "出行场景 Scene",
+      "multi": true,
+      "aiGeneratable": true
+    },
+    {
+      "id": "prop",
+      "name": "道具 Prop",
+      "multi": true,
+      "aiGeneratable": true
+    },
+    {
+      "id": "productUI",
+      "name": "产品界面 App UI",
+      "multi": true,
+      "aiGeneratable": false
+    },
+    {
+      "id": "brand",
+      "name": "品牌素材 Brand",
+      "multi": true,
+      "aiGeneratable": false
+    },
+    {
+      "id": "overlay",
+      "name": "已审核叠加素材",
+      "multi": true,
+      "aiGeneratable": false
+    },
+    {
+      "id": "reference",
+      "name": "历史参考广告",
+      "multi": true,
+      "aiGeneratable": false
+    }
+  ],
+  "items": [
+    {
+      "id": "person-office-female-25",
+      "category": "person",
+      "name": "Office Female 25",
+      "nameCn": "都市女白领 · 25岁",
+      "prompt": "a 25 year old Chinese woman, shoulder length black hair, light natural makeup, slim build, friendly relatable face, ordinary office worker look",
+      "negative": "heavy makeup, model-like glamour, celebrity face, western features",
+      "refImage": null,
+      "tags": [
+        "female",
+        "commuter",
+        "new-user"
+      ],
+      "note": "建议上传真实出镜人物参考图以锁定形象"
+    },
+    {
+      "id": "person-office-male-30",
+      "category": "person",
+      "name": "Office Male 30",
+      "nameCn": "都市男白领 · 30岁",
+      "prompt": "a 30 year old Chinese man, short black hair, clean shaven, average build, tired but friendly expression, ordinary office worker look",
+      "negative": "model-like face, muscular physique, celebrity likeness, beard",
+      "refImage": null,
+      "tags": [
+        "male",
+        "commuter"
+      ]
+    },
+    {
+      "id": "person-student-female-20",
+      "category": "person",
+      "name": "Student Female 20",
+      "nameCn": "女大学生 · 20岁",
+      "prompt": "a 20 year old Chinese female university student, ponytail, fresh face no makeup, casual youthful look, carrying a backpack",
+      "negative": "heavy makeup, mature business look, child appearance",
+      "refImage": null,
+      "tags": [
+        "female",
+        "student-youth"
+      ]
+    },
+    {
+      "id": "person-student-male-21",
+      "category": "person",
+      "name": "Student Male 21",
+      "nameCn": "男大学生 · 21岁",
+      "prompt": "a 21 year old Chinese male university student, short messy hair, casual hoodie style, energetic friendly look",
+      "negative": "business suit, mature appearance, child appearance",
+      "refImage": null,
+      "tags": [
+        "male",
+        "student-youth"
+      ]
+    },
+    {
+      "id": "person-mom-35",
+      "category": "person",
+      "name": "Mother 35",
+      "nameCn": "年轻妈妈 · 35岁",
+      "prompt": "a 35 year old Chinese woman, practical short hair, warm approachable face, casual comfortable clothing, carrying shopping bags",
+      "negative": "glamorous look, teenage appearance, heavy makeup",
+      "refImage": null,
+      "tags": [
+        "female",
+        "family-shopping"
+      ]
+    },
+    {
+      "id": "person-senior-55",
+      "category": "person",
+      "name": "Senior 55",
+      "nameCn": "中老年用户 · 55岁",
+      "prompt": "a 55 year old Chinese person, greying hair, kind everyday face, simple comfortable clothing",
+      "negative": "young appearance, fashionable styling",
+      "refImage": null,
+      "tags": [
+        "senior",
+        "low-frequency"
+      ]
+    },
+    {
+      "id": "person-driver-40",
+      "category": "person",
+      "name": "Driver 40",
+      "nameCn": "网约车司机 · 40岁",
+      "prompt": "a 40 year old Chinese male ride-hailing driver, neat short hair, plain polo shirt, polite professional demeanor, seated in driver seat with seatbelt on",
+      "negative": "uniform with competitor logo, unkempt appearance, no seatbelt, looking at phone",
+      "refImage": null,
+      "tags": [
+        "male",
+        "driver"
+      ],
+      "note": "司机镜头必须系安全带、不得低头看手机"
+    },
+    {
+      "id": "outfit-office-casual",
+      "category": "outfit",
+      "name": "Office Casual",
+      "nameCn": "通勤休闲装",
+      "prompt": "light knit sweater and simple trousers, neutral colors, comfortable everyday office wear",
+      "negative": "formal evening gown, luxury branded clothing",
+      "refImage": null,
+      "tags": []
+    },
+    {
+      "id": "outfit-student-casual",
+      "category": "outfit",
+      "name": "Student Casual",
+      "nameCn": "学生休闲装",
+      "prompt": "oversized hoodie, jeans and sneakers, youthful casual streetwear",
+      "negative": "business suit, formal wear",
+      "refImage": null,
+      "tags": []
+    },
+    {
+      "id": "outfit-business",
+      "category": "outfit",
+      "name": "Business Formal",
+      "nameCn": "商务正装",
+      "prompt": "simple business shirt and blazer, neat professional appearance",
+      "negative": "luxury designer suit, flashy accessories",
+      "refImage": null,
+      "tags": []
+    },
+    {
+      "id": "outfit-rainy",
+      "category": "outfit",
+      "name": "Rainy Day",
+      "nameCn": "雨天装扮",
+      "prompt": "light jacket holding a folding umbrella, slightly damp clothing",
+      "negative": "heavy winter coat, raincoat costume",
+      "refImage": null,
+      "tags": []
+    },
+    {
+      "id": "vehicle-sedan-white",
+      "category": "vehicle",
+      "name": "White Sedan",
+      "nameCn": "白色轿车",
+      "prompt": "an ordinary clean white compact sedan, common Chinese domestic model, no visible branding, blurred license plate",
+      "negative": "luxury car, sports car, readable license plate, competitor car sticker, damaged body",
+      "refImage": null,
+      "tags": [
+        "economy"
+      ],
+      "note": "车牌必须模糊处理"
+    },
+    {
+      "id": "vehicle-sedan-black",
+      "category": "vehicle",
+      "name": "Black Sedan",
+      "nameCn": "黑色轿车",
+      "prompt": "an ordinary clean black compact sedan, common Chinese domestic model, no visible branding, blurred license plate",
+      "negative": "luxury car, limousine, readable license plate, competitor branding",
+      "refImage": null,
+      "tags": [
+        "economy"
+      ]
+    },
+    {
+      "id": "vehicle-interior-standard",
+      "category": "vehicle",
+      "name": "Standard Interior",
+      "nameCn": "标准车内饰",
+      "prompt": "clean tidy car interior, grey fabric seats, simple dashboard, passenger rear seat perspective, seatbelt visible",
+      "negative": "luxury leather interior, messy cluttered car, competitor branded accessories",
+      "refImage": null,
+      "tags": []
+    },
+    {
+      "id": "vehicle-door-open",
+      "category": "vehicle",
+      "name": "Door Open Boarding",
+      "nameCn": "开门上车视角",
+      "prompt": "car rear door open at the curb, passenger about to get in, street level view",
+      "negative": "car moving with door open, dangerous boarding position",
+      "refImage": null,
+      "tags": []
+    },
+    {
+      "id": "scene-office-building",
+      "category": "scene",
+      "name": "Office Building Exit",
+      "nameCn": "写字楼门口",
+      "prompt": "outside a modern Chinese office building at evening, glass facade, office workers leaving, city street",
+      "negative": "western architecture, empty deserted street, futuristic city",
+      "refImage": null,
+      "tags": [
+        "commute-evening"
+      ]
+    },
+    {
+      "id": "scene-residential",
+      "category": "scene",
+      "name": "Residential Compound",
+      "nameCn": "住宅小区门口",
+      "prompt": "entrance of a typical Chinese residential compound in the morning, trees, parked bicycles, ordinary neighborhood",
+      "negative": "luxury villa, slum, western suburb",
+      "refImage": null,
+      "tags": [
+        "commute-morning"
+      ]
+    },
+    {
+      "id": "scene-mall-exit",
+      "category": "scene",
+      "name": "Mall Exit",
+      "nameCn": "商场出口",
+      "prompt": "exit of a busy Chinese shopping mall, bright signage, shoppers with bags, plaza in front",
+      "negative": "empty mall, western outlet, luxury boutique street",
+      "refImage": null,
+      "tags": [
+        "shopping-return"
+      ]
+    },
+    {
+      "id": "scene-restaurant-night",
+      "category": "scene",
+      "name": "Restaurant Night Street",
+      "nameCn": "夜晚餐厅门口",
+      "prompt": "night street outside a Chinese restaurant, warm shop signs, friends leaving after dinner, city lights",
+      "negative": "bar district with drunk people, deserted alley, western pub",
+      "refImage": null,
+      "tags": [
+        "party-end"
+      ]
+    },
+    {
+      "id": "scene-station-exit",
+      "category": "scene",
+      "name": "Station Exit",
+      "nameCn": "车站出口",
+      "prompt": "exit of a Chinese high speed railway station, travellers with luggage, wide plaza, signage",
+      "negative": "airport interior only, western train station",
+      "refImage": null,
+      "tags": [
+        "with-luggage"
+      ]
+    },
+    {
+      "id": "scene-rain-awning",
+      "category": "scene",
+      "name": "Rainy Awning",
+      "nameCn": "雨天屋檐下",
+      "prompt": "person standing under a shop awning in the rain on a Chinese street, wet pavement reflections, umbrellas passing",
+      "negative": "storm disaster, flooding, dramatic weather",
+      "refImage": null,
+      "tags": [
+        "rain-waiting"
+      ]
+    },
+    {
+      "id": "scene-night-street-quiet",
+      "category": "scene",
+      "name": "Quiet Night Street",
+      "nameCn": "深夜安静街道",
+      "prompt": "quiet Chinese city street late at night, street lamps, few people, calm safe atmosphere",
+      "negative": "dark scary alley, crime scene atmosphere, deserted ruins",
+      "refImage": null,
+      "tags": [
+        "late-night-home"
+      ]
+    },
+    {
+      "id": "scene-bus-stop-crowd",
+      "category": "scene",
+      "name": "Crowded Bus Stop",
+      "nameCn": "拥挤公交站",
+      "prompt": "crowded Chinese bus stop during rush hour, many people waiting, busy traffic behind",
+      "negative": "empty bus stop, western bus shelter",
+      "refImage": null,
+      "tags": [
+        "commute-morning",
+        "commute-evening"
+      ]
+    },
+    {
+      "id": "prop-shopping-bags",
+      "category": "prop",
+      "name": "Shopping Bags",
+      "nameCn": "购物袋",
+      "prompt": "several full shopping bags held in both hands, ordinary paper and plastic bags",
+      "negative": "luxury brand shopping bags",
+      "refImage": null,
+      "tags": []
+    },
+    {
+      "id": "prop-suitcase",
+      "category": "prop",
+      "name": "Suitcase",
+      "nameCn": "行李箱",
+      "prompt": "a medium sized rolling suitcase, ordinary travel luggage",
+      "negative": "luxury designer luggage",
+      "refImage": null,
+      "tags": []
+    },
+    {
+      "id": "prop-phone-in-hand",
+      "category": "prop",
+      "name": "Phone In Hand",
+      "nameCn": "手持手机",
+      "prompt": "an ordinary smartphone held in hand, screen facing away from camera or screen content added in post",
+      "negative": "competitor app interface, fake app ui generated by model, readable chinese text on screen",
+      "refImage": null,
+      "tags": [],
+      "note": "手机屏幕内容一律后期叠加，不交给模型绘制"
+    },
+    {
+      "id": "prop-umbrella",
+      "category": "prop",
+      "name": "Umbrella",
+      "nameCn": "雨伞",
+      "prompt": "a plain folding umbrella, slightly wet",
+      "negative": "branded umbrella, broken umbrella",
+      "refImage": null,
+      "tags": []
+    },
+    {
+      "id": "ui-home-order",
+      "category": "productUI",
+      "name": "Home / Order Screen",
+      "nameCn": "首页叫车界面",
+      "prompt": "",
+      "negative": "",
+      "refImage": "/media/asset-1790064440473-HuUI4y.jpg",
+      "tags": [
+        "official-required"
+      ],
+      "note": "★ 必须上传官方 App 截图或录屏，禁止 AI 生成界面。未上传前该镜头不得进入生成。"
+    },
+    {
+      "id": "ui-price-preview",
+      "category": "productUI",
+      "name": "Price Preview",
+      "nameCn": "预估价界面",
+      "prompt": "",
+      "negative": "",
+      "refImage": null,
+      "tags": [
+        "official-required"
+      ],
+      "note": "★ 必须上传官方截图，涉及价格必须为真实界面"
+    },
+    {
+      "id": "ui-coupon-center",
+      "category": "productUI",
+      "name": "Coupon Center",
+      "nameCn": "优惠券 / 领券页",
+      "prompt": "",
+      "negative": "",
+      "refImage": null,
+      "tags": [
+        "official-required"
+      ],
+      "note": "★ 必须上传官方截图，券面额需与 product-facts 一致"
+    },
+    {
+      "id": "ui-driver-arriving",
+      "category": "productUI",
+      "name": "Driver Arriving",
+      "nameCn": "司机接单/到达界面",
+      "prompt": "",
+      "negative": "",
+      "refImage": null,
+      "tags": [
+        "official-required"
+      ],
+      "note": "★ 必须上传官方截图，司机信息需脱敏"
+    },
+    {
+      "id": "brand-logo-main",
+      "category": "brand",
+      "name": "Logo Horizontal",
+      "nameCn": "花小猪主 Logo（横版）",
+      "prompt": "",
+      "negative": "",
+      "refImage": "/media/hxz-logo-horizontal.png",
+      "tags": [
+        "official-required"
+      ],
+      "note": "来源：花小猪官网 hxz.didichuxing.com。横版含猪头图标与中文字标，粉紫渐变。用于结尾 CTA 叠加。正式投放前请向品牌方索取矢量源文件（AI/SVG）替换。"
+    },
+    {
+      "id": "brand-endcard",
+      "category": "brand",
+      "name": "End Card",
+      "nameCn": "品牌结尾卡",
+      "prompt": "",
+      "negative": "",
+      "refImage": null,
+      "tags": [
+        "official-required"
+      ],
+      "note": "★ 建议上传已审核的结尾卡设计稿，用于后期叠加"
+    },
+    {
+      "id": "overlay-coupon-card",
+      "category": "overlay",
+      "name": "Coupon Card",
+      "nameCn": "优惠卡片（已审核）",
+      "prompt": "",
+      "negative": "",
+      "refImage": "/media/asset-1790064451059-lJO_1e.png",
+      "tags": [
+        "official-required"
+      ],
+      "note": "★ 已过审的优惠卡片图，金额与门槛须与 product-facts 对应条目一致"
+    },
+    {
+      "id": "overlay-cta-button",
+      "category": "overlay",
+      "name": "CTA Button",
+      "nameCn": "CTA 按钮素材",
+      "prompt": "",
+      "negative": "",
+      "refImage": null,
+      "tags": [
+        "official-required"
+      ],
+      "note": "★ 用于结尾行动引导的按钮图形"
+    },
+    {
+      "id": "brand-logo-icon",
+      "category": "brand",
+      "name": "Logo Icon",
+      "nameCn": "花小猪图标（方形）",
+      "prompt": "",
+      "negative": "",
+      "refImage": "/media/hxz-icon.png",
+      "tags": [
+        "official-required"
+      ],
+      "note": "来源：花小猪官网 favicon。方形图标，适合小尺寸角标叠加。"
+    },
+    {
+      "id": "brand-logo-alt",
+      "category": "brand",
+      "name": "Logo Horizontal Alt",
+      "nameCn": "花小猪 Logo（横版备选）",
+      "prompt": "",
+      "negative": "",
+      "refImage": "/media/hxz-logo-horizontal-alt.png",
+      "tags": [
+        "official-required"
+      ],
+      "note": "来源：花小猪官网备选版本。"
+    },
+    {
+      "id": "overlay-oZHEWd",
+      "category": "overlay",
+      "name": "Coupon fact-campaign-newuser",
+      "nameCn": "优惠卡 · 新人首单活动",
+      "prompt": "",
+      "negative": "",
+      "refImage": "/media/coupon-fact-campaign-newuser-1791648641065.png",
+      "tags": [
+        "official-required",
+        "generated"
+      ],
+      "note": "由事实 fact-campaign-newuser 生成 · 依据来源：[待补充] 活动立项文档编号或运营确认记录 · 金额 20元",
+      "factId": "fact-campaign-newuser",
+      "custom": true
+    }
+  ]
+}

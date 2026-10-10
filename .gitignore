@@ -1,0 +1,28 @@
+# Local environment configuration: only the template is tracked.
+.env
+.env.*
+!.env.example
+
+# Credentials, exports and private keys.
+credentials/
+_sensitive/
+session-diffs/
+*.pem
+*.key
+*.p12
+*.pfx
+*.serviceaccount.json
+*service-account*.json
+gcp-*.json
+
+# Dependencies and build output.
+node_modules/
+dist/
+
+# Local project records, uploads, generated media and runtime logs.
+data/projects.json
+data/media/
+.local/
+*.log
+*.tmp
+.DS_Store
