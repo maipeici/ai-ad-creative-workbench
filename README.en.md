@@ -55,13 +55,13 @@ Specify the audience, scenario, objective, tone, duration, and CTA. Channel guid
 
 Generate multiple concepts, inspect their hooks and supporting facts, refine a direction, and select it for storyboarding.
 
-![Creative concepts and opening hooks](assets/screenshots/creative-directions.png)
+![Creative concepts Agent with generation preferences and concept details](assets/screenshots/creative-directions.png)
 
 ### Editable shots and shared visual context
 
 Record character, vehicle, scene, and style descriptions once, then manage individual shots. Each card includes its role, prompt, voiceover, subtitle, duration, and asset references.
 
-![Shot cards with previews, narration, and subtitles](assets/screenshots/storyboard.png)
+![Storyboard Agent with generation requirements and shared visual context](assets/screenshots/storyboard.png)
 
 | Rendering mode | Use |
 | --- | --- |
@@ -75,13 +75,13 @@ Reference images and shared descriptions help guide consistency; outputs still n
 
 Save 1–30 requirements per project. A rule engine checks facts, wording, assets, rendering choices, and narration length. The agent evaluates each requirement and may apply one bounded round of text repairs followed by a fresh review. Approval requires zero rule blockers and a complete passing checklist. Missing credentials, model failures, and incomplete evidence never produce automatic approval. Changes to inputs invalidate previous results; campaign information is rechecked on a new day. This stage reviews pre-generation storyboards and references, not rendered video pixels.
 
-![Automatic review checklist and repair workflow](assets/screenshots/review.png)
+![Automatic review Agent with a project checklist and repair workflow](assets/screenshots/review.png)
 
 ### Video assembly, export, and creative variants
 
 Generate, import, or retry individual shots. With FFmpeg configured, combine footage, subtitles, brand assets, and voiceover into a 1080 × 1920 video and extract a cover image. Prepare variants around one creative dimension and record the changed and reused shots.
 
-![Finished video, cover download, and creative variant controls](assets/screenshots/render-export.png)
+![Video production with shot previews, finished video, and cover download](assets/screenshots/render-export.png)
 
 The creative package download is a **JSON file**, containing the brief, concept, fact references, shared context, shot prompts, and variant information. Download video and cover files through their separate controls.
 
