@@ -1,6 +1,8 @@
+import { fileURLToPath } from 'node:url'
+
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: ['./client/index.html', './client/src/**/*.{ts,tsx}'],
+  content: [fileURLToPath(new URL('../src/client/**/*.{html,ts,tsx}', import.meta.url)).replaceAll('\\', '/')],
   theme: {
     extend: {
       colors: {

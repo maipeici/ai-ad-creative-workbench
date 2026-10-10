@@ -49,25 +49,24 @@
     {
       "id": "fact-campaign-newuser",
       "type": "campaign",
-      "status": "confirmed",
+      "status": "pending",
       "title": "新人首单活动",
-      "statement": "新人首单最高立减20元",
-      "couponAmount": "20元",
-      "threshold": "无门槛",
-      "claimPath": "[待补充] 领取路径，如首页弹窗 / 新人专区",
-      "source": "[待补充] 活动立项文档编号或运营确认记录",
-      "owner": "mm",
+      "statement": "[待补充] 经业务确认的活动权益",
+      "couponAmount": "[待补充]",
+      "threshold": "[待补充]",
+      "claimPath": "[待补充]",
+      "source": "[待补充]",
+      "owner": "运营",
       "validFrom": "[待补充]",
       "validTo": "[待补充]",
-      "cities": "[待补充] 适用城市",
+      "cities": "[待补充]",
       "audience": "new-user",
       "conditions": [
         "[待补充] 是否仅限新注册用户",
         "[待补充] 是否限单笔使用",
         "[待补充] 是否与其他优惠叠加"
       ],
-      "usageNote": "金额、门槛、有效期三项缺一不可，必须同时出现在素材中",
-      "updatedAt": "2026-09-22T08:07:05.115Z"
+      "usageNote": "金额、门槛、有效期三项缺一不可，必须同时出现在素材中"
     },
     {
       "id": "fact-campaign-recall",

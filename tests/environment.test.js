@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import dotenv from 'dotenv'
-import { credentialsFromEnv } from '../server/providers/gcp-auth.js'
+import { credentialsFromEnv } from '../src/server/providers/gcp-auth.js'
 
 const { privateKey } = crypto.generateKeyPairSync('rsa', {
   modulusLength: 2048,

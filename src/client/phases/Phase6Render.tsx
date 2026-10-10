@@ -391,7 +391,7 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
 
         {manualCmd && (
           <div className="mt-4 space-y-2">
-            <div className="label">手动合成：保存为 data/media/shots.txt</div>
+            <div className="label">手动合成：保存为 data/runtime/media/shots.txt</div>
             <pre className="text-[10px] font-mono bg-ink-900 border border-ink-600 rounded p-3 overflow-x-auto">
               {manualCmd.listFileContent}
             </pre>
@@ -489,7 +489,7 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
         <div className="space-y-3">
           <p className="text-xs text-slate-500 leading-relaxed">
             在这里接入已确认的素材片段，或外部平台生成的视频。
-            建议放到 <code className="text-brand-soft">data/media/</code> 并填 <code className="text-brand-soft">/media/文件名.mp4</code>，
+            建议放到 <code className="text-brand-soft">data/runtime/media/</code> 并填 <code className="text-brand-soft">/media/文件名.mp4</code>，
             这样才能参与本地叠加与合成。
           </p>
           <input

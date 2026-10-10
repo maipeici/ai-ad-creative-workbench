@@ -927,7 +927,7 @@ async function composeShot({ project, shot, picked, channel, brandGuide, subtitl
   const entry = project.render.shots[shot.id]
   if (!entry?.url) throw new Error(`镜头 #${shot.index} 尚无可用视频`)
   if (!entry.url.startsWith('/media/')) {
-    throw new Error(`镜头 #${shot.index} 是外部 URL，无法本地合成，请先下载到 data/media 后回传`)
+    throw new Error(`镜头 #${shot.index} 是外部 URL，无法本地合成，请先下载到 data/runtime/media 后回传`)
   }
 
   // 始终以原始素材为输入，保证重复合成不会叠加两次字幕。
@@ -1193,7 +1193,7 @@ app.post(
 
     if (localFiles.length !== ordered.length) {
       return res.status(400).json({
-        error: '存在外部视频 URL，无法本地合成。请先下载到 data/media 后重试。',
+        error: '存在外部视频 URL，无法本地合成。请先下载到 data/runtime/media 后重试。',
         externalUrls: ordered.map((e) => e.url),
       })
     }

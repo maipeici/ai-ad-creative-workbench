@@ -188,7 +188,7 @@ export async function veoSubmit({ prompt, negativePrompt, durationSec, aspectRat
   }
 }
 
-/** 轮询 Veo 任务；完成后把视频写入 data/media 并返回可访问路径 */
+/** 轮询 Veo 任务；完成后把视频写入 data/runtime/media 并返回可访问路径 */
 export async function veoPoll({ operationName, model, fileHint = 'shot' }) {
   const veoModel = model || config.vertex.veoModel
   const location = config.vertex.location === 'global' ? 'us-central1' : config.vertex.location

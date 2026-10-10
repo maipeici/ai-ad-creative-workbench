@@ -131,7 +131,7 @@ export default function Phase1Foundation({ project, meta, patch, reloadMeta, not
       {/* ---------------- a. 品牌规范 ---------------- */}
       <Section
         title="a. 花小猪品牌规范（固定知识 · 全局生效）"
-        desc="所有阶段的 Prompt 与文案都会自动注入以下规范。修改请编辑 data/brand-guide.json。"
+        desc="所有阶段的 Prompt 与文案都会自动注入以下规范。修改请编辑 config/business/brand-guide.json。"
         right={<Badge tone="brand">{brandGuide.id}</Badge>}
       >
         {brandGuide.notice && (

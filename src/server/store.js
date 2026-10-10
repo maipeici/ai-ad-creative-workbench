@@ -1,17 +1,16 @@
-import fs from 'node:fs'
 import fsp from 'node:fs/promises'
 import path from 'node:path'
-import { DATA_DIR, MEDIA_DIR } from './config.js'
+import { DATA_DIR, SEED_DIR, BUSINESS_DIR } from './config.js'
+import { initializeRuntimeData } from './runtime-data.js'
 
 const PROJECTS_FILE = path.join(DATA_DIR, 'projects.json')
 const ASSETS_FILE = path.join(DATA_DIR, 'assets.json')
-const BRAND_FILE = path.join(DATA_DIR, 'brand-guide.json')
+const BRAND_FILE = path.join(BUSINESS_DIR, 'brand-guide.json')
 const FACTS_FILE = path.join(DATA_DIR, 'product-facts.json')
-const CHANNELS_FILE = path.join(DATA_DIR, 'channels.json')
-const COMPLIANCE_FILE = path.join(DATA_DIR, 'compliance.json')
+const CHANNELS_FILE = path.join(BUSINESS_DIR, 'channels.json')
+const COMPLIANCE_FILE = path.join(BUSINESS_DIR, 'compliance.json')
 
-fs.mkdirSync(MEDIA_DIR, { recursive: true })
-if (!fs.existsSync(PROJECTS_FILE)) fs.writeFileSync(PROJECTS_FILE, '[]', 'utf8')
+initializeRuntimeData({ runtimeDir: DATA_DIR, seedDir: SEED_DIR })
 
 let writeQueue = Promise.resolve()
 

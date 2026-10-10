@@ -20,6 +20,8 @@ node_modules/
 dist/
 
 # Local project records, uploads, generated media and runtime logs.
+data/runtime/
+# Ignore legacy local data left by older installations as well.
 data/projects.json
 data/media/
 .local/

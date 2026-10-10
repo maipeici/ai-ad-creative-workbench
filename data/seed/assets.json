@@ -376,19 +376,6 @@
       "tags": []
     },
     {
-      "id": "ui-home-order",
-      "category": "productUI",
-      "name": "Home / Order Screen",
-      "nameCn": "首页叫车界面",
-      "prompt": "",
-      "negative": "",
-      "refImage": "/media/asset-1790064440473-HuUI4y.jpg",
-      "tags": [
-        "official-required"
-      ],
-      "note": "★ 必须上传官方 App 截图或录屏，禁止 AI 生成界面。未上传前该镜头不得进入生成。"
-    },
-    {
       "id": "ui-price-preview",
       "category": "productUI",
       "name": "Price Preview",
@@ -428,19 +415,6 @@
       "note": "★ 必须上传官方截图，司机信息需脱敏"
     },
     {
-      "id": "brand-logo-main",
-      "category": "brand",
-      "name": "Logo Horizontal",
-      "nameCn": "花小猪主 Logo（横版）",
-      "prompt": "",
-      "negative": "",
-      "refImage": "/media/hxz-logo-horizontal.png",
-      "tags": [
-        "official-required"
-      ],
-      "note": "来源：花小猪官网 hxz.didichuxing.com。横版含猪头图标与中文字标，粉紫渐变。用于结尾 CTA 叠加。正式投放前请向品牌方索取矢量源文件（AI/SVG）替换。"
-    },
-    {
       "id": "brand-endcard",
       "category": "brand",
       "name": "End Card",
@@ -454,19 +428,6 @@
       "note": "★ 建议上传已审核的结尾卡设计稿，用于后期叠加"
     },
     {
-      "id": "overlay-coupon-card",
-      "category": "overlay",
-      "name": "Coupon Card",
-      "nameCn": "优惠卡片（已审核）",
-      "prompt": "",
-      "negative": "",
-      "refImage": "/media/asset-1790064451059-lJO_1e.png",
-      "tags": [
-        "official-required"
-      ],
-      "note": "★ 已过审的优惠卡片图，金额与门槛须与 product-facts 对应条目一致"
-    },
-    {
       "id": "overlay-cta-button",
       "category": "overlay",
       "name": "CTA Button",
@@ -478,48 +439,6 @@
         "official-required"
       ],
       "note": "★ 用于结尾行动引导的按钮图形"
-    },
-    {
-      "id": "brand-logo-icon",
-      "category": "brand",
-      "name": "Logo Icon",
-      "nameCn": "花小猪图标（方形）",
-      "prompt": "",
-      "negative": "",
-      "refImage": "/media/hxz-icon.png",
-      "tags": [
-        "official-required"
-      ],
-      "note": "来源：花小猪官网 favicon。方形图标，适合小尺寸角标叠加。"
-    },
-    {
-      "id": "brand-logo-alt",
-      "category": "brand",
-      "name": "Logo Horizontal Alt",
-      "nameCn": "花小猪 Logo（横版备选）",
-      "prompt": "",
-      "negative": "",
-      "refImage": "/media/hxz-logo-horizontal-alt.png",
-      "tags": [
-        "official-required"
-      ],
-      "note": "来源：花小猪官网备选版本。"
-    },
-    {
-      "id": "overlay-oZHEWd",
-      "category": "overlay",
-      "name": "Coupon fact-campaign-newuser",
-      "nameCn": "优惠卡 · 新人首单活动",
-      "prompt": "",
-      "negative": "",
-      "refImage": "/media/coupon-fact-campaign-newuser-1791648641065.png",
-      "tags": [
-        "official-required",
-        "generated"
-      ],
-      "note": "由事实 fact-campaign-newuser 生成 · 依据来源：[待补充] 活动立项文档编号或运营确认记录 · 金额 20元",
-      "factId": "fact-campaign-newuser",
-      "custom": true
     }
   ]
 }

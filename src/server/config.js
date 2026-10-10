@@ -4,8 +4,10 @@ import { fileURLToPath } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-export const ROOT = path.resolve(__dirname, '..')
-export const DATA_DIR = path.join(ROOT, 'data')
+export const ROOT = path.resolve(__dirname, '../..')
+export const DATA_DIR = path.join(ROOT, 'data', 'runtime')
+export const SEED_DIR = path.join(ROOT, 'data', 'seed')
+export const BUSINESS_DIR = path.join(ROOT, 'config', 'business')
 export const MEDIA_DIR = path.join(DATA_DIR, 'media')
 export const DIST_DIR = path.join(ROOT, 'dist')
 
