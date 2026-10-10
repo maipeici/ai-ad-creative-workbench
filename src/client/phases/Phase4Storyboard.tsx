@@ -5,7 +5,7 @@ import type { GlobalContext, Shot, ValidateResult } from '../types'
 import { Badge, EmptyHint, Field, IssueRow, Section, Spinner } from '../ui'
 import ShotCard from '../components/ShotCard'
 
-export default function Phase4Storyboard({ project, meta, patch, setProject, notify, goto }: PhaseProps) {
+export default function Phase4Storyboard({ project, meta, patch, setProject, notify, goto, preview }: PhaseProps) {
   const [loading, setLoading] = useState(false)
   const [shotCount, setShotCount] = useState<number | ''>('')
   const [shotDuration, setShotDuration] = useState<number | ''>('')
@@ -41,7 +41,7 @@ export default function Phase4Storyboard({ project, meta, patch, setProject, not
   const target = concept?.durationSec || project.brief.durationSec
 
   const revalidate = async () => {
-    if (!sb) return
+    if (!sb || preview) return
     try {
       setValidation(await api.validate(project.id))
     } catch {

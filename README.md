@@ -4,9 +4,19 @@
 
 **AI 广告创意与素材制作工作台：从投放需求出发，把创意、分镜、审核与视频制作串成一个可回看的流程。**
 
+### 90 秒了解工作台
+
+带气泡讲解的实际界面演示：每一步做什么、如何操作、会产出什么。
+
+https://github.com/user-attachments/assets/14ff8fe4-a855-4626-a5ac-5ae34d96caf6
+
+[下载演示视频（MP4，约 1.4 MB）](assets/demos/workbench-guide.mp4) · [操作指南与视频章节](docs/guide.md)
+
+启动后，点击首页 **“90 秒了解流程”** 或顶部 **“操作指南”**，即可体验 12 步可重播导览；支持上一步、下一步、自动播放、暂停和阶段跳转。独立示例不修改项目，也不调用模型。
+
 ![工作台首页：项目概览、创作进度与最近成片](assets/screenshots/workbench-home.png)
 
-> 当前以花小猪出行广告为案例，面向 10–20 秒竖屏信息流素材创作。以上及下方图片均截取自实际运行的工作台；示例项目、上传素材和生成视频保留在本地，新安装的工作台从空项目开始。
+> 当前以花小猪出行广告为案例，面向 10–20 秒竖屏信息流素材创作。以上及下方图片均截取自实际运行的工作台；实际项目、上传素材和生成视频保留在本地；仓库仅附带导览所需的固定示例与一条压缩历史样片，新安装的工作台仍从空项目列表开始。
 
 [功能与页面](#features) · [快速开始](#quick-start) · [模型配置](docs/configuration.md) · [部署与运行](docs/deployment.md) · [常见问题](docs/deployment.md#faq)
 
@@ -133,9 +143,9 @@ npm run build
 npm start
 ~~~
 
-浏览器打开 **http://localhost:8787**。首次启动会自动创建本地项目记录与媒体目录。
+浏览器打开 [http://localhost:8787](http://localhost:8787)。首次启动会自动创建本地项目记录与媒体目录。
 
-Windows 完成依赖安装后，也可以双击**`scripts/start-workbench.cmd`**。启动脚本会检查本地服务；未运行时先构建页面、再启动服务并打开浏览器。
+Windows 完成依赖安装后，也可以双击 `scripts/start-workbench.cmd`。启动脚本会检查本地服务；未运行时先构建页面、再启动服务并打开浏览器。
 
 ### 4. 创建第一条素材
 
@@ -165,6 +175,8 @@ src/
   server/                 服务端、模型适配、检查与数据读写
 assets/
   public/brand/           页面 Logo 与图标
+  public/demo/            导览中的压缩历史样片
+  demos/                  README 演示视频与封面
   screenshots/            README 实际页面截图
 config/
   business/               品牌规范、渠道与检查规则
@@ -198,4 +210,4 @@ npm run build
 npm run dev
 ~~~
 
-开发页面为 **http://localhost:5173**，后端默认为 **http://localhost:8787**。
+开发页面为 [http://localhost:5173](http://localhost:5173)，后端默认为 [http://localhost:8787](http://localhost:8787)。

@@ -11,9 +11,9 @@ const FOUNDATION_TABS = [
   { id: 'visual', label: '视觉设计', desc: '画面风格 · 镜头 · 光照' },
   { id: 'compliance', label: '合规边界说明', desc: '表达边界 · 使用规则' },
 ]
-export default function Phase1Foundation({ project, meta, patch, reloadMeta, notify, goto }: PhaseProps) {
+export default function Phase1Foundation({ project, meta, patch, reloadMeta, notify, goto, foundationTab }: PhaseProps) {
   const { brandGuide, assets, facts: factLib, compliance } = meta
-  const [tab, setTab] = useState('brand')
+  const [tab, setTab] = useState(foundationTab || 'brand')
   const visual = meta.visualDesign
   const logoAsset = assets.items.find(item => item.id === 'brand-logo-main') || assets.items.find(item => item.category === 'brand' && item.refImage)
   const factTypes = tab === 'brand' ? ['feature'] : tab === 'campaign' ? ['campaign', 'conversion-path'] : ['compliance-note']

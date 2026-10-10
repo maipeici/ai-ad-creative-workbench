@@ -4,9 +4,19 @@
 
 **An AI workspace for turning advertising briefs into creative concepts, storyboards, reviewed shots, and finished vertical videos.**
 
+### Watch the 90-second walkthrough
+
+A real interface walkthrough with Chinese guide bubbles explaining each step, the action to take, and the expected output.
+
+https://github.com/user-attachments/assets/14ff8fe4-a855-4626-a5ac-5ae34d96caf6
+
+[Download the demo (MP4, about 1.4 MB)](assets/demos/workbench-guide.mp4) · [Guide and video chapters](docs/guide.md)
+
+Open **“90 秒了解流程”** on the home screen or **“操作指南”** in the top bar for the replayable 12-step tour. Previous/next, autoplay, pause, and chapter navigation are included. The isolated example does not edit saved projects or call model services.
+
 ![Workbench home with project progress and a recent finished video](assets/screenshots/workbench-home.png)
 
-This project uses a Huaxiaozhu ride-hailing campaign as its example workflow, focusing on 10–20 second vertical ads. Screenshots come from the running application. Local projects, uploaded files, and generated videos are excluded from Git; a fresh installation starts with no projects.
+This project uses a Huaxiaozhu ride-hailing campaign as its example workflow, focusing on 10–20 second vertical ads. Screenshots come from the running application. Local projects, uploaded files, and generated videos are excluded from Git. The repository includes only a fixed tour example and a compressed historical sample ad; a fresh installation still starts with no saved projects.
 
 [Features](#features) · [Quick start](#quick-start) · [Configuration](#configuration) · [Deployment](#deployment) · [Project structure](#project-structure)
 
@@ -218,6 +228,8 @@ src/
   server/                 API, model providers, validation, storage
 assets/
   public/brand/           UI icons and logos
+  public/demo/            Compressed sample ad for the tour
+  demos/                  README walkthrough video and cover
   screenshots/            Product screenshots
 config/
   business/               Brand, channel, and validation rules

@@ -1,18 +1,20 @@
 import React, { useEffect, useId, useRef, useState } from 'react'
 
 export function Section({
+  dataGuide,
   title,
   desc,
   right,
   children,
 }: {
+  dataGuide?: string
   title: string
   desc?: string
   right?: React.ReactNode
   children: React.ReactNode
 }) {
   return (
-    <section className="card p-5">
+    <section className="card p-5" data-guide={dataGuide}>
       <header className="flex items-start justify-between gap-4 mb-4">
         <div>
           <h3 className="text-sm font-semibold text-slate-100">{title}</h3>

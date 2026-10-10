@@ -6,7 +6,7 @@ import { Badge, CopyButton, EmptyHint, IssueRow, RenderModeBadge, RoleBadge, Sec
 import ShotCard from '../components/ShotCard'
 import AutomaticReviewPanel from '../components/AutomaticReviewPanel'
 
-export default function Phase5Review({ project, meta, patch, setProject, notify, goto }: PhaseProps) {
+export default function Phase5Review({ project, meta, patch, setProject, notify, goto, preview }: PhaseProps) {
   const sb = project.storyboard
   const [pkg, setPkg] = useState<any>(null)
   const [validation, setValidation] = useState<ValidateResult | null>(null)
@@ -17,7 +17,7 @@ export default function Phase5Review({ project, meta, patch, setProject, notify,
   const selectedFactIds = project.facts || []
 
   const load = async () => {
-    if (!sb) return
+    if (!sb || preview) return
     setLoading(true)
     try {
       const [p, v, fresh] = await Promise.all([api.getPackage(project.id), api.validate(project.id), api.getProject(project.id)])
@@ -74,7 +74,7 @@ export default function Phase5Review({ project, meta, patch, setProject, notify,
     load()
   }, [project.updatedAt, project.id])
 
-  if (!sb) return panel
+  if (!sb || preview) return panel
 
   const blockers = validation?.summary.blockers || 0
   const updateShot = (id: string, p: Partial<Shot>) =>

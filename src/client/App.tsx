@@ -4,6 +4,7 @@ import type { Meta, Project, ProjectSummary } from './types'
 import { Badge, Modal, Spinner, Toast } from './ui'
 import Dashboard, { PHASES, formatDate, projectStatus } from './components/Dashboard'
 import Icon from './components/Icon'
+import GuidedTour from './components/GuidedTour'
 import Phase1 from './phases/Phase1Foundation'
 import Phase2 from './phases/Phase2Brief'
 import Phase3 from './phases/Phase3Concept'
@@ -12,6 +13,8 @@ import Phase5 from './phases/Phase5Review'
 import Phase6 from './phases/Phase6Render'
 
 export interface PhaseProps {
+  preview?: boolean
+  foundationTab?: string
   project: Project
   meta: Meta
   patch: (p: Record<string, unknown>) => Promise<void>
@@ -43,6 +46,7 @@ export default function App() {
   const [newName, setNewName] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<ProjectSummary | null>(null)
   const [showSettings, setShowSettings] = useState(false)
+  const [showGuide, setShowGuide] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [sidebarSearch, setSidebarSearch] = useState('')
   const toastTimer = useRef<ReturnType<typeof setTimeout>>()
@@ -204,9 +208,9 @@ export default function App() {
       <header className="studio-topbar">
         <button className="mobile-menu icon-button" aria-label="展开导航" onClick={() => setMenuOpen(true)}><Icon name="menu" /></button>
         <div className="topbar-breadcrumb"><span>创意空间</span><Icon name="chevron" width="13" /><strong>{view === 'overview' ? '工作台概览' : currentPhase.name}</strong>{busy && <Spinner />}</div>
-        <div className="ml-auto flex items-center gap-3"><button className={'environment-button ' + (configured && meta.ffmpeg ? 'configured' : '')} onClick={() => setShowSettings(true)}><span className="status-dot" />{!meta.ffmpeg ? '合成待配置' : configured ? '模型已配置' : meta.videoMode === 'manual' ? '手动制作模式' : '演示模式'}<Icon name="settings" width="14" /></button><span className="topbar-avatar">花</span></div>
+        <div className="ml-auto flex items-center gap-3"><button className="guide-entry" onClick={() => setShowGuide(true)}><Icon name="book" width="15" />操作指南</button><button className={'environment-button ' + (configured && meta.ffmpeg ? 'configured' : '')} onClick={() => setShowSettings(true)}><span className="status-dot" />{!meta.ffmpeg ? '合成待配置' : configured ? '模型已配置' : meta.videoMode === 'manual' ? '手动制作模式' : '演示模式'}<Icon name="settings" width="14" /></button><span className="topbar-avatar">花</span></div>
       </header>
-      {view === 'overview' || !project ? <div className="studio-scroll"><Dashboard projects={projects} meta={meta} lastId={project?.id} busy={busy} onOpen={openProject} onCreate={prepareCreate} /></div> :
+      {view === 'overview' || !project ? <div className="studio-scroll"><Dashboard projects={projects} meta={meta} lastId={project?.id} busy={busy} onOpen={openProject} onCreate={prepareCreate} onGuide={() => setShowGuide(true)} /></div> :
         <div className="project-workspace">
           <div className="workspace-heading">
             <button className="text-link mb-3" onClick={showOverview}>← 返回项目总览</button>
@@ -257,5 +261,6 @@ export default function App() {
       <div className="flex justify-end mt-5"><button className="btn-ghost" onClick={async () => { try { await reloadMeta(); notify('运行状态已刷新') } catch (e: any) { notify(e.message, 'error') } }}><Icon name="retry" width="15" />刷新状态</button></div>
     </Modal>
     <Toast msg={toast?.msg || null} tone={toast?.tone} />
+    {showGuide && <GuidedTour meta={meta} onClose={() => setShowGuide(false)} />}
   </div>
 }

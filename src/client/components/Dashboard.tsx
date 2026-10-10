@@ -21,13 +21,14 @@ export function formatDate(value: string) {
   return new Date(value).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })
 }
 
-export default function Dashboard({ projects, meta, lastId, busy, onOpen, onCreate }: {
+export default function Dashboard({ projects, meta, lastId, busy, onOpen, onCreate, onGuide }: {
   projects: ProjectSummary[]
   meta: Meta
   lastId?: string
   busy: boolean
   onOpen: (id: string, phase?: number) => void
   onCreate: () => void
+  onGuide?: () => void
 }) {
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
@@ -54,6 +55,7 @@ export default function Dashboard({ projects, meta, lastId, busy, onOpen, onCrea
           <p>从投放需求到成片，让品牌、创意和制作在一个工作台里有序协作。</p>
           <div className="flex flex-wrap items-center gap-3 mt-6">
             <button className="btn-primary" onClick={onCreate} disabled={busy}><Icon name="plus" /> 新建素材项目</button>
+            {onGuide && <button className="guide-entry hero-guide" onClick={onGuide}><Icon name="play" width="15" />90 秒了解流程</button>}
             {resume && <button className="hero-resume" onClick={() => onOpen(resume.id)} disabled={busy}>继续上次创作 <Icon name="arrow" width="16" /></button>}
           </div>
         </div>

@@ -20,7 +20,7 @@ const STATUS_TEXT: Record<string, string> = {
   simulated: '已模拟',
 }
 
-export default function Phase6Render({ project, meta, patch, setProject, notify, goto }: PhaseProps) {
+export default function Phase6Render({ project, meta, patch, setProject, notify, goto, preview }: PhaseProps) {
   const sb = project.storyboard
   const [busyShot, setBusyShot] = useState<string | null>(null)
   const [batchRunning, setBatchRunning] = useState(false)
@@ -40,7 +40,7 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
   const pollingRef = useRef(false)
 
   useEffect(() => {
-    if (!runningKey) return
+    if (!runningKey || preview) return
     let cancelled = false
     const tick = async () => {
       if (pollingRef.current) return
@@ -180,7 +180,7 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
 
   return (
     <>
-      {!meta.ffmpeg && <div className="rounded-xl border border-amber-900/60 bg-amber-950/20 px-4 py-3 text-xs text-amber-200 leading-relaxed" role="status"><strong>视频合成待配置</strong><p className="mt-1 text-amber-200/70">本机尚未安装视频合成工具。已有成片可以播放和下载，新的字幕叠加与成片合成暂不可用。</p></div>}
+      {!preview && !meta.ffmpeg && <div className="rounded-xl border border-amber-900/60 bg-amber-950/20 px-4 py-3 text-xs text-amber-200 leading-relaxed" role="status"><strong>视频合成待配置</strong><p className="mt-1 text-amber-200/70">本机尚未安装视频合成工具。已有成片可以播放和下载，新的字幕叠加与成片合成暂不可用。</p></div>}
       {Object.values(renders).some(render => render.stale) && <p className="foundation-notice">自动审核修复了部分分镜。对应旧镜头与成片保留供回看，请重新生成或回传标记为待更新的镜头，再合成新版。</p>}
       <Section
         title="生成设置"
@@ -345,6 +345,7 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
 
       <Section
         title="成片合成"
+        dataGuide="assembly"
         desc="按分镜顺序拼接通过审核的镜头，输出 1080x1920 成片并自动抽取封面。"
         right={
           <div className="flex gap-2">
