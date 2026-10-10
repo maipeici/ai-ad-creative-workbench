@@ -45,7 +45,7 @@ export default function Phase3Concept({ project, meta, patch, setProject, notify
   return (
     <>
       <Section
-        title="广告创意生成控制台"
+        title="广告创意 Agent"
         desc="AI 基于品牌规范、已确认事实、合规词库与投放需求生成多个创意方案。只有已确认的事实会被用于卖点表达。"
         right={<Badge tone={selected ? 'green' : 'amber'}>{selected ? '已选定方案' : '未选定'}</Badge>}
       >

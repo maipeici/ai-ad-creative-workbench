@@ -82,7 +82,7 @@ const PHASES = [
   { id: 3, key: 'concept', name: '广告创意策划' },
   { id: 4, key: 'storyboard', name: '分镜规划' },
   { id: 5, key: 'review', name: '自动审核' },
-  { id: 6, key: 'render', name: '生成·合成·测试' },
+  { id: 6, key: 'render', name: '成片制作' },
 ]
 
 function newProject(name) {
@@ -830,7 +830,7 @@ app.get(
   }),
 )
 
-/* --------------------- Phase 6：生成与合成 --------------------- */
+/* --------------------- Phase 6：成片制作 --------------------- */
 
 app.post(
   '/api/projects/:id/render/shots/:shotId',

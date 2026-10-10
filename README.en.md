@@ -31,7 +31,7 @@ Channel presets include Douyin, Tencent Ads, Kuaishou, and WeChat Channels. The 
 | 03 Creative concepts | Compare directions and opening hooks | Selected concept |
 | 04 Storyboard | Plan visuals, narration, subtitles, and timing | Editable shot cards |
 | 05 Automatic review | Check a project checklist, repair eligible issues, and recheck | Evidence, changes, and missing inputs |
-| 06 Generate and assemble | Produce shots, assemble the video, and prepare variants | Video, cover, and creative package |
+| 06 Video production | Produce shots, assemble the video, and prepare variants | Video, cover, and creative package |
 
 <a id="features"></a>
 

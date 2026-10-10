@@ -116,7 +116,7 @@ export default function Phase4Storyboard({ project, meta, patch, setProject, not
   return (
     <>
       <Section
-        title="分镜生成控制台"
+        title="分镜规划 Agent"
         desc="AI 先产出全局分镜上下文（人物 / 车辆 / 场景 / 视觉锁定描述），再基于它拆分连续镜头，并自动标注哪些镜头需要后期叠加。"
         right={concept ? <Badge tone="brand">{concept.title}</Badge> : <Badge tone="red">未选创意</Badge>}
       >

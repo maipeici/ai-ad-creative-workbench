@@ -8,7 +8,7 @@ export const PHASES = [
   { id: 3, name: '广告创意', desc: '选择有共鸣的创意与开场钩子', icon: 'spark' },
   { id: 4, name: '分镜规划', desc: '编排画面、口播和字幕', icon: 'layers' },
   { id: 5, name: '自动审核', desc: '按清单自动校验、修复并复检', icon: 'check' },
-  { id: 6, name: '生成与合成', desc: '生成镜头、合成成片与测试变体', icon: 'movie' },
+  { id: 6, name: '成片制作', desc: '生成镜头、合成成片与测试变体', icon: 'movie' },
 ]
 
 export function projectStatus(p: ProjectSummary) {
