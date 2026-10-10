@@ -4,19 +4,21 @@
 
 **An AI workspace for turning advertising briefs into creative concepts, storyboards, reviewed shots, and finished vertical videos.**
 
-### Watch the 90-second walkthrough
+### Full workflow recording: create a 15-second ad from scratch
 
-A real interface walkthrough with Chinese guide bubbles explaining each step, the action to take, and the expected output.
+Follow one project in about 3 minutes: **facts and assets → brief → concepts → storyboard → automatic review and repairs → video generation → narration and assembly → playback and download**. Chinese step explanations and click indicators accompany the actual interactions.
 
-https://github.com/user-attachments/assets/14ff8fe4-a855-4626-a5ac-5ae34d96caf6
+https://github.com/user-attachments/assets/ea7da458-9990-423d-b896-ad58b3098b28
 
-[Download the demo (MP4, about 1.4 MB)](assets/demos/workbench-guide.mp4) · [Guide and video chapters](docs/guide.md)
+[Download the recording (MP4, about 7.3 MB)](assets/demos/workbench-workflow.mp4) · [Steps and chapters](docs/walkthrough.md) · [Watch the resulting 15-second ad](assets/demos/workflow-result.mp4)
 
-Open **“90 秒了解流程”** on the home screen or **“操作指南”** in the top bar for the replayable 12-step tour. Previous/next, autoplay, pause, and chapter navigation are included. The isolated example does not edit saved projects or call model services.
+> Recorded from a new project with actual model calls for concepts, storyboards, first frames, and video shots. It includes corrections and rechecks after review findings. Model and download waits are shortened. The interface recording uses text explanations; the ending includes the generated ad with its original audio. This demonstrates the workflow; generated visuals and asset versions still need review before an actual campaign.
+
+The home-screen **“90 秒了解流程”** button and the top-bar **“操作指南”** also provide a replayable 12-step bubble tour. That separate tour uses an isolated example without editing saved projects or calling models. [Tour guide](docs/guide.md).
 
 ![Workbench home with project progress and a recent finished video](assets/screenshots/workbench-home.png)
 
-This project uses a Huaxiaozhu ride-hailing campaign as its example workflow, focusing on 10–20 second vertical ads. Screenshots come from the running application. Local projects, uploaded files, and generated videos are excluded from Git. The repository includes only a fixed tour example and a compressed historical sample ad; a fresh installation still starts with no saved projects.
+This project uses a Huaxiaozhu ride-hailing campaign as its example workflow, focusing on 10–20 second vertical ads. Screenshots come from the running application. Local projects, uploaded files, and generated videos are excluded from Git. The repository includes the workflow recording, its resulting demo ad, a fixed tour example, and a compressed historical sample ad; a fresh installation still starts with no saved projects.
 
 [Features](#features) · [Quick start](#quick-start) · [Configuration](#configuration) · [Deployment](#deployment) · [Project structure](#project-structure)
 

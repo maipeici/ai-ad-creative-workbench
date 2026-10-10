@@ -141,11 +141,11 @@ export async function geminiImage({ prompt, refImages = [], extraInstruction = '
 
 /* ------------------------------- Veo 视频 ------------------------------- */
 
-/** Veo 3.0 仅支持固定时长，取最近的合法值 */
+/** Veo 仅支持固定时长，向上取合法值，合成时裁剪到分镜时长 */
 function normalizeDuration(sec, model) {
   const allowed = model.startsWith('veo-2') ? [5, 6, 7, 8] : [4, 6, 8]
   const target = Number(sec) || 4
-  return allowed.reduce((best, v) => (Math.abs(v - target) < Math.abs(best - target) ? v : best), allowed[0])
+  return allowed.find(v => v >= target) ?? allowed.at(-1)
 }
 
 /**

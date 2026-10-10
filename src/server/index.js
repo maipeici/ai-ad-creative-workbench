@@ -1034,9 +1034,9 @@ async function composeShot({ project, shot, picked, channel, brandGuide, subtitl
   const logoFile = wantWatermark ? path.join(MEDIA_DIR, path.basename(logoAsset.refImage)) : null
 
   // 4) 口播配音
-  //    语速必须按视频的「实际时长」反推：Veo 只支持 4/6/8 秒，
-  //    分镜写 5s 时实际产出 4s，用 5s 算语速会导致口播被截断。
-  const realDuration = Number(entry.actualDurationSec) || Number(shot.durationSec) || 4
+  //    模型向上取合法时长，按分镜目标裁剪；旧的较短视频仍按实际时长配音。
+  const plannedDuration = Number(shot.durationSec) || 4
+  const realDuration = Math.min(Number(entry.actualDurationSec) || plannedDuration, plannedDuration)
   const subtitle = subtitleOverride ?? shot.subtitle
   let vo = null
   let voError = null
@@ -1122,6 +1122,7 @@ async function composeShot({ project, shot, picked, channel, brandGuide, subtitl
     url: `/media/${outName}`,
     overlayApplied: true,
     overlayInfo: info,
+    composedDurationSec: realDuration,
     // 画面内容变了，需要重新确认
     approved: false,
     updatedAt: new Date().toISOString(),
@@ -1203,7 +1204,8 @@ app.post(
           shot.subtitle ||
           shot.vo ||
           (shot.uiRefs || []).length ||
-          shot.renderMode === 'overlay'
+          shot.renderMode === 'overlay' ||
+          Number(entry.actualDurationSec) > Number(shot.durationSec)
         if (!needs) {
           composeLog.push({ index: shot.index, skipped: '无需叠加' })
           continue
@@ -1273,7 +1275,7 @@ app.post(
     project.render.finalVideo = {
       url: `/media/${outName}`,
       shotCount: ordered.length,
-      durationSec: sb.shots.reduce((a, s) => a + (Number(s.durationSec) || 0), 0),
+      durationSec: ordered.reduce((sum, entry, i) => sum + (Number(entry.composedDurationSec) || Number(entry.actualDurationSec) || Number(sb.shots[i].durationSec) || 0), 0),
       overlayCount: ordered.filter((e) => e.overlayApplied).length,
       subtitleCount: withSubtitle,
       voCount: withVo,

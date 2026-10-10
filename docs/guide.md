@@ -1,6 +1,6 @@
 # 工作台操作指南 / Workbench guide
 
-[中文 README](../README.md) · [English README](../README.en.md)
+[中文 README](../README.md) · [English README](../README.en.md) · [从新建项目到成片的操作实录](walkthrough.md)
 
 ## 打开导览
 
@@ -44,4 +44,4 @@ The tour does not create or edit saved projects, submit generation jobs, or fabr
 
 导览说明位于 src/client/demo/tour-steps.ts；固定项目位于 src/client/demo/demo-project.ts；只读界面位于 src/client/components/GuidedTour.tsx。视频与封面位于 assets/demos/；导览样片位于 assets/public/demo/。
 
-更新界面或文案后，应重新录制 12 个步骤，核对气泡与页面一致，再更新中英文 README 的视频附件地址。README 使用 GitHub 附件播放器，并保留仓库内 MP4 作为备用下载。
+更新导览界面或文案后，应重新录制 12 个步骤，核对气泡与页面一致，再更新本页的导览视频。中英文 README 顶部展示的是另行录制的完整生成流程，维护时应从新项目实际操作到成片交付，详见 [操作实录](walkthrough.md)。两类视频均保留仓库内 MP4 作为备用下载。
