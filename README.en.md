@@ -26,22 +26,24 @@ Channel presets include Douyin, Tencent Ads, Kuaishou, and WeChat Channels. The 
 
 | Stage | Purpose | Output |
 | --- | --- | --- |
-| 01 Brand and assets | Select brand guidance, references, and confirmed facts | Production inputs |
+| 01 Creative foundation | Organize brand identity, campaigns, assets, visual design, and compliance | Five distinct input areas |
 | 02 Advertising brief | Define audience, scenario, channel, duration, and CTA | Structured brief |
 | 03 Creative concepts | Compare directions and opening hooks | Selected concept |
 | 04 Storyboard | Plan visuals, narration, subtitles, and timing | Editable shot cards |
-| 05 Review | Run checks and complete a human review | Issues and approval state |
+| 05 Automatic review | Check a project checklist, repair eligible issues, and recheck | Evidence, changes, and missing inputs |
 | 06 Generate and assemble | Produce shots, assemble the video, and prepare variants | Video, cover, and creative package |
 
 <a id="features"></a>
 
 ## Features and real screens
 
-### Shared brand, asset, and product context
+### Five clear areas for creative inputs
 
-Use brand guidance across the workflow. Organize reference materials and distinguish pending product facts from confirmed information. Coupon and CTA cards can be rendered programmatically.
+Separate brand positioning, colors, logos, and selling points from campaign benefits and eligibility. Keep existing material categories in the asset library. Visual design contains style, camera, lighting, and production presets. Compliance boundaries bring wording and material rules together. Shared libraries retain project-specific selections.
 
-![Brand guidance and creative inputs](assets/screenshots/brand-assets.png)
+![Brand identity and five foundation areas](assets/screenshots/brand-assets.png)
+
+![Visual style, camera and lighting presets](assets/screenshots/visual-design.png)
 
 ### A structured advertising brief
 
@@ -69,11 +71,11 @@ Record character, vehicle, scene, and style descriptions once, then manage indiv
 
 Reference images and shared descriptions help guide consistency; outputs still need visual review.
 
-### Automated checks followed by human review
+### Checklist-based automatic review and repair
 
-Check fact references, wording, available assets, rendering choices, and narration length. Review blocking issues and warnings before completing the human checklist. Rules support review; maintainers still need to keep facts and requirements current.
+Save 1–30 requirements per project. A rule engine checks facts, wording, assets, rendering choices, and narration length. The agent evaluates each requirement and may apply one bounded round of text repairs followed by a fresh review. Approval requires zero rule blockers and a complete passing checklist. Missing credentials, model failures, and incomplete evidence never produce automatic approval. Changes to inputs invalidate previous results; campaign information is rechecked on a new day. This stage reviews pre-generation storyboards and references, not rendered video pixels.
 
-![Automated checks and the human review checklist](assets/screenshots/review.png)
+![Automatic review checklist and repair workflow](assets/screenshots/review.png)
 
 ### Video assembly, export, and creative variants
 
@@ -95,8 +97,8 @@ The creative package download is a **JSON file**, containing the brief, concept,
 - **Model credentials**, optional when trying the Mock workflow.
 
 ~~~bash
-git clone https://github.com/maipeici/ai-ad-creative-workbench.git
-cd ai-ad-creative-workbench
+git clone https://github.com/maipeici/xhs-ai-creative-workbench.git
+cd xhs-ai-creative-workbench
 npm ci
 ~~~
 

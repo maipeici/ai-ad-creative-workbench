@@ -1,6 +1,7 @@
 import fsp from 'node:fs/promises'
 import path from 'node:path'
 import { DATA_DIR, SEED_DIR, BUSINESS_DIR } from './config.js'
+import { invalidateReview, reviewProjectFingerprint } from './review-state.js'
 import { initializeRuntimeData } from './runtime-data.js'
 
 const PROJECTS_FILE = path.join(DATA_DIR, 'projects.json')
@@ -34,7 +35,12 @@ function writeJsonQueued(file, data) {
 }
 
 export async function getBrandGuide() {
-  return readJson(BRAND_FILE, {})
+  const [brand, visual] = await Promise.all([readJson(BRAND_FILE, {}), getVisualDesign()])
+  return { ...brand, ...visual, negativePromptLibrary: { ...brand.negativePromptLibrary, ...visual.negativePromptLibrary } }
+}
+
+export async function getVisualDesign() {
+  return readJson(path.join(BUSINESS_DIR, 'visual-design.json'), {})
 }
 
 export async function getChannels() {
@@ -92,6 +98,7 @@ export async function getProject(id) {
 
 export async function upsertProject(project) {
   const all = await readJson(PROJECTS_FILE, [])
+  if (project.review?.checkedAt && project.review.projectFingerprint !== reviewProjectFingerprint(project)) invalidateReview(project)
   project.updatedAt = new Date().toISOString()
   const idx = all.findIndex((p) => p.id === project.id)
   if (idx >= 0) all[idx] = project

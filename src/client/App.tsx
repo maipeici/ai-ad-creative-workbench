@@ -55,7 +55,10 @@ export default function App() {
     toastTimer.current = setTimeout(() => setToast(null), 4200)
   }, [])
   useEffect(() => () => clearTimeout(toastTimer.current), [])
-  const reloadMeta = useCallback(async () => setMeta(await api.meta()), [])
+  const reloadMeta = useCallback(async () => {
+    setMeta(await api.meta())
+    if (project?.id) { const fresh = await api.getProject(project.id); setProject(current => current?.id === fresh.id ? fresh : current) }
+  }, [project?.id])
   const reloadProjects = useCallback(async () => setProjects(await api.listProjects()), [])
   const load = useCallback(async () => {
     setLoading(true)
@@ -104,7 +107,7 @@ export default function App() {
       remember(p.id)
       setShowCreate(false)
       await reloadProjects()
-      notify('项目已创建，从品牌与素材开始吧')
+      notify('项目已创建，从创作基础开始吧')
     } catch (e: any) { notify(e.message, 'error') }
     finally { setBusy(false) }
   }
@@ -231,9 +234,9 @@ export default function App() {
     </div>
     <Modal open={showCreate} title="开启一个新的广告创意" onClose={() => !busy && setShowCreate(false)}>
       <form onSubmit={e => { e.preventDefault(); void createProject() }} className="space-y-5">
-        <p className="text-sm text-slate-400 leading-relaxed">为素材项目起个名字。接下来，我们会从品牌与素材开始，逐步完成投放需求、创意、分镜与成片。</p>
+        <p className="text-sm text-slate-400 leading-relaxed">为素材项目起个名字。接下来，我们会从创作基础开始，逐步完成投放需求、创意、分镜与成片。</p>
         <div><label className="label" htmlFor="new-project-name">项目名称</label><input id="new-project-name" className="input" value={newName} onChange={e => setNewName(e.target.value)} placeholder="例如：晚高峰通勤 · 抖音 15 秒广告" required maxLength={100} /></div>
-        <div className="creation-steps">{['品牌素材', '投放需求', '创意分镜', '审核成片'].map((label, i) => <span key={label}><small>{i + 1}</small>{label}</span>)}</div>
+        <div className="creation-steps">{['创作基础', '投放需求', '创意分镜', '审核成片'].map((label, i) => <span key={label}><small>{i + 1}</small>{label}</span>)}</div>
         <div className="flex justify-end gap-2 pt-2"><button type="button" className="btn-ghost" onClick={() => setShowCreate(false)} disabled={busy}>取消</button><button type="submit" className="btn-primary" disabled={busy || !newName.trim()}>{busy ? <Spinner /> : <Icon name="plus" width="16" />}创建项目</button></div>
       </form>
     </Modal>

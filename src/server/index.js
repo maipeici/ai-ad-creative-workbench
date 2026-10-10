@@ -9,6 +9,7 @@ import { nanoid } from 'nanoid'
 import { config, providerStatus, resolvedVideoMode, MEDIA_DIR, DIST_DIR } from './config.js'
 import {
   getBrandGuide,
+  getVisualDesign,
   getChannels,
   getCompliance,
   getAssets,
@@ -34,6 +35,8 @@ import {
 } from './prompts.js'
 import { validateStoryboard, analyzeImpact, scanCompliance } from './validate.js'
 import { autoFix } from './autofix.js'
+import { runAutomaticReview } from './review.js'
+import { DEFAULT_REVIEW_REQUIREMENTS, normalizeRequirements, refreshReview, reviewInputFingerprint } from './review-state.js'
 import { llmJson } from './providers/llm.js'
 import { mockConcepts, mockStoryboard, mockShotRevision, mockVariant } from './mock.js'
 import { generateShotPreview } from './providers/image.js'
@@ -74,11 +77,11 @@ const wrap = (fn) => (req, res) =>
   })
 
 const PHASES = [
-  { id: 1, key: 'foundation', name: '品牌·素材·事实' },
+  { id: 1, key: 'foundation', name: '创作基础' },
   { id: 2, key: 'brief', name: '投放需求输入' },
   { id: 3, key: 'concept', name: '广告创意策划' },
   { id: 4, key: 'storyboard', name: '分镜规划' },
-  { id: 5, key: 'review', name: '人工审核' },
+  { id: 5, key: 'review', name: '自动审核' },
   { id: 6, key: 'render', name: '生成·合成·测试' },
 ]
 
@@ -120,7 +123,7 @@ function newProject(name) {
     concepts: [],
     selectedConceptId: null,
     storyboard: null,
-    review: { approved: false, approvedAt: null, checklist: {}, notes: '' },
+    review: { mode: 'automatic', status: 'idle', requirements: [...DEFAULT_REVIEW_REQUIREMENTS], approved: false, approvedAt: null, checklist: {}, notes: '' },
     render: { model: '', params: {}, shots: {}, finalVideo: null, cover: null },
     variants: [],
   }
@@ -143,7 +146,9 @@ async function loadContext(projectId) {
   const picked = resolveAssets(project, assetLib)
   const facts = resolveFacts(project, factLib)
   const channel = (channelLib.channels || []).find((c) => c.id === project.brief?.channel) || channelLib.channels?.[0]
-  return { project, brandGuide, assetLib, factLib, channelLib, compliance, picked, facts, channel }
+  const ctx = { project, brandGuide, assetLib, factLib, channelLib, compliance, picked, facts, channel }
+  refreshReview(ctx)
+  return ctx
 }
 
 const selectedConcept = (p) => p.concepts?.find((c) => c.id === p.selectedConceptId) || null
@@ -162,6 +167,8 @@ app.get(
     ])
     res.json({
       phases: PHASES,
+      visualDesign: await getVisualDesign(),
+      reviewChecklist: DEFAULT_REVIEW_REQUIREMENTS,
       brandGuide,
       assets,
       facts,
@@ -407,7 +414,13 @@ app.delete(
 
 /* ------------------------------ 项目 ------------------------------ */
 
-app.get('/api/projects', wrap(async (_req, res) => res.json(await listProjects())))
+app.get('/api/projects', wrap(async (_req, res) => {
+  const projects = await listProjects()
+  res.json(await Promise.all(projects.map(async summary => {
+    const { project } = await loadContext(summary.id)
+    return { ...summary, approved: Boolean(project.review?.approved) }
+  })))
+}))
 
 app.post(
   '/api/projects',
@@ -422,8 +435,7 @@ app.post(
 app.get(
   '/api/projects/:id',
   wrap(async (req, res) => {
-    const project = await getProject(req.params.id)
-    if (!project) return res.status(404).json({ error: '项目不存在' })
+    const { project } = await loadContext(req.params.id)
     res.json(project)
   }),
 )
@@ -434,7 +446,14 @@ app.patch(
     const project = await getProject(req.params.id)
     if (!project) return res.status(404).json({ error: '项目不存在' })
     const gcChanged = Boolean(req.body?.storyboard?.globalContext)
-    const merged = deepMerge(project, req.body)
+    const changes = { ...req.body }
+    // Approval is computed by the review endpoint; clients only edit requirements and notes.
+    if (Object.hasOwn(changes, 'review')) {
+      changes.review = {}
+      if (req.body.review?.requirements !== undefined) changes.review.requirements = normalizeRequirements(req.body.review.requirements)
+      if (typeof req.body.review?.notes === 'string') changes.review.notes = req.body.review.notes
+    }
+    const merged = deepMerge(project, changes)
     merged.id = project.id
     await upsertProject(merged)
     const impact = gcChanged ? analyzeImpact({ project: merged, globalContextChanged: true }) : null
@@ -553,7 +572,7 @@ app.post(
       source,
       generatedAt: new Date().toISOString(),
     }
-    project.review = { approved: false, approvedAt: null, checklist: {}, notes: project.review?.notes || '' }
+    project.review = { mode: 'automatic', status: 'idle', requirements: project.review?.requirements || [...DEFAULT_REVIEW_REQUIREMENTS], approved: false, approvedAt: null, checklist: {}, notes: project.review?.notes || '' }
     project.render = { ...project.render, shots: {}, finalVideo: null, cover: null }
     project.variants = []
     project.phase = Math.max(project.phase, 4)
@@ -681,7 +700,29 @@ app.delete(
   }),
 )
 
-/* --------------------- Phase 5：校验与审核 --------------------- */
+/* --------------------- Phase 5：自动审核 --------------------- */
+const reviewRuns = new Set()
+app.post('/api/projects/:id/review', wrap(async (req, res) => {
+  if (reviewRuns.has(req.params.id)) return res.status(409).json({ error: '该项目正在自动审核，请等待完成。' })
+  reviewRuns.add(req.params.id)
+  try {
+    const ctx = await loadContext(req.params.id)
+    const originalFingerprint = reviewInputFingerprint(ctx)
+    if (req.body?.autoRepair !== undefined && typeof req.body.autoRepair !== 'boolean') return res.status(400).json({ error: 'autoRepair 必须是布尔值' })
+    const result = await runAutomaticReview(ctx, { requirements: normalizeRequirements(req.body?.requirements || ctx.project.review?.requirements), autoRepair: req.body?.autoRepair !== false })
+    const latest = await loadContext(req.params.id)
+    if (reviewInputFingerprint(latest) !== originalFingerprint) return res.status(409).json({ error: '审核期间资料已更新，本次结果未保存，请重新运行审核。' })
+    result.project = { ...latest.project, storyboard: result.project.storyboard, assets: result.project.assets, facts: result.project.facts, review: result.project.review, phase: Math.max(latest.project.phase, 5) }
+    for (const [id, render] of Object.entries(ctx.project.render?.shots || {})) {
+      if (render.stale && result.project.render?.shots?.[id]) {
+        result.project.render.shots[id].stale = true
+        result.project.render.shots[id].approved = false
+      }
+    }
+    await upsertProject(result.project)
+    res.json(result)
+  } finally { reviewRuns.delete(req.params.id) }
+}))
 
 app.get(
   '/api/projects/:id/validate',
@@ -801,7 +842,7 @@ app.post(
 
     if (!req.body?.force) {
       if (!project.review?.approved) {
-        return res.status(400).json({ error: '分镜尚未通过 Phase 5 审核，如需强制生成请传 force=true' })
+        return res.status(400).json({ error: '分镜尚未通过自动审核或内容已变更，如需强制生成请传 force=true' })
       }
       const v = validateStoryboard({ project, brandGuide, compliance, factLib, picked, channel })
       const shotIssues = v.shots.find((s) => s.shotId === shot.id)?.issues || []
@@ -903,6 +944,8 @@ app.post(
       status: 'succeeded',
       url: req.body.url,
       source: 'manual',
+      stale: false,
+      approved: false,
       overlayApplied: false,
       overlayInfo: null,
       rawUrl: null,
@@ -925,6 +968,7 @@ app.post(
  */
 async function composeShot({ project, shot, picked, channel, brandGuide, subtitleOverride, voicePreset }) {
   const entry = project.render.shots[shot.id]
+  if (entry?.stale) throw new Error('分镜已自动修复，请重新生成或回传该镜头后再合成。')
   if (!entry?.url) throw new Error(`镜头 #${shot.index} 尚无可用视频`)
   if (!entry.url.startsWith('/media/')) {
     throw new Error(`镜头 #${shot.index} 是外部 URL，无法本地合成，请先下载到 data/runtime/media 后回传`)
@@ -1115,6 +1159,7 @@ app.post(
     const project = await getProject(req.params.id)
     const entry = project?.render?.shots?.[req.params.shotId]
     if (!entry) return res.status(404).json({ error: '该镜头尚未生成' })
+    if (entry.stale) return res.status(400).json({ error: '分镜已变更，请重新生成或回传该镜头。' })
     entry.approved = req.body?.approved !== false
     entry.reviewNote = req.body?.note || ''
     await upsertProject(project)
@@ -1138,6 +1183,8 @@ app.post(
     const sb = project.storyboard
     if (!sb) return res.status(400).json({ error: '尚未生成分镜' })
 
+    if (!project.review?.approved) return res.status(400).json({ error: '请先完成当前版本的自动审核，再合成成片。' })
+    if (sb.shots.some(shot => project.render.shots[shot.id]?.stale)) return res.status(400).json({ error: '存在自动修复前的旧镜头，请重新生成或回传后再合成。' })
     const missing = sb.shots.filter((s) => !project.render.shots[s.id]?.url)
     if (missing.length) {
       return res.status(400).json({

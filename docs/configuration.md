@@ -61,3 +61,9 @@ Linux 字体路径示例：`/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.t
 配音相关参数包括 `TTS_ENABLED`、`TTS_VOICE`、`TTS_AMBIENT_VOLUME` 和 `TTS_VO_VOLUME`。其他可选参数以 [配置模板](../.env.example) 为准。
 
 [返回中文首页](../README.md) · [English overview](../README.en.md)
+
+## 创作资料与自动审核
+
+品牌自身信息保存在 `config/business/brand-guide.json`；视觉风格、镜头、光照和制作规格独立存放于 `config/business/visual-design.json`。生成接口仍会合并读取两者，已有项目无需重新绑定。
+
+自动审核复用文本模型配置。项目审核清单、逐项结论和修复报告保存在本地 `data/runtime/projects.json`。没有可用文本模型时仍可检查规则，但不会自动审核通过。已有人工通过标记需要重新运行自动审核。

@@ -289,7 +289,7 @@ export default function Phase4Storyboard({ project, meta, patch, setProject, not
 
             <div className="mt-6 flex justify-end">
               <button className="btn-primary" onClick={() => goto(5)}>
-                下一步：进入人工审核 →
+                下一步：进入自动审核 →
               </button>
             </div>
           </Section>

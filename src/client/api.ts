@@ -97,6 +97,9 @@ export const api = {
   autofix: (id: string, opts: { shotId?: string; removeMissingAssets?: boolean } = {}) =>
     req<AutoFixResult>(`/api/projects/${id}/autofix`, { method: 'POST', body: body(opts) }),
 
+  automaticReview: (id: string, requirements: string[], autoRepair: boolean) =>
+    req<AutoFixResult>('/api/projects/' + id + '/review', { method: 'POST', body: body({ requirements, autoRepair }) }),
+
   getPackage: (id: string) => req<any>(`/api/projects/${id}/package`),
   impact: (id: string, factIds: string[] = [], global = false) =>
     req<ImpactResult>(`/api/projects/${id}/impact?factIds=${factIds.join(',')}&global=${global ? 1 : 0}`),
