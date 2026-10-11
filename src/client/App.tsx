@@ -16,6 +16,10 @@ import Phase5 from './phases/Phase5Review'
 import Phase6 from './phases/Phase6Render'
 
 export interface PhaseProps {
+  videoDetail?: boolean
+  inspectVideo?: (id: string) => Promise<boolean | void>
+  closeVideoDetail?: () => void
+  openMaterial?: (id: string, phase?: number) => Promise<boolean | void>
   openReferences?: () => void
   openExperiments?: () => void
   registerBeforeLeave?: (save: (() => Promise<void>) | null) => void
@@ -44,6 +48,7 @@ export default function App() {
   const [projects, setProjects] = useState<ProjectSummary[]>([])
   const [project, setProject] = useState<Project | null>(null)
   const [activePhase, setActivePhase] = useState(1)
+  const [videoDetailId, setVideoDetailId] = useState<string | null>(null)
   const [view, setView] = useState<'overview' | 'project' | 'experiments'>('overview')
   const [creativeTab, setCreativeTab] = useState<'concepts' | 'references'>('concepts')
   const [foundationTab, setFoundationTab] = useState('brand')
@@ -196,7 +201,7 @@ export default function App() {
   const changeView = async (next: typeof view) => { try { await beforeLeave.current?.(); setView(next); setMenuOpen(false) } catch {} }
   const openReferences = () => { if (!project) { notify('先选择或新建一个推广任务，参考库会结合任务生成建议'); return }; setCreativeTab('references'); void navigate(3) }
   const openExperiments = () => { const root = project?.batchId || project?.experimentLink?.parentId; if (root) void openProject(root, 7); else void changeView('experiments') }
-  const phaseProps: PhaseProps | null = project ? { project, meta, patch, setProject: setProjectAndRefresh, reloadMeta, notify, goto: phase => { void navigate(phase) }, gotoFoundation: tab => { setFoundationTab(tab); void navigate(1) }, foundationTab, openReferences, openExperiments, creativeTab, registerBeforeLeave } : null
+  const phaseProps: PhaseProps | null = project ? { project, meta, patch, setProject: setProjectAndRefresh, reloadMeta, notify, goto: phase => { void navigate(phase) }, gotoFoundation: tab => { setFoundationTab(tab); void navigate(1) }, foundationTab, openReferences, openExperiments, creativeTab, registerBeforeLeave, openMaterial: openProject, videoDetail: videoDetailId === project.id, closeVideoDetail: () => setVideoDetailId(null), inspectVideo: async id => { const opened = await openProject(id, 6); if (opened !== false) setVideoDetailId(id); return opened } } : null
   const currentPhase = PHASES.find(ph => ph.id === activePhase) || PHASES[0]
   const visibleProjects = projects.filter(p => !p.experimentLink && p.name.toLowerCase().includes(sidebarSearch.trim().toLowerCase()))
   const configured = !meta.providers.video.startsWith('mock') && !meta.providers.video.startsWith('manual')
@@ -246,10 +251,10 @@ export default function App() {
           <nav ref={phaseNavigation} className="phase-navigation" aria-label="创作阶段">
             {PHASES.map(ph => <button key={ph.id} className={(activePhase === ph.id ? 'active ' : '') + (phaseReady[ph.id] ? 'ready' : '')} disabled={!!project.experimentLink && !project.batchId && ph.id < 4} onClick={() => void navigate(ph.id)} aria-current={activePhase === ph.id ? 'step' : undefined}><span className="phase-number">{phaseReady[ph.id] ? <Icon name="check" width="13" height="13" /> : '0' + ph.id}</span><span>{ph.name}</span></button>)}
           </nav>
-          <BatchPanel project={project} phase={activePhase} onOpen={openProject} onUpdate={setProjectAndRefresh} notify={notify} beforeOpen={async () => { await beforeLeave.current?.() }} />
+          {activePhase < 6 && <BatchPanel project={project} phase={activePhase} onOpen={openProject} onUpdate={setProjectAndRefresh} notify={notify} beforeOpen={async () => { await beforeLeave.current?.() }} />}
           <div className="phase-scroll" key={project.id + '-' + activePhase}>
             <div className="phase-content animate-in">
-              <div className="phase-intro"><div><div className="eyebrow">STEP {'0' + activePhase}</div><h1>{currentPhase.name}</h1><p>{currentPhase.desc}</p></div></div>
+              {(activePhase !== 6 || videoDetailId === project.id || project.experimentLink) && <div className="phase-intro"><div><div className="eyebrow">STEP {'0' + activePhase}</div><h1>{currentPhase.name}</h1><p>{currentPhase.desc}</p></div></div>}
               {project.experimentLink && <div className="business-context">实验 {project.experimentLink.label} 版 · {project.experimentLink.label === 'A' ? '基准脚本已锁定，可继续制作视频。' : '只修改指定镜头，固定镜头沿用基准版。'}<button className="btn-ghost" onClick={() => void openProject(project.experimentLink!.parentId, 7)}>返回素材测试 →</button></div>}
               {phaseProps && activePhase === 1 && <Phase1 {...phaseProps} />}
               {phaseProps && activePhase === 2 && <Phase2 {...phaseProps} />}
@@ -264,7 +269,7 @@ export default function App() {
     </div>
     <Modal open={showCreate} title="开启一个新的广告创意" onClose={() => !busy && setShowCreate(false)}>
       <form onSubmit={e => { e.preventDefault(); void createProject() }} className="space-y-5">
-        <p className="text-sm text-slate-400 leading-relaxed">一个项目管理一批视频。先选品牌和素材，再填写共用需求、选择多个创意方向并批量制作。</p>
+        <p className="text-sm text-slate-400 leading-relaxed">一个项目对应一条核心创意。确认基础脚本与允许变化的范围后，批量制作多个视频版本。</p>
         <div><label className="label" htmlFor="new-project-name">项目名称</label><input id="new-project-name" className="input" value={newName} onChange={e => setNewName(e.target.value)} placeholder="例如：晚高峰通勤 · 抖音 15 秒广告" required maxLength={100} /></div>
         <div className="creation-steps">{['明确任务', '创意方案', '制作质检', '素材测试'].map((label, i) => <span key={label}><small>{i + 1}</small>{label}</span>)}</div>
         <div className="flex justify-end gap-2 pt-2"><button type="button" className="btn-ghost" onClick={() => setShowCreate(false)} disabled={busy}>取消</button><button type="submit" className="btn-primary" disabled={busy || !newName.trim()}>{busy ? <Spinner /> : <Icon name="plus" width="16" />}创建项目</button></div>

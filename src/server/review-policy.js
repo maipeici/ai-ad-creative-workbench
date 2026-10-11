@@ -25,5 +25,6 @@ export function buildReviewPolicy(ctx, library) {
   if (!profile?.rules.length || profile.coverage === 'missing') rules.push({ id: 'platform-missing', group: 'platform', label: profile?.missing || '所选平台尚无审核规则', source: profile?.name || '平台规则', requiredInput: true })
   rules.push({ id: 'production-feasibility', group: 'production', label: '分镜时长、口播长度、字幕排版与渠道画幅及安全区配置可执行；创意建议不作为平台硬性规定。', source: '制作规格' })
   for (const [i, label] of additionalRequirements(ctx.project.review?.requirements).entries()) rules.push({ id: `extra-${i}`, group: 'extra', label, source: '项目额外要求' })
+  if (ctx.project.versionPlan) rules.push({ id: 'creative-consistency', group: 'production', label: `与基础脚本保持同一核心创意、开头钩子（${ctx.project.versionPlan.hookStrategy}）、叙事顺序、卖点和 CTA；只允许已选择的变化，英文画面提示词也必须遵守。${ctx.project.versionPlan.fixedNotes}`, source: '共用创意与版本范围' })
   return { version: library.version, scope: library.scope, platform: profile || null, rules }
 }

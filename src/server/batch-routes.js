@@ -4,6 +4,7 @@ import { failure } from './experiments.js'
 import { deliveryFiles, zipFiles } from './delivery.js'
 import { assertStoryboardCurrent } from './inspiration-guidance.js'
 import { randomUUID } from 'node:crypto'
+import { hasFfmpeg } from './providers/ffmpeg.js'
 
 export function registerBatchRoutes(app, { wrap, invoke, loadContext }) {
   const running = new Map()
@@ -44,6 +45,7 @@ export function registerBatchRoutes(app, { wrap, invoke, loadContext }) {
     const available = batchView(parent).items.map(c => c.id)
     const ids = Array.isArray(req.body.ids) ? [...new Set(req.body.ids)] : available
     if (!ids.length || ids.some(id => !available.includes(id))) throw failure('请选择本项目中的有效素材')
+    if (stage === 'produce' && !await hasFfmpeg()) throw failure('请先配置 FFmpeg，才能批量制作完整视频。尚未提交模型任务。', 422)
     if (running.has(parent.id)) throw failure('这批素材已在处理，请勿重复提交', 409)
     const task = { cancelled: false }
     running.set(parent.id, task)

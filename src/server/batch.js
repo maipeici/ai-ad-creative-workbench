@@ -1,10 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import { failure } from './experiments.js'
 import { assertStoryboardCurrent } from './inspiration-guidance.js'
+import { makeVersionPlan, VERSION_CHANGES } from './video-versions.js'
 
 // The original project's video remains in place. Additional creatives are nested
 // records, projected through the existing single-video endpoints for compatibility.
-export const CREATIVE_FIELDS = ['creativeName', 'creativeInstruction', 'sharedSnapshot', 'phase', 'concepts', 'selectedConceptId', 'storyboard', 'review', 'render', 'variants', 'experimentLink', 'createdAt', 'updatedAt']
+export const CREATIVE_FIELDS = ['creativeName', 'creativeInstruction', 'versionPlan', 'sharedSnapshot', 'phase', 'concepts', 'selectedConceptId', 'storyboard', 'review', 'render', 'variants', 'experimentLink', 'createdAt', 'updatedAt']
 export function creativeRecord(project) {
   return Object.fromEntries(['id', ...CREATIVE_FIELDS].filter(key => project[key] !== undefined).map(key => [key, structuredClone(project[key])]))
 }
@@ -20,7 +21,7 @@ export function creativeSummary(project) {
   const video = project.render?.finalVideo
   return {
     id: project.id, name: project.creativeName || project.concepts?.find(c => c.id === project.selectedConceptId)?.title || '素材 01',
-    conceptId: project.selectedConceptId, instruction: project.creativeInstruction || '', phase: project.phase,
+    conceptId: project.selectedConceptId, instruction: project.creativeInstruction || '', phase: project.phase, scriptSource: project.storyboard?.source || '',
     shotCount: shots.length, readyShots: shots.filter(s => project.render?.shots?.[s.id]?.url && !project.render.shots[s.id].stale).length,
     approved: Boolean(project.review?.approved), reviewStatus: project.review?.status || 'idle',
     videoUrl: video?.url || null, stale: Boolean(video?.stale), cover: project.render?.cover || null,
@@ -32,34 +33,34 @@ export function batchView(parent) {
   return { id: parent.id, name: parent.name, target: Math.max(Number(parent.brief?.deliveryCount) || 1, items.length), items: items.map(creativeSummary), job: parent.batchJob || null }
 }
 export function createBatch(parent, input) {
-  if (parent.batchId || parent.experimentLink) throw failure('请在项目的广告创意阶段添加素材')
-  const ids = [...new Set(input.conceptIds || [])]
-  const count = Number(input.versionsPerConcept)
-  if (!ids.length || ids.some(id => !parent.concepts?.some(c => c.id === id)) || !Number.isInteger(count) || count < 1 || count > 12) throw failure('请选择有效创意，每个方向支持 1–12 个版本')
+  if (parent.batchId || parent.experimentLink) throw failure('请在项目的基础分镜中设置视频版本')
+  if (input.conceptIds?.some(id => id !== parent.selectedConceptId)) throw failure('一个项目只能使用一条核心创意')
+  const count = Number(input.versionCount)
   const existing = (parent.creatives?.length || 0) + 1
-  const reuseFirst = !parent.storyboard && !(parent.creatives?.length) && !parent.render?.finalVideo
-  if (existing + ids.length * count - Number(reuseFirst) > 60) throw failure('每个项目最多 60 条素材，请减少本次数量')
+  if (!Number.isInteger(count) || count < Math.max(2, existing) || count > 60) throw failure(`请输入 ${Math.max(2, existing)}–60 个视频版本；已建版本会保留`)
+  const plan = parent.versionPlan || makeVersionPlan(parent, input)
+  if (parent.creatives?.some(c => c.selectedConceptId !== parent.selectedConceptId)) throw failure('旧项目包含多个创意，请先按创意拆分项目')
   const instructions = Array.isArray(input.instructions) ? input.instructions : []
-  const approaches = ['先展示具体出行困境，再引出解决办法', '第一人称分享出行经历，语气自然', '用一个与目标人群有关的问题开场', '用出行前后的状态变化形成对照', '用两人简短对话推进卖点', '先给出生活场景，再解释使用方法', '从用户犹豫点切入，给出有依据的回应', '用行动和细节带出产品，减少口播', '以时间线串联一次完整出行', '以场景小反转形成记忆点', '突出官方界面的操作演示', '用简洁清晰的利益点组织叙事']
   const records = []
-  for (const id of ids) for (let i = 0; i < count; i++) {
-    const concept = parent.concepts.find(c => c.id === id)
+  for (let i = existing; i < count; i++) {
+    const concept = plan.concept
     const record = {
       id: randomUUID(), creativeName: `${concept.title} · 版本 ${i + 1}`,
-      creativeInstruction: String(instructions[i] || `第 ${i + 1} 个创意版本：${approaches[i]}。保留已选创意方向，遵守已确认事实，不新增权益承诺。`).slice(0, 2000),
-      concepts: [structuredClone(concept)], selectedConceptId: id, storyboard: null, phase: 4,
+      creativeInstruction: String(instructions[i - existing] || `视频版本 ${i + 1}：保持“${plan.hookStrategy}”和基础脚本结构，只在${plan.allowedChanges.map(key => VERSION_CHANGES[key]).join('、')}范围内形成不同的执行表达。不得改变创意方向和权益承诺。`).slice(0, 2000),
+      versionPlan: structuredClone(plan),
+      concepts: [structuredClone(concept)], selectedConceptId: concept.id, storyboard: null, phase: 4,
       review: { mode: 'automatic', status: 'idle', approved: false, requirements: parent.review?.requirements || [], checklist: {}, notes: '' },
       render: { model: parent.render?.model || '', params: parent.render?.params || {}, voicePreset: parent.render?.voicePreset, shots: {}, finalVideo: null, cover: null },
       variants: [], createdAt: new Date().toISOString(),
     }
     records.push(record)
   }
-  if (reuseFirst) {
-    const first = records.shift()
-    const { id, concepts, ...fields } = first
-    Object.assign(parent, fields)
-  }
+  for (const item of parent.creatives || []) if (!Object.hasOwn(item, 'versionPlan')) item.versionPlan = item.storyboard ? null : structuredClone(plan)
+  parent.versionPlan = plan
+  parent.review = { ...parent.review, approved: false, status: 'stale' }
+  parent.creativeName ||= `${plan.concept.title} · 版本 1（基础脚本）`
   parent.creatives = [...(parent.creatives || []), ...records]
+  parent.brief.deliveryCount = count
   return parent
 }
 
@@ -69,6 +70,9 @@ export async function runCreativePipeline(id, stage, { load, invoke, progress, c
   const step = async (name, body) => { if (cancelled()) throw failure('已暂停，已完成的内容保留', 409); await progress(name); return invoke(id, name, body || {}) }
   let p = await load(id)
   assertStoryboardCurrent(p)
+  if (stage !== 'storyboard' && !p.storyboard?.shots?.length) throw failure('请先在分镜规划中准备此版本的脚本', 422)
+  if (stage !== 'storyboard' && p.storyboard?.source?.startsWith('mock')) throw failure('当前仍是示例脚本，请先在分镜规划中重新生成或确认真实脚本', 422)
+  if (stage === 'produce' && !p.review?.approved) throw failure('自动审核未通过，请先在自动审核阶段完成品牌、平台与创意一致性检查', 422)
   if (!p.storyboard?.shots?.length || p.storyboard.source?.startsWith('mock')) {
     const result = await step('storyboard', { userPreference: p.creativeInstruction || '' })
     if (!['gemini', 'llm'].includes(result.source)) throw failure('模型未完成真实分镜生成，已保留示例供查看；请检查模型后单条重新生成', 503)

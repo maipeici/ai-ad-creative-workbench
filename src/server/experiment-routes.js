@@ -110,6 +110,7 @@ export function registerExperimentRoutes(app, wrap) {
     project.createdAt = new Date().toISOString(); project.phase = 2
     project.brief.notes = [project.brief.notes, `上轮实验：${experiment.title}`, `观察结论：${experiment.conclusion || '未填写'}`, `下一轮建议：${experiment.nextAction}`].filter(Boolean).join('\n')
     project.concepts = []; project.selectedConceptId = null; project.storyboard = null; project.variants = []
+    delete project.versionPlan
     project.render = { ...project.render, shots: {}, finalVideo: null, cover: null }; delete project.render.qualityReview
     project.review = { requirements: project.review?.requirements, mode: 'automatic', status: 'idle', approved: false, checklist: {}, notes: '' }
     delete project.experiments; delete project.experimentLink; delete project.creatives; delete project.batch; delete project.batchId; delete project.batchJob; delete project.sharedSnapshot; delete project.creativeName

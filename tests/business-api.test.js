@@ -74,10 +74,14 @@ test('isolated business workflow: inherited brief → locked A/B → result impo
     // New batch model: multiple video records live inside one visible project.
     const batchProject = await request('/api/projects', 'POST', { name: '12-video isolated batch' })
     const batchRoute = '/api/projects/' + batchProject.id
-    const concepts = ['first', 'second', 'third'].map(id => ({ id, title: id, coreIdea: '出行', beats: [] }))
-    await request(batchRoute, 'PATCH', { concepts, selectedConceptId: 'first' })
-    const added = await request(batchRoute + '/batch/creatives', 'POST', { conceptIds: concepts.map(c => c.id), versionsPerConcept: 4 })
+    const concepts = ['first', 'second', 'third'].map(id => ({ id, title: id, coreIdea: '出行', hook: '人物出行痛点', beats: [] }))
+    await request(batchRoute, 'PATCH', { concepts, selectedConceptId: 'first', storyboard: { globalContext: {}, shots } })
+    await request(batchRoute + '/batch/creatives', 'POST', { conceptIds: ['first', 'second'], versionCount: 12 }, 400)
+    const added = await request(batchRoute + '/batch/creatives', 'POST', { versionCount: 12, allowedChanges: ['performance', 'camera', 'wording'], hookStrategy: '人物出行痛点' })
     assert.equal(added.batch.items.length, 12)
+    assert.equal(new Set(added.batch.items.map(i => i.conceptId)).size, 1)
+    await request(batchRoute, 'PATCH', { selectedConceptId: 'second' }, 409)
+    await request(batchRoute, 'PATCH', { versionPlan: null }, 400)
     assert.equal((await request('/api/projects')).filter(p => p.name === batchProject.name).length, 1)
     const [first, second] = added.batch.items.slice(1, 3)
     await Promise.all([request('/api/projects/' + first.id, 'PATCH', { creativeInstruction: '开头版本甲' }), request('/api/projects/' + second.id, 'PATCH', { creativeInstruction: '开头版本乙' })])
@@ -101,13 +105,17 @@ test('isolated business workflow: inherited brief → locked A/B → result impo
     assert.equal(batch.job.status, 'attention', 'mock storyboard must not be reported as real batch generation')
     assert.equal(batch.job.items.filter(i => i.status === 'attention').length, 2, 'one item failure must not abort siblings')
     const untouched = await request(batchRoute)
-    assert.equal(untouched.storyboard, null, 'child storyboard writes must not replace the original creative')
+    assert.deepEqual(untouched.storyboard.shots, shots, 'child storyboard writes must not replace the base script')
     assert.equal(untouched.creatives.length, 11)
+    const regenerated = await request('/api/projects/' + first.id + '/storyboard/shots/s0/regenerate', 'POST', { instruction: '保持创意，用更近的景别' })
+    assert.deepEqual(regenerated.project.storyboard.shots.map(s => [s.id, s.role, s.durationSec]), shots.map(s => [s.id, s.role, s.durationSec]))
+    assert.equal(regenerated.project.storyboard.shots[1].vo, shots[1].vo, 'shot regeneration preserves the fixed CTA')
     // Material tests reuse existing batch items and export several independent films.
     for (const item of [first, second]) {
       const itemShots = structuredClone(shots)
       if (item.id === second.id) itemShots[0].vo = '另一个开头'
-      await request('/api/projects/' + item.id, 'PATCH', { storyboard: { globalContext: {}, shots: itemShots }, render: { shots: { s0: { url: '/media/fixture.mp4', backend: 'manual' }, s1: { url: '/media/fixture.mp4', backend: 'manual' } }, finalVideo: { url: '/media/fixture.mp4' } } })
+      await request('/api/projects/' + item.id, 'PATCH', { storyboard: { globalContext: {}, shots: itemShots, source: 'manual' }, render: { shots: { s0: { url: '/media/fixture.mp4', backend: 'manual' }, s1: { url: '/media/fixture.mp4', backend: 'manual' } }, finalVideo: { url: '/media/fixture.mp4' } } })
+      await request('/api/projects/' + item.id, 'PATCH', { storyboard: { shots: itemShots.map(s => ({ ...s, durationSec: 8 })) } }, 409)
     }
     const compared = await request(batchRoute + '/experiments', 'POST', { mode: 'comparison', creativeIds: [first.id, second.id], primaryMetric: 'ctr', hypothesis: '比较已有素材' })
     assert.deepEqual(compared.experiment.versions.map(v => v.projectId), [first.id, second.id])

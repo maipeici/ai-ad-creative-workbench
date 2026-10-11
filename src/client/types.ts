@@ -300,6 +300,7 @@ export interface Variant {
 }
 
 export interface Project {
+  versionPlan?: { concept: Concept; template: Storyboard; hookStrategy: string; fixedNotes: string; allowedChanges: string[]; createdAt: string } | null
   brandGuideId?: string
   batchId?: string
   batch?: CreativeBatch
@@ -482,6 +483,7 @@ export interface ReviewPolicy {
   rules: { id: string; group: string; label: string; source: string; sourceUrl?: string; requiredInput?: boolean }[]
 }
 export interface CreativeSummary {
+  scriptSource?: string
   id: string; name: string; conceptId: string | null; instruction: string; phase: number
   shotCount: number; readyShots: number; approved: boolean; reviewStatus: string
   videoUrl: string | null; stale: boolean; cover: string | null; qualityStatus: string

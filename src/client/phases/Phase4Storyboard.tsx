@@ -5,8 +5,10 @@ import type { GlobalContext, Shot, ValidateResult } from '../types'
 import { DetailsWhen, Badge, EmptyHint, Field, IssueRow, Section, Spinner } from '../ui'
 import ShotCard from '../components/ShotCard'
 import ReferenceGuidance from '../components/ReferenceGuidance'
+import VersionPlanPanel from '../components/VersionPlanPanel'
 
-export default function Phase4Storyboard({ project, meta, patch, setProject, notify, gotoFoundation, preview }: PhaseProps) {
+export default function Phase4Storyboard(props: PhaseProps) {
+  const { project, meta, patch, setProject, notify, gotoFoundation, preview } = props
   const [loading, setLoading] = useState(false)
   const [shotCount, setShotCount] = useState<number | ''>('')
   const [shotDuration, setShotDuration] = useState<number | ''>('')
@@ -143,6 +145,7 @@ export default function Phase4Storyboard({ project, meta, patch, setProject, not
   return (
     <>
       <ReferenceGuidance reference={concept?.inspiration} stage="storyboard"/>
+      {project.batchId && <VersionPlanPanel {...props} />}
       {sb?.conceptId&&sb.conceptId!==concept?.id&&<p className="inspiration-notice" role="status">当前已选新的创意方案。下方仍是原方案的分镜与素材，请点击“重新生成全部”后继续制作。</p>}
       {!sb && generationControls}
 
@@ -196,7 +199,7 @@ export default function Phase4Storyboard({ project, meta, patch, setProject, not
                 <button className="btn-ghost !py-1 !text-xs" onClick={generateAllPreviews} disabled={previewAll || !!project.experimentLink}>
                   {previewAll && <Spinner />} 生成全部预览图
                 </button>
-                <button className="btn-ghost !py-1 !text-xs" disabled={!!project.experimentLink} onClick={async () => setProject(await api.addShot(project.id, sb.shots.length))}>
+                <button className="btn-ghost !py-1 !text-xs" disabled={!!project.experimentLink || !!project.versionPlan} onClick={async () => setProject(await api.addShot(project.id, sb.shots.length))}>
                   + 补镜头
                 </button>
               </div>
@@ -211,6 +214,7 @@ export default function Phase4Storyboard({ project, meta, patch, setProject, not
                   key={shot.id}
                   readOnly={!!project.experimentLink && !project.experimentLink.editableShotIds.includes(shot.id)}
                   contentOnly={!!project.experimentLink}
+                  versionAllowed={project.versionPlan?.allowedChanges}
                   shot={shot}
                   meta={meta}
                   selectedAssetIds={selectedAssetIds}
@@ -219,7 +223,7 @@ export default function Phase4Storyboard({ project, meta, patch, setProject, not
                   onChange={(p) => updateShot(shot.id, p)}
                   onRegen={(ins) => regenShot(shot.id, ins)}
                   onPreview={() => previewShot(shot.id)}
-                  onDelete={async () => {
+                  onDelete={project.versionPlan ? undefined : async () => {
                     if (!confirm(`删除镜头 #${shot.index}？`)) return
                     setProject(await api.removeShot(project.id, shot.id))
                   }}
@@ -253,7 +257,7 @@ export default function Phase4Storyboard({ project, meta, patch, setProject, not
               ).map(([key, label]) => (
                 <Field key={key} label={label}>
                   <textarea
-                    disabled={!!project.experimentLink}
+                    disabled={!!project.experimentLink || !!project.versionPlan}
                     className="input h-14 resize-none !text-[11px] leading-relaxed"
                     value={sb.globalContext?.[key] || ''}
                     onChange={(e) =>
@@ -268,6 +272,7 @@ export default function Phase4Storyboard({ project, meta, patch, setProject, not
               ))}
             </div>
           </Section></details>
+          {!project.batchId && <VersionPlanPanel {...props} />}
           {generationControls}
         </>
       )}

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import ReferenceGuidance from '../components/ReferenceGuidance'
 import FinalQualityPanel from '../components/FinalQualityPanel'
+import BatchPanel from '../components/BatchPanel'
 import type { PhaseProps } from '../App'
 import { api } from '../api'
 import type { ShotRender } from '../types'
@@ -22,7 +23,13 @@ const STATUS_TEXT: Record<string, string> = {
   simulated: '已模拟',
 }
 
-export default function Phase6Render({ project, meta, patch, setProject, notify, goto, preview, openExperiments }: PhaseProps) {
+export default function Phase6Render(props: PhaseProps) {
+  if (props.preview || props.project.experimentLink) return <SingleVideoProduction {...props} />
+  if (props.videoDetail) return <><div className="version-detail-heading"><button className="text-link" onClick={props.closeVideoDetail}>← 返回整批视频</button><h2>{props.project.creativeName || '当前视频版本'}</h2><p>这里只调整当前版本的镜头与成片；整批生产进度在视频列表中查看。</p></div><SingleVideoProduction {...props} /></>
+  return <BatchPanel project={props.project} phase={6} production ffmpeg={props.meta.ffmpeg} onOpen={async (id, phase) => phase === 6 ? props.inspectVideo?.(id) : props.openMaterial?.(id, phase)} onUpdate={props.setProject} notify={props.notify} beforeOpen={async () => {}} onExperiment={props.openExperiments} />
+}
+
+function SingleVideoProduction({ project, meta, patch, setProject, notify, goto, preview, openExperiments }: PhaseProps) {
   const sb = project.storyboard
   const [busyShot, setBusyShot] = useState<string | null>(null)
   const [batchRunning, setBatchRunning] = useState(false)
@@ -66,8 +73,7 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
   }, [runningKey, project.id, setProject])
 
   const finalVideo = project.render?.finalVideo
-  const readyFilms = project.batch?.items.filter(item => item.videoUrl && !item.stale).length || (finalVideo && !finalVideo.stale ? 1 : 0)
-  const deliveryActions = readyFilms > 0 && <div className="delivery-actions"><div><strong>投放与比较</strong><p>选择已完成素材开展投放测试，再导入数据比较表现。</p></div><div className="flex gap-2 flex-wrap">{(project.batch?.items.length || 0) > 1 && <a className="btn-ghost" href={`/api/projects/${project.batchId || project.id}/batch/delivery.zip`} download>下载本批成片 ZIP（{readyFilms}）</a>}<button className="btn-primary" onClick={openExperiments}>进入素材测试 →</button></div></div>
+  const deliveryActions = project.experimentLink && finalVideo && <button className="btn-ghost" onClick={openExperiments}>返回素材测试 →</button>
   if (!sb) return <><EmptyHint>当前素材还没有分镜。<button className="text-link ml-2" onClick={() => goto(4)}>前往分镜规划 →</button></EmptyHint>{deliveryActions}</>
 
   const renders = project.render?.shots || {}
@@ -76,7 +82,6 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
   const lockedShot = (id: string) => Boolean(project._experimentRenderLocked || project.experimentLink && project.experimentLink.label !== 'A' && !project.experimentLink.editableShotIds.includes(id))
   const pendingShots = sb.shots.filter(s => !lockedShot(s.id) && s.renderMode !== 'asset' && (!renders[s.id]?.url || renders[s.id]?.stale) && !['running', 'manual'].includes(renders[s.id]?.status || ''))
   const doneCount = sb.shots.filter((s) => renders[s.id]?.url && !renders[s.id]?.stale).length
-  const needOverlay = sb.shots.filter((s) => !lockedShot(s.id) && s.renderMode === 'overlay' && !renders[s.id]?.stale && renders[s.id]?.url && !renders[s.id]?.overlayApplied)
 
   const renderShot = async (shotId: string) => {
     if (!approved || busyShot || batchRunning) return
@@ -120,26 +125,12 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
     try {
       const { project: p } = await api.overlayShot(project.id, shotId)
       setProject(p)
-      notify('字幕与素材已叠加')
+      notify('字幕、品牌素材与配音已更新，请重新合成此版本成片')
     } catch (e: any) {
       notify(e.message, 'error')
     } finally {
       setBusyShot(null)
     }
-  }
-
-  const overlayAll = async () => {
-    for (const s of needOverlay) {
-      setBusyShot(s.id)
-      try {
-        const { project: p } = await api.overlayShot(project.id, s.id)
-        setProject(p)
-      } catch (e: any) {
-        notify(`#${s.index} ${e.message}`, 'error')
-      }
-    }
-    setBusyShot(null)
-    notify('批量叠加完成')
   }
 
   const assemble = async (force = false) => {
@@ -216,13 +207,6 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
       <Section
         title={`镜头制作（${doneCount}/${sb.shots.length} 已就绪）`}
         desc="保留已完成镜头，只重做需要修改的部分；合成后统一检查成片。"
-        right={
-          needOverlay.length > 0 ? (
-            <button className="btn-primary !py-1 !text-xs" onClick={overlayAll}>
-              批量叠加 {needOverlay.length} 镜
-            </button>
-          ) : null
-        }
       >
         <div className="space-y-2">
           {sb.shots.map((shot) => {
@@ -252,7 +236,7 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
                       {r?.stale && <Badge tone="amber">分镜已更新 · 待重新制作</Badge>}
                       {r?.status === 'running' && <Spinner className="text-sky-400" />}
                       {r?.usedFirstFrame && <Badge tone="blue">图生视频</Badge>}
-                      {r?.overlayApplied && <Badge tone="green">✓ 已叠加</Badge>}
+                      {r?.overlayApplied && <Badge tone="green">字幕配音已加入</Badge>}
                       {lockedShot(shot.id) && <Badge tone="blue">固定镜头</Badge>}
                     </div>
 
@@ -286,7 +270,7 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
                     )}
                     {r?.message && (!r.url || r.status === 'running' || r.status === 'failed') && <p className="text-[11px] text-amber-400 mt-1">{r.message}</p>}
                     {r?.error && <p className="text-[11px] text-red-400 mt-1">{r.error}</p>}
-                    {needsOv && <p className="text-[11px] text-brand mt-1">该镜头需要叠加字幕与素材后才能用于成片</p>}
+                    {needsOv && <p className="text-[11px] text-slate-400 mt-1">合成时会自动加入字幕、品牌素材与配音</p>}
 
                     <div className="flex flex-wrap items-center gap-1.5 mt-2">
                       {shot.renderMode !== 'asset' && (
@@ -295,8 +279,8 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
                         </button>
                       )}
                       {r?.url && shot.renderMode === 'overlay' && (
-                        <button className="btn-primary !py-1 !text-[11px]" onClick={() => doOverlay(shot.id)} disabled={lockedShot(shot.id) || !!busyShot || batchRunning}>
-                          {busyShot === shot.id ? <Spinner /> : '⧉'} {r.overlayApplied ? '重新叠加' : '叠加字幕素材'}
+                        <button className="btn-ghost !py-1 !text-[11px]" title="基于原镜头更新字幕、品牌素材与配音，不会重新生成画面；随后需重新合成成片。" onClick={() => doOverlay(shot.id)} disabled={lockedShot(shot.id) || !!busyShot || batchRunning}>
+                          {busyShot === shot.id && <Spinner />}更新字幕与配音
                         </button>
                       )}
                       {r?.taskId && r.status === 'running' && (

@@ -7,6 +7,7 @@ import { getWorkspace } from './workspace.js'
 import { assertExperimentLock, assertFrozenMedia, baselineFrozen, fingerprint } from './experiments.js'
 import { qualityFingerprint, compositionFingerprint } from './delivery.js'
 import { batchView, creativeRecord, projectCreative, flattenCreatives } from './batch.js'
+import { assertVersionContract, splitLegacyProjects } from './video-versions.js'
 
 const PROJECTS_FILE = path.join(DATA_DIR, 'projects.json')
 const ASSETS_FILE = path.join(DATA_DIR, 'assets.json')
@@ -36,6 +37,16 @@ function writeJsonQueued(file, data) {
   // A failed save must reach the caller, while later saves can still proceed.
   writeQueue = operation.catch(() => {})
   return operation
+}
+
+const storedProjects = await readJson(PROJECTS_FILE, [])
+const migratedProjects = splitLegacyProjects(storedProjects)
+if (migratedProjects.length !== storedProjects.length) {
+  const backupDir = path.join(DATA_DIR, 'backups')
+  await fsp.mkdir(backupDir, { recursive: true })
+  await fsp.writeFile(path.join(backupDir, `projects-before-one-creative-${Date.now()}.json`), JSON.stringify(storedProjects, null, 2), { flag: 'wx' })
+  await fsp.writeFile(PROJECTS_FILE + '.tmp', JSON.stringify(migratedProjects, null, 2))
+  await fsp.rename(PROJECTS_FILE + '.tmp', PROJECTS_FILE)
 }
 
 export async function getBrandGuide(id = 'hxz-ad-v1') {
@@ -148,6 +159,8 @@ export function upsertProjects(projects) {
         if (previous.batchJob) project.batchJob = structuredClone(previous.batchJob)
       }
       if (previous) {
+        if (previous.creatives?.length && (project.selectedConceptId !== previous.selectedConceptId || fingerprint(project.concepts?.find(c => c.id === project.selectedConceptId)) !== fingerprint(previous.concepts?.find(c => c.id === previous.selectedConceptId)))) throw Object.assign(new Error('一个项目只对应一条核心创意；已有视频版本时，请新建项目探索其他创意。'), { status: 409 })
+        assertVersionContract(project, previous)
         assertFrozenMedia(project, previous, flattenCreatives(all))
         if (project.render?.finalVideo && project.render.finalVideo.url === previous.render?.finalVideo?.url && compositionFingerprint(previous) !== compositionFingerprint(project)) project.render.finalVideo.stale = true
         for (const shot of project.storyboard?.shots || []) {

@@ -5,10 +5,10 @@ import Icon from './Icon'
 export const PHASES = [
   { id: 1, name: '品牌素材', desc: '选择或新增品牌、活动与素材，准备共用资料', icon: 'book' },
   { id: 2, name: '投放需求', desc: '明确受众、场景、目标与渠道', icon: 'settings' },
-  { id: 3, name: '广告创意', desc: '选择多个方向，创建一批独立视频素材', icon: 'spark' },
-  { id: 4, name: '分镜规划', desc: '编排画面、口播和字幕', icon: 'layers' },
+  { id: 3, name: '广告创意', desc: '选定本项目的一条核心创意', icon: 'spark' },
+  { id: 4, name: '分镜规划', desc: '确认基础脚本，设置变化范围与视频版本', icon: 'layers' },
   { id: 5, name: '自动审核', desc: '同时检查品牌要求与投放平台规则', icon: 'check' },
-  { id: 6, name: '成片交付', desc: '批量制作、逐条质检、打包交付', icon: 'movie' },
+  { id: 6, name: '视频制作', desc: '同一创意批量生成多个视频，逐条质检与交付', icon: 'movie' },
 ]
 
 export function projectStatus(p: ProjectSummary) {
@@ -53,7 +53,7 @@ export default function Dashboard({ projects, meta, lastId, busy, onOpen, onCrea
         <div className="hero-copy">
           <div className="eyebrow"><span className="live-dot" /> AI CREATIVE STUDIO</div>
           <h1>让好创意，<br className="sm:hidden" />更快成为好广告<span>。</span></h1>
-          <p>一份投放需求，多个创意方向，一批视频素材。从品牌准备、自动审核到成片交付。</p>
+          <p>一条核心创意，一份共用脚本框架，多个视频版本。从品牌准备、自动审核到批量制作。</p>
           <div className="flex flex-wrap items-center gap-3 mt-6">
             <button className="btn-primary" onClick={onCreate} disabled={busy}><Icon name="plus" /> 新建素材项目</button>
             {onGuide && <button className="guide-entry hero-guide" onClick={onGuide}><Icon name="play" width="15" />90 秒了解流程</button>}

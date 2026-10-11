@@ -14,10 +14,7 @@ export default function Phase3Concept(props: PhaseProps) {
   const [loading, setLoading] = useState(false)
   const [pref, setPref] = useState('')
   const [count, setCount] = useState(3)
-  const [chosen, setChosen] = useState<string[]>(project.selectedConceptId ? [project.selectedConceptId] : [])
-  const [versions, setVersions] = useState(4)
-  const [instructions, setInstructions] = useState('')
-  useEffect(() => { setChosen(ids => ids.filter(id => project.concepts.some(c => c.id === id))) }, [project.concepts])
+  const locked = Boolean(project.versionPlan || (project.batch?.items.length || 0) > 1)
   const [editing, setEditing] = useState<string | null>(null)
   const [appliedId,setAppliedId] = useState('')
   const appliedCard = useRef<HTMLDivElement>(null)
@@ -61,7 +58,7 @@ export default function Phase3Concept(props: PhaseProps) {
       {tabs}
       <Section
         title="广告创意 Agent"
-        desc="基于品牌与投放需求生成多个方向；也可先从「爆款参考」导入视频拆解建议。勾选方案后统一创建素材。"
+        desc="先探索候选方案，再选定一条作为本项目的核心创意。后续多个视频版本共享这条创意与脚本框架。"
       >
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4 items-end">
           <Field label="创意指令 / 偏好（可选）">
@@ -82,12 +79,12 @@ export default function Phase3Concept(props: PhaseProps) {
                 ))}
               </select>
             </Field>
-            <button className="btn-primary" onClick={() => generate(false)} disabled={loading}>
+            <button className="btn-primary" onClick={() => generate(false)} disabled={loading || locked}>
               {loading && <Spinner />}
               {concepts.length ? '重新生成' : '生成创意方案'}
             </button>
             {concepts.length > 0 && (
-              <button className="btn-ghost" onClick={() => generate(true)} disabled={loading}>
+              <button className="btn-ghost" onClick={() => generate(true)} disabled={loading || locked}>
                 追加方案
               </button>
             )}
@@ -98,13 +95,14 @@ export default function Phase3Concept(props: PhaseProps) {
           {(project.facts || []).length} 条
         </div>
       </Section>
+      {locked && <p className="business-context">本项目已建立多个视频版本，核心创意保持固定。新的创意方向请新建项目，已有分镜和视频会保留。</p>}
 
       {concepts.length === 0 ? (
         <EmptyHint>还没有创意方案，点击上方「生成创意方案」开始。</EmptyHint>
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
           {concepts.map((c) => {
-            const on = chosen.includes(c.id)
+            const on = project.selectedConceptId === c.id
             const isEditing = editing === c.id
             const blockers = (c.complianceHits || []).filter((h) => h.severity === 'block')
             return (
@@ -119,7 +117,8 @@ export default function Phase3Concept(props: PhaseProps) {
                   <button
                     aria-label={'选择创意：' + c.title}
                     aria-pressed={on}
-                    onClick={() => setChosen(on ? chosen.filter(id => id !== c.id) : [...chosen, c.id])}
+                    disabled={locked}
+                    onClick={() => void patch({ selectedConceptId: c.id }).catch(() => {})}
                     className={`mt-0.5 w-4 h-4 rounded border-2 shrink-0 grid place-items-center ${
                       on ? 'border-brand bg-brand' : 'border-ink-500'
                     }`}
@@ -136,7 +135,7 @@ export default function Phase3Concept(props: PhaseProps) {
                   <div className="flex items-center gap-1.5 shrink-0">
                     <Badge tone="blue">{c.tone}</Badge>
                     <Badge>{c.durationSec}s</Badge>
-                    <button className="text-[11px] text-slate-500 hover:text-brand" onClick={() => setEditing(isEditing ? null : c.id)}>
+                    <button disabled={locked} className="text-[11px] text-slate-500 hover:text-brand" onClick={() => setEditing(isEditing ? null : c.id)}>
                       {isEditing ? '完成' : '微调'}
                     </button>
                   </div>
@@ -280,10 +279,8 @@ export default function Phase3Concept(props: PhaseProps) {
         </div>
       )}
 
-      {concepts.length > 0 && <Section title="建立这批视频素材" desc="例如：3 个创意方向 × 每个方向 4 个版本 = 12 条视频。每条素材都可独立编辑分镜与制作。">
-        <div className="batch-toolbar"><strong>已选 {chosen.length} 个方向</strong><Field label="每个方向的版本数"><select aria-label="每个方向的版本数" className="input" value={versions} onChange={e => setVersions(Number(e.target.value))}>{[1,2,3,4,5,6,8,10,12].map(n => <option key={n} value={n}>{n} 个版本</option>)}</select></Field><Badge tone="brand">本次创建 {chosen.length * versions} 条</Badge></div>
-        <details className="mt-4"><summary>补充各版本的创作偏好（可选）</summary><textarea className="input mt-3" value={instructions} onChange={e => setInstructions(e.target.value)} placeholder="每行对应一个版本，例如：第一人称困境开场；对话开场；先展示出行场景。留空则由 Agent 探索不同表达。" /></details>
-        <button className="btn-primary mt-4" disabled={loading || !chosen.length} onClick={async () => { setLoading(true); try { const p = await api.addCreatives(project.id, { conceptIds: chosen, versionsPerConcept: versions, instructions: instructions.split('\n') }); setProject(p); notify('这批素材已创建，可逐条编辑或批量生成分镜'); goto(4) } catch (e: any) { notify(e.message, 'error') } finally { setLoading(false) } }}>创建 {chosen.length * versions} 条素材并进入分镜 →</button>
+      {concepts.length > 0 && <Section title="本项目的核心创意" desc="下一步先完成基础分镜，再设置视频数量和允许变化项。">
+        <div className="batch-toolbar"><strong>{concepts.find(c => c.id === project.selectedConceptId)?.title || '请选择一个方案'}</strong><Badge tone="brand">一条创意 · 多个视频版本</Badge><button className="btn-primary" disabled={loading || !project.selectedConceptId} onClick={() => goto(4)}>确定创意，进入分镜 →</button></div>
       </Section>}
     </>
   )

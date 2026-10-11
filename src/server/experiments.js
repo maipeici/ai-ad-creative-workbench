@@ -74,6 +74,7 @@ export function createExperimentVersion(baseline, experiment, changes, source = 
   if (!Object.keys(accepted).some(key => accepted[key] !== (original[key] || ''))) throw failure('变体需至少改变指定镜头的一项内容')
   const project = structuredClone(baseline), label = String.fromCharCode(65 + experiment.versions.length)
   project.id = randomUUID(); project.createdAt = new Date().toISOString()
+  project.versionPlan = null // The experiment's shot lock defines the explicitly selected variable.
   project.name = baseline.name.replace(/ · A 基准版$/, '') + ` · ${label} 实验版`
   const shot = project.storyboard.shots.find(s => s.id === original.id)
   Object.assign(shot, accepted, { preview: null, approved: false })

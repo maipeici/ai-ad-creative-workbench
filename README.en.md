@@ -4,7 +4,7 @@
 
 **An AI workspace for turning advertising briefs into creative concepts, storyboards, reviewed shots, and finished vertical videos.**
 
-**One project, a batch of videos:** select or create brand inputs, share one brief, and create multiple directions and versions with independent storyboards, reviews, and videos. Optional material tests reuse those outputs. See the [workflow and limitations (Chinese)](docs/experiments.md).
+**One project = one creative idea + multiple video versions.** Define a base storyboard, keep its hook strategy, structure, timing, claims and CTA fixed, and select allowed variations. Produce complete videos together in Video Production. [Workflow details (Chinese)](docs/experiments.md).
 
 ### Full workflow recording: create a 15-second ad from scratch
 
@@ -30,7 +30,7 @@ This project uses a Huaxiaozhu ride-hailing campaign as its example workflow, fo
 
 Keep the brief, creative decisions, prompts, assets, reviews, and rendering results together in one project.
 
-- Create batches such as 3 directions × 4 versions, process a queue, retry individual items, and download multiple outputs.
+- Expand one creative and a shared script framework into multiple video versions, with independent rendering, retry and delivery.
 - Turn audience, scenario, selling points, and calls to action into editable concepts and storyboards.
 - Reference product facts and brand assets throughout the workflow.
 - Generate or import shots, add subtitles and audio, and assemble videos and covers.
@@ -45,10 +45,10 @@ Channel presets include Douyin, Tencent Ads, Kuaishou, and WeChat Channels. The 
 | --- | --- | --- |
 | 01 Brand and assets | Select or create brand data, assets, and shared rules | Five distinct input areas |
 | 02 Advertising brief | Define audience, scenario, channel, duration, and CTA | Structured brief |
-| 03 Creative concepts | Select multiple directions and versions | A batch of creative records |
-| 04 Storyboard | Plan each video's visuals, narration, and timing | Independent shot cards and progress |
+| 03 Creative concepts | Choose one idea from alternative candidates | One core creative |
+| 04 Storyboard | Define the base script, fixed elements and variation scope | Scripts for each video version |
 | 05 Automatic review | Combine brand and platform rules, repair and recheck | Rule sources, evidence, and missing inputs |
-| 06 Video delivery | Produce shots, inspect actual video/audio, and export | Video, cover, copy, and ZIP bundle |
+| 06 Video production | Produce shots, inspect actual video/audio, and export | Video, cover, copy, and ZIP bundle |
 
 <a id="features"></a>
 
@@ -56,11 +56,11 @@ Channel presets include Douyin, Tencent Ads, Kuaishou, and WeChat Channels. The 
 
 ### Batch production and optional material testing
 
-Maintain shared data within Brand and assets. Select directions and versions: each item keeps independent storyboards, reviews, clips, and videos. A serial queue retains completed work and continues past individual failures. Pausing retains remote jobs; resuming polls them without resubmitting. The screenshot shows 12 pending items, not 12 newly rendered videos.
+Maintain shared data within Brand and assets. Select one idea, finish its base script, and create up to 60 versions within an explicit variation scope. Existing scripts and videos remain intact. Prepare scripts and run reviews in their corresponding stages.
 
-Batch controls live in the project-level material drawer; stage pages focus on the current item. Once a video is ready, open material testing from delivery.
+Video Production displays one card per complete video, with preparation requirements, shot progress, previews, quality status and batch delivery. It processes reviewed scripts only, retains completed work, and continues past individual failures. Multiple variations do not imply a controlled single-variable experiment.
 
-![Project material drawer with status filters and batch actions](assets/screenshots/batch-production.png)
+![Same-creative video versions and batch production](assets/screenshots/batch-production.png)
 
 Material testing has four steps: select outputs, define the comparison, import data, and record findings. Compare complete concepts descriptively, or control the first/last shot while keeping other content and fixed clips identical. One baseline can start a controlled test before creating a variant. Screenshots contain no invented performance figures.
 
@@ -84,7 +84,7 @@ Specify the audience, scenario, objective, tone, duration, and CTA. Channel guid
 
 ### Compare creative directions before production
 
-Generate concepts and inspect hooks and facts, then select directions with 1–12 versions each, up to 60 items per project. Each version can have its own expression instructions. Variants do not automatically qualify as a controlled single-variable test.
+Generate candidates and inspect hooks and facts, then select one core idea. Define the base storyboard and create 2–60 video versions, including the base version, within the allowed variation scope. Adding versions preserves existing scripts and media. Versions do not automatically qualify as a controlled single-variable test.
 
 ![Creative concepts Agent with generation preferences and concept details](assets/screenshots/creative-directions.png)
 

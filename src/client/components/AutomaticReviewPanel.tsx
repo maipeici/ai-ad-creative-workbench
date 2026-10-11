@@ -64,7 +64,7 @@ export default function AutomaticReviewPanel({ project, meta, patch, runReview, 
             {(review.results || []).filter(result => result.status !== 'pass').map(renderResult)}
           </div>
           {!!review.results?.filter(result => result.status === 'pass').length && <details className="business-disclosure mt-4"><summary>{stale ? '上次通过' : '已通过'} {review.results.filter(result => result.status === 'pass').length} 项 · 查看依据</summary><div className="grid grid-cols-1 lg:grid-cols-2 gap-3">{review.results.filter(result => result.status === 'pass').map(renderResult)}</div></details>}
-          {passed && <p className="business-help mt-4">全部必查项通过，可以进入成片交付。</p>}
+          {passed && <p className="business-help mt-4">全部必查项通过，可以进入视频制作。</p>}
         </div>
       )}
     </Section>

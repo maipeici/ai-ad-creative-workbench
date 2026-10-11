@@ -45,7 +45,7 @@ export function reviewProjectFingerprint(project) {
   return hash({
     brandGuideId: project.brandGuideId, assets: project.assets, facts: project.facts,
     brief: project.brief, concept: project.concepts?.find(c => c.id === project.selectedConceptId),
-    storyboard, requirements: project.review?.requirements || DEFAULT_REVIEW_REQUIREMENTS,
+    storyboard, versionPlan: project.versionPlan, requirements: project.review?.requirements || DEFAULT_REVIEW_REQUIREMENTS,
   })
 }
 

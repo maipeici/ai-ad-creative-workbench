@@ -15,6 +15,7 @@ interface Props {
   onDelete?: () => void
   readOnly?: boolean
   contentOnly?: boolean
+  versionAllowed?: string[]
 }
 
 export default function ShotCard({
@@ -29,6 +30,7 @@ export default function ShotCard({
   onDelete,
   readOnly,
   contentOnly,
+  versionAllowed,
 }: Props) {
   const [local, setLocal] = useState<Shot>(shot)
   const [instruction, setInstruction] = useState('')
@@ -39,6 +41,13 @@ export default function ShotCard({
   useEffect(() => setLocal(shot), [shot])
 
   const bg = meta.brandGuide
+  const editable = (field: string) => {
+    if (readOnly) return false
+    if (!versionAllowed) return true
+    const groups: Record<string, string[]> = { casting: ['personRefs'], performance: ['action', 'actionCn', 'titleCn'], camera: ['cameraAngle', 'cameraMovement'], setting: ['sceneRefs'], wording: ['vo', 'subtitle'] }
+    if (shot.role === 'cta' && ['vo', 'subtitle'].includes(field)) return false
+    return ['prompt', 'negativePrompt', 'factRefs'].includes(field) || versionAllowed.some(key => groups[key]?.includes(field))
+  }
   const assetById = new Map(meta.assets.items.map((i) => [i.id, i]))
   const pool: AssetItem[] = selectedAssetIds.map((id) => assetById.get(id)).filter(Boolean) as AssetItem[]
   const personPool = pool.filter((a) => ['person', 'outfit'].includes(a.category))
@@ -47,7 +56,7 @@ export default function ShotCard({
   const uiPool = pool.filter((a) => ['productUI', 'brand', 'overlay'].includes(a.category))
 
   const commit = (patch: Partial<Shot>) => {
-    if (readOnly) return
+    if (readOnly || Object.keys(patch).some(field => !editable(field))) return
     setLocal((s) => ({ ...s, ...patch }))
     onChange(patch)
   }
@@ -88,7 +97,7 @@ export default function ShotCard({
         <input
           className="w-full bg-transparent text-xs font-semibold text-slate-100 focus:outline-none"
           value={local.titleCn}
-          disabled={readOnly}
+          disabled={!editable('titleCn')}
           onChange={(e) => setLocal({ ...local, titleCn: e.target.value })}
           onBlur={(e) => commit({ titleCn: e.target.value })}
         />
@@ -102,9 +111,9 @@ export default function ShotCard({
         )}
 
         {!advanced && <div className="shot-simple space-y-3">
-          <Mini label="画面内容"><textarea className="input" value={local.actionCn || ''} placeholder="用中文描述这一镜发生什么" disabled={readOnly} onChange={e => setLocal({ ...local, actionCn: e.target.value })} onBlur={e => commit({ actionCn: e.target.value })} /></Mini>
-          <Mini label="口播"><textarea className="input" value={local.vo} disabled={readOnly} onChange={e => setLocal({ ...local, vo: e.target.value })} onBlur={e => commit({ vo: e.target.value })} /></Mini>
-          <Mini label="字幕"><input className="input" value={local.subtitle} disabled={readOnly} onChange={e => setLocal({ ...local, subtitle: e.target.value })} onBlur={e => commit({ subtitle: e.target.value })} /></Mini>
+          <Mini label="画面内容"><textarea className="input" value={local.actionCn || ''} placeholder="用中文描述这一镜发生什么" disabled={!editable('actionCn')} onChange={e => setLocal({ ...local, actionCn: e.target.value })} onBlur={e => commit({ actionCn: e.target.value })} /></Mini>
+          <Mini label="口播"><textarea className="input" value={local.vo} disabled={!editable('vo')} onChange={e => setLocal({ ...local, vo: e.target.value })} onBlur={e => commit({ vo: e.target.value })} /></Mini>
+          <Mini label="字幕"><input className="input" value={local.subtitle} disabled={!editable('subtitle')} onChange={e => setLocal({ ...local, subtitle: e.target.value })} onBlur={e => commit({ subtitle: e.target.value })} /></Mini>
           <p>时长 {local.durationSec} 秒 · {local.factRefs?.length || 0} 条事实依据</p>
         </div>}
         <button className="text-link !text-xs" onClick={() => setAdvanced(!advanced)}>{advanced ? '收起高级制作设置' : '展开高级制作设置'}</button>
@@ -114,7 +123,7 @@ export default function ShotCard({
             <select
               className="input !py-1 !text-[11px]"
               value={local.role}
-              disabled={readOnly}
+              disabled={!editable('role')}
               onChange={(e) => commit({ role: e.target.value })}
             >
               {bg.shotRoles.map((r) => (
@@ -128,7 +137,7 @@ export default function ShotCard({
             <select
               className="input !py-1 !text-[11px]"
               value={local.renderMode}
-              disabled={readOnly}
+              disabled={!editable('renderMode')}
               onChange={(e) => commit({ renderMode: e.target.value as RenderMode })}
             >
               <option value="ai">AI 生成</option>
@@ -143,7 +152,7 @@ export default function ShotCard({
             <select
               className="input !py-1 !text-[11px]"
               value={local.cameraAngle}
-              disabled={readOnly}
+              disabled={!editable('cameraAngle')}
               onChange={(e) => commit({ cameraAngle: e.target.value })}
             >
               {[local.cameraAngle, ...bg.cameraStyle.defaultAngles.filter((a) => a !== local.cameraAngle)].map((a) => (
@@ -157,7 +166,7 @@ export default function ShotCard({
             <select
               className="input !py-1 !text-[11px]"
               value={local.cameraMovement}
-              disabled={readOnly}
+              disabled={!editable('cameraMovement')}
               onChange={(e) => commit({ cameraMovement: e.target.value })}
             >
               {[local.cameraMovement, ...bg.cameraStyle.defaultMovements.filter((a) => a !== local.cameraMovement)].map((a) => (
@@ -174,7 +183,7 @@ export default function ShotCard({
             className={`input !py-1 !text-[11px] h-12 resize-none ${voOver ? '!border-amber-700' : ''}`}
             placeholder="中文口播，无则留空"
             value={local.vo}
-            disabled={readOnly}
+            disabled={!editable('vo')}
             onChange={(e) => setLocal({ ...local, vo: e.target.value })}
             onBlur={(e) => commit({ vo: e.target.value })}
           />
@@ -185,7 +194,7 @@ export default function ShotCard({
             className="input !py-1 !text-[11px]"
             placeholder="后期烧录，100% 准确"
             value={local.subtitle}
-            disabled={readOnly}
+            disabled={!editable('subtitle')}
             onChange={(e) => setLocal({ ...local, subtitle: e.target.value })}
             onBlur={(e) => commit({ subtitle: e.target.value })}
           />
@@ -195,7 +204,7 @@ export default function ShotCard({
           <textarea
             className="input !py-1 !text-[11px] h-12 resize-none"
             value={local.action}
-            disabled={readOnly}
+            disabled={!editable('action')}
             onChange={(e) => setLocal({ ...local, action: e.target.value })}
             onBlur={(e) => commit({ action: e.target.value })}
           />
@@ -210,7 +219,7 @@ export default function ShotCard({
               step={0.5}
               className="input !py-1 !text-[11px]"
               value={local.durationSec}
-              disabled={readOnly}
+              disabled={!editable('durationSec')}
               onChange={(e) => commit({ durationSec: Number(e.target.value) })}
             />
           </Mini>
@@ -218,16 +227,16 @@ export default function ShotCard({
             <input
               className="input !py-1 !text-[11px]"
               value={local.sfx || ''}
-              disabled={readOnly}
+              disabled={!editable('sfx')}
               onChange={(e) => setLocal({ ...local, sfx: e.target.value })}
               onBlur={(e) => commit({ sfx: e.target.value })}
             />
           </Mini>
         </div>
 
-        <RefRow label="人物参考" pool={personPool} selected={local.personRefs} onToggle={(id) => toggleRef('personRefs', id)} disabled={readOnly} />
-        <RefRow label="车辆参考" pool={vehiclePool} selected={local.vehicleRefs} onToggle={(id) => toggleRef('vehicleRefs', id)} disabled={readOnly} />
-        <RefRow label="场景参考" pool={scenePool} selected={local.sceneRefs} onToggle={(id) => toggleRef('sceneRefs', id)} disabled={readOnly} />
+        <RefRow label="人物参考" pool={personPool} selected={local.personRefs} onToggle={(id) => toggleRef('personRefs', id)} disabled={!editable('personRefs')} />
+        <RefRow label="车辆参考" pool={vehiclePool} selected={local.vehicleRefs} onToggle={(id) => toggleRef('vehicleRefs', id)} disabled={!editable('vehicleRefs')} />
+        <RefRow label="场景参考" pool={scenePool} selected={local.sceneRefs} onToggle={(id) => toggleRef('sceneRefs', id)} disabled={!editable('sceneRefs')} />
 
         <Mini label="叠加素材（界面 / Logo / 优惠卡）">
           <div className="flex flex-wrap gap-1">
@@ -238,7 +247,7 @@ export default function ShotCard({
               return (
                 <button
                   key={a.id}
-                  disabled={readOnly}
+                  disabled={!editable('uiRefs')}
                   className={`${on ? (ready ? 'chip-on' : 'chip-off !border-red-700 !text-red-300') : 'chip-off'} !text-[10px] !px-2 !py-0.5`}
                   onClick={() => toggleRef('uiRefs', a.id)}
                   title={ready ? '' : '官方素材未上传'}
@@ -261,7 +270,7 @@ export default function ShotCard({
               return (
                 <button
                   key={id}
-                  disabled={readOnly}
+                  disabled={!editable('factRefs')}
                   className={`${on ? 'chip-on' : 'chip-off'} !text-[10px] !px-2 !py-0.5 ${f.status !== 'confirmed' ? '!text-amber-400' : ''}`}
                   onClick={() => toggleRef('factRefs', id)}
                 >
@@ -297,7 +306,7 @@ export default function ShotCard({
               <textarea
                 className="input !text-[10px] h-24 resize-none font-mono leading-relaxed"
                 value={local.prompt}
-                disabled={readOnly}
+                disabled={!editable('prompt')}
                 onChange={(e) => setLocal({ ...local, prompt: e.target.value })}
                 onBlur={(e) => commit({ prompt: e.target.value })}
               />
@@ -309,7 +318,7 @@ export default function ShotCard({
               <textarea
                 className="input !text-[10px] h-12 resize-none font-mono"
                 value={local.negativePrompt}
-                disabled={readOnly}
+                disabled={!editable('negativePrompt')}
                 onChange={(e) => setLocal({ ...local, negativePrompt: e.target.value })}
                 onBlur={(e) => commit({ negativePrompt: e.target.value })}
               />

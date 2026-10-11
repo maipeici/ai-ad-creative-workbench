@@ -2,6 +2,7 @@ import express from 'express'
 import { registerBrandRoutes, listBrands } from './brand-routes.js'
 import { getPlatformPolicies, buildReviewPolicy, additionalRequirements } from './review-policy.js'
 import { registerBatchRoutes } from './batch-routes.js'
+import { constrainVersionStoryboard, versionPrompt } from './video-versions.js'
 import { registerInspirationRoutes } from './inspiration-routes.js'
 import { registerExperimentRoutes } from './experiment-routes.js'
 import { registerDeliveryRoutes } from './delivery-routes.js'
@@ -106,7 +107,7 @@ const PHASES = [
   { id: 3, key: 'concept', name: '广告创意' },
   { id: 4, key: 'storyboard', name: '分镜规划' },
   { id: 5, key: 'review', name: '自动审核' },
-  { id: 6, key: 'render', name: '成片交付' },
+  { id: 6, key: 'render', name: '视频制作' },
 ]
 
 function newProject(name) {
@@ -516,6 +517,7 @@ app.patch(
     if (changes.brandGuideId !== undefined) await getBrandGuide(changes.brandGuideId)
     if (changes.render) delete changes.render.qualityReview
     delete changes.reviewPolicy
+    if (Object.hasOwn(changes, 'versionPlan')) return res.status(400).json({ error: '请在分镜规划中建立视频版本' })
     for (const key of ['experimentLink', 'experiments', 'creatives', 'batch', 'batchId', 'batchJob', 'sharedSnapshot']) if (Object.hasOwn(changes, key)) return res.status(400).json({ error: '请使用实验工作区修改实验记录' })
     // Approval is computed by the review endpoint; clients only edit requirements and notes.
     if (Object.hasOwn(changes, 'review')) {
@@ -546,6 +548,7 @@ app.post(
   wrap(async (req, res) => {
     const { project, brandGuide, compliance, picked, assetLib, facts, channel } = await loadContext(req.params.id)
     const count = Number(req.body?.count || 3)
+    if (project.versionPlan) return res.status(409).json({ error: '本项目的核心创意已确定，请新建项目探索新的方向' })
     const userPreference = req.body?.userPreference || ''
     const avoid = req.body?.keepExisting ? (project.concepts || []).map((c) => c.title) : []
 
@@ -592,11 +595,13 @@ app.post(
     const { project, brandGuide, compliance, picked, assetLib, facts, channel } = await loadContext(req.params.id)
     const concept = selectedConcept(project)
     if (!concept) return res.status(400).json({ error: '请先在 Phase 3 选择一个创意方案' })
+    // Regenerating a preserved historical version explicitly adopts the new framework.
+    if (project.batchId && !project.versionPlan) project.versionPlan = (await getProject(project.batchId))?.versionPlan || null
 
     const options = {
-      shotCount: req.body?.shotCount ? Number(req.body.shotCount) : undefined,
+      shotCount: project.versionPlan?.template.shots.length || (req.body?.shotCount ? Number(req.body.shotCount) : undefined),
       shotDurationSec: req.body?.shotDurationSec ? Number(req.body.shotDurationSec) : undefined,
-      userPreference: req.body?.userPreference || project.creativeInstruction || '',
+      userPreference: [versionPrompt(project.versionPlan), project.creativeInstruction, req.body?.userPreference].filter(Boolean).join('\n\n'),
     }
 
     const messages = storyboardMessages({
@@ -635,7 +640,7 @@ app.post(
       approved: false,
     }))
 
-    project.storyboard = {
+    project.storyboard = constrainVersionStoryboard({
       globalContext: data.globalContext || {},
       shots,
       conceptId: concept.id,
@@ -643,7 +648,7 @@ app.post(
       inspiration: concept.inspiration ? structuredClone(concept.inspiration) : null,
       source,
       generatedAt: new Date().toISOString(),
-    }
+    }, project.versionPlan)
     project.review = { mode: 'automatic', status: 'idle', requirements: project.review?.requirements || [...DEFAULT_REVIEW_REQUIREMENTS], approved: false, approvedAt: null, checklist: {}, notes: project.review?.notes || '' }
     project.render = { ...project.render, shots: {}, finalVideo: null, cover: null }
     project.variants = []
@@ -678,7 +683,7 @@ app.post(
       globalContext: sb.globalContext,
       shot,
       neighbors,
-      instruction: req.body?.instruction || '',
+      instruction: [versionPrompt(project.versionPlan), req.body?.instruction || ''].filter(Boolean).join('\n\n'),
     })
     const { data, source, error } = await llmJson(messages, () =>
       mockShotRevision({ shot, instruction: req.body?.instruction }),
@@ -696,6 +701,7 @@ app.post(
       approved: false,
       regeneratedAt: new Date().toISOString(),
     }
+    project.storyboard = constrainVersionStoryboard(sb, project.versionPlan)
     await upsertProject(project)
     res.json({ project, source, error })
   }),

@@ -19,19 +19,25 @@ function filmed() {
   p.render = { shots: { s1: { url: '/media/first.mp4' }, s2: { url: '/media/fixed.mp4' } }, finalVideo: { url: '/media/final.mp4' } }
   return p
 }
-test('3 directions x 4 versions creates twelve independent creatives; old media remains first', () => {
-  const p = createBatch(fixture(), { conceptIds: ['one', 'two', 'three'], versionsPerConcept: 4 })
+test('one creative produces twelve versions, preserves old media and rejects mixed directions', () => {
+  const p = createBatch(filmed(), { versionCount: 12, hookStrategy: '人物痛点展示', allowedChanges: ['camera', 'performance'] })
   assert.equal(batchView(p).items.length, 12)
+  assert.equal(new Set(batchView(p).items.map(i => i.conceptId)).size, 1)
   p.creatives[0].review.approved = true
   assert.equal(p.creatives[1].review.approved, false)
   const old = filmed(); const video = structuredClone(old.render)
-  createBatch(old, { conceptIds: ['two'], versionsPerConcept: 2 })
+  createBatch(old, { versionCount: 3, hookStrategy: '人物痛点展示', allowedChanges: ['camera'] })
   assert.deepEqual(old.render, video)
   assert.equal(batchView(old).items.length, 3)
   assert.throws(() => createBatch(old, { conceptIds: ['missing'], versionsPerConcept: 2 }))
+  assert.throws(() => createBatch(old, { conceptIds: ['one', 'two'], versionCount: 4 }), /一条核心创意/)
+  createBatch(old, { versionCount: 3 })
+  assert.equal(old.creatives.length, 2, 'repeating the target count must not duplicate records')
+  createBatch(old, { versionCount: 5 })
+  assert.equal(old.creatives.length, 4)
 })
 test('creative projection shares brief while controlled variants can preserve their recorded conditions', () => {
-  const p = createBatch(fixture(), { conceptIds: ['one'], versionsPerConcept: 2 })
+  const p = createBatch(filmed(), { versionCount: 2, hookStrategy: '人物痛点展示', allowedChanges: ['camera'] })
   const item = p.creatives[0]
   assert.deepEqual(projectCreative(p, item).brief, p.brief)
   item.sharedSnapshot = { brief: { channel: 'old-channel' } }
@@ -54,7 +60,7 @@ test('production resumes an existing remote shot without resubmission, skips com
 test('review blocker prevents paid video submission and cancellation preserves current state', async () => {
   const p = filmed(); const calls = []
   await assert.rejects(runCreativePipeline(p.id, 'produce', { load: async () => p, invoke: async (_, action) => calls.push(action), progress: async () => {}, cancelled: () => false }), /审核未通过/)
-  assert.deepEqual(calls, ['review'])
+  assert.deepEqual(calls, [], 'production cannot silently rewrite or approve scripts')
   await assert.rejects(runCreativePipeline(p.id, 'review', { load: async () => p, invoke: async () => assert.fail('must not submit'), progress: async () => {}, cancelled: () => true }), /暂停/)
 })
 test('brand and platform rules are combined; missing platform coverage cannot be overridden by the model', async () => {
