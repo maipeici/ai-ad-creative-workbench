@@ -51,14 +51,14 @@ async function chat(messages) {
  * 保证工作流在任何环境下都能完整跑通。
  * 优先级：Vertex AI (Gemini) > OpenAI 兼容 > Mock
  */
-export async function llmJson(messages, mockFactory) {
+export async function llmJson(messages, mockFactory, options = {}) {
   const useVertex = config.vertex.enabled
   const useOpenai = config.llm.enabled
   if (!useVertex && !useOpenai) {
     return { data: mockFactory(), source: 'mock' }
   }
   try {
-    const raw = useVertex ? await geminiChat(messages) : await chat(messages)
+    const raw = useVertex ? await geminiChat(messages, options) : await chat(messages)
     return { data: extractJson(raw), source: useVertex ? 'gemini' : 'llm' }
   } catch (err) {
     console.error('[llm] 调用失败，回退 mock:', err.message)

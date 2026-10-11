@@ -21,7 +21,7 @@ function modelBase(location = config.vertex.location) {
 /* ----------------------------- Gemini LLM ----------------------------- */
 
 /** 把 OpenAI 风格 messages 转成 Gemini contents + systemInstruction */
-function toGeminiPayload(messages, { json = true } = {}) {
+function toGeminiPayload(messages, { json = true, responseSchema } = {}) {
   const system = messages
     .filter((m) => m.role === 'system')
     .map((m) => m.content)
@@ -40,6 +40,7 @@ function toGeminiPayload(messages, { json = true } = {}) {
       temperature: 0.9,
       maxOutputTokens: 16384,
       ...(json ? { responseMimeType: 'application/json' } : {}),
+      ...(responseSchema ? { responseSchema } : {}),
     },
     safetySettings: [
       'HARM_CATEGORY_HATE_SPEECH',
@@ -50,11 +51,11 @@ function toGeminiPayload(messages, { json = true } = {}) {
   }
 }
 
-export async function geminiChat(messages) {
+export async function geminiChat(messages, options = {}) {
   const { geminiModel, location } = config.vertex
   const data = await gcpFetch(`${modelBase(location)}/${geminiModel}:generateContent`, {
     method: 'POST',
-    body: JSON.stringify(toGeminiPayload(messages)),
+    body: JSON.stringify(toGeminiPayload(messages, options)),
   })
 
   const cand = data?.candidates?.[0]

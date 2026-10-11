@@ -1,3 +1,5 @@
+import type { InspirationAttribution, InspirationAnalysis } from './inspiration-types'
+
 export interface AssetItem {
   id: string
   category: string
@@ -146,6 +148,7 @@ export interface ComplianceHit {
 }
 
 export interface Concept {
+  inspiration?: InspirationAttribution
   id: string
   title: string
   coreIdea: string
@@ -276,6 +279,7 @@ export interface Variant {
 }
 
 export interface Project {
+  inspirationAnalyses?: Record<string, InspirationAnalysis>
   id: string
   name: string
   createdAt: string

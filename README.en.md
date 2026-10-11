@@ -18,6 +18,7 @@ Keep the brief, creative decisions, prompts, assets, reviews, and rendering resu
 - Turn audience, scenario, selling points, and calls to action into editable concepts and storyboards.
 - Reference product facts and brand assets throughout the workflow.
 - Generate or import shots, add subtitles and audio, and assemble videos and covers.
+- Import video references, analyze scripts, and reuse selected creative patterns with source attribution.
 - Prepare variants that change one creative dimension while documenting the hypothesis and affected shots.
 
 Channel presets include Douyin, Tencent Ads, Kuaishou, and WeChat Channels. The application supports **creative production**; it does not currently publish to advertising accounts, manage budgets, or import campaign performance.
@@ -54,6 +55,16 @@ Specify the audience, scenario, objective, tone, duration, and CTA. Channel guid
 Generate multiple concepts, inspect their hooks and supporting facts, refine a direction, and select it for storyboarding.
 
 ![Creative concepts and opening hooks](assets/screenshots/creative-directions.png)
+
+### Video references and script analysis
+
+Open Creative concepts → 爆款参考 to import video links, transcripts, and engagement snapshots, individually or through CSV / JSON. Filter by platform, industry, date, and keywords. A configured text model analyzes hooks, narrative structure, product presentation, and calls to action; selected suggestions create a new brand-specific concept with attribution while retaining existing work.
+
+Recommendations use imported data, not live platform rankings. Links are not scraped or downloaded. Clearly labeled examples contain no fabricated popularity metrics. Analysis and reuse require a working text model and do not silently fall back to Mock. See the [import and workflow guide (Chinese)](docs/inspiration.md).
+
+![Video reference library with platform filters, sources, and scripts](assets/screenshots/inspiration-library.jpg)
+
+![Model-generated script analysis and selectable reuse suggestions](assets/screenshots/inspiration-analysis.jpg)
 
 ### Editable shots and shared visual context
 

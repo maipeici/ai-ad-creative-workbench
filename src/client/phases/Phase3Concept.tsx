@@ -1,10 +1,14 @@
+import InspirationPanel from '../components/InspirationPanel'
+import '../styles/inspiration.css'
 import { useState } from 'react'
 import type { PhaseProps } from '../App'
 import { api } from '../api'
 import type { Concept } from '../types'
 import { Badge, EmptyHint, Field, IssueRow, RoleBadge, Section, Spinner } from '../ui'
 
-export default function Phase3Concept({ project, meta, patch, setProject, notify, goto }: PhaseProps) {
+export default function Phase3Concept(props: PhaseProps) {
+  const { project, meta, patch, setProject, notify, goto } = props
+  const [creativeTab, setCreativeTab] = useState<'concepts'|'references'>('concepts')
   const [loading, setLoading] = useState(false)
   const [pref, setPref] = useState('')
   const [count, setCount] = useState(3)
@@ -42,8 +46,12 @@ export default function Phase3Concept({ project, meta, patch, setProject, notify
   const audience = meta.brandGuide.audienceOptions.find((a) => a.id === project.brief.audience)
   const scene = meta.brandGuide.sceneOptions.find((s) => s.id === project.brief.scene)
 
+  const tabs = <div className="inspiration-mode" aria-label="广告创意工作区"><button className={creativeTab==='concepts'?'active':''} onClick={()=>setCreativeTab('concepts')}>创意方案</button><button className={creativeTab==='references'?'active':''} onClick={()=>setCreativeTab('references')}>爆款参考</button></div>
+  if (creativeTab === 'references') return <>{tabs}<InspirationPanel {...props} onApplied={()=>setCreativeTab('concepts')} /></>
   return (
     <>
+      {tabs}
+      <div className="concept-entry"><div><strong>从同行、同平台的热门内容中寻找创意</strong><p>导入视频参考，拆解脚本结构，把可迁移的方法应用到当前品牌。</p></div><button className="btn-ghost" onClick={()=>setCreativeTab('references')}>浏览爆款参考 →</button></div>
       <Section
         title="广告创意生成控制台"
         desc="AI 基于品牌规范、已确认事实、合规词库与投放需求生成多个创意方案。只有已确认的事实会被用于卖点表达。"
@@ -102,6 +110,7 @@ export default function Phase3Concept({ project, meta, patch, setProject, notify
               >
                 <div className="flex items-start gap-3">
                   <button
+                    aria-label={'选择创意：' + c.title}
                     onClick={() => patch({ selectedConceptId: c.id })}
                     className={`mt-0.5 w-4 h-4 rounded-full border-2 shrink-0 grid place-items-center ${
                       on ? 'border-brand bg-brand' : 'border-ink-500'
@@ -125,6 +134,7 @@ export default function Phase3Concept({ project, meta, patch, setProject, notify
                   </div>
                 </div>
 
+                {c.inspiration && <div className="inspiration-attribution"><strong>{c.inspiration.isDemo?'示例结构复用':'来源于参考视频'} · {c.inspiration.title}</strong><p>复用方法：{c.inspiration.summary}</p>{c.inspiration.sourceUrl && <a className="inspiration-link" href={c.inspiration.sourceUrl} target="_blank" rel="noopener noreferrer">查看原视频 ↗</a>}</div>}
                 {blockers.length > 0 && (
                   <div className="mt-3 space-y-1">
                     {blockers.map((h, i) => (

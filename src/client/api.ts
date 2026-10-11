@@ -1,3 +1,4 @@
+import type { InspirationReference, InspirationLibrary, InspirationAnalysis } from './inspiration-types'
 import type {
   AssetItem,
   AutoFixResult,
@@ -28,6 +29,12 @@ async function req<T>(url: string, init?: RequestInit): Promise<T> {
 const body = (v: unknown) => JSON.stringify(v ?? {})
 
 export const api = {
+  inspirations: (query: Record<string,string>) => req<InspirationLibrary>('/api/inspirations?' + new URLSearchParams(query)),
+  createInspiration: (data: Record<string,unknown>) => req<InspirationReference>('/api/inspirations', {method:'POST',body:body(data)}),
+  updateInspiration: (id:string, data:Record<string,unknown>) => req<InspirationReference>('/api/inspirations/'+id, {method:'PATCH',body:body(data)}),
+  importInspirations: (content:string,format:string) => req<{count:number;items:InspirationReference[]}>('/api/inspirations/import',{method:'POST',body:body({content,format})}),
+  analyzeInspiration: (id:string,referenceId:string) => req<{project:Project;analysis:InspirationAnalysis}>(`/api/projects/${id}/inspirations/${referenceId}/analyze`,{method:'POST'}),
+  applyInspiration: (id:string,referenceId:string,suggestionIds:string[]) => req<{project:Project}>(`/api/projects/${id}/inspirations/${referenceId}/apply`,{method:'POST',body:body({suggestionIds})}),
   meta: () => req<Meta>('/api/meta'),
 
   listProjects: () => req<ProjectSummary[]>('/api/projects'),

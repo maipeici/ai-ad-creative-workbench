@@ -1,4 +1,5 @@
 import express from 'express'
+import { registerInspirationRoutes } from './inspiration-routes.js'
 import cors from 'cors'
 import multer from 'multer'
 import fs from 'node:fs'
@@ -147,6 +148,8 @@ async function loadContext(projectId) {
 }
 
 const selectedConcept = (p) => p.concepts?.find((c) => c.id === p.selectedConceptId) || null
+
+registerInspirationRoutes(app, { wrap, loadContext })
 
 /* ------------------------------ Meta ------------------------------ */
 
