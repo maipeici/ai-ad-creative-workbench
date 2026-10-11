@@ -21,7 +21,7 @@ const STATUS_TEXT: Record<string, string> = {
   simulated: '已模拟',
 }
 
-export default function Phase6Render({ project, meta, patch, setProject, notify, goto }: PhaseProps) {
+export default function Phase6Render({ project, meta, patch, setProject, notify, goto, preview }: PhaseProps) {
   const sb = project.storyboard
   const [busyShot, setBusyShot] = useState<string | null>(null)
   const [batchRunning, setBatchRunning] = useState(false)
@@ -41,7 +41,7 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
   const pollingRef = useRef(false)
 
   useEffect(() => {
-    if (!runningKey) return
+    if (!runningKey || preview) return
     let cancelled = false
     const tick = async () => {
       if (pollingRef.current) return
@@ -72,10 +72,10 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
   const renders = project.render?.shots || {}
   const staleConcept = Boolean(sb.conceptId && sb.conceptId !== project.selectedConceptId)
   const approved = project.review?.approved && !staleConcept
-  const pendingShots = sb.shots.filter(s => s.renderMode !== 'asset' && !renders[s.id]?.url && !['running', 'manual'].includes(renders[s.id]?.status || ''))
-  const doneCount = sb.shots.filter((s) => renders[s.id]?.url).length
+  const pendingShots = sb.shots.filter(s => s.renderMode !== 'asset' && (!renders[s.id]?.url || renders[s.id]?.stale) && !['running', 'manual'].includes(renders[s.id]?.status || ''))
+  const doneCount = sb.shots.filter((s) => renders[s.id]?.url && !renders[s.id]?.stale).length
   const approvedCount = sb.shots.filter((s) => renders[s.id]?.approved).length
-  const needOverlay = sb.shots.filter((s) => s.renderMode === 'overlay' && renders[s.id]?.url && !renders[s.id]?.overlayApplied)
+  const needOverlay = sb.shots.filter((s) => s.renderMode === 'overlay' && !renders[s.id]?.stale && renders[s.id]?.url && !renders[s.id]?.overlayApplied)
 
   const renderShot = async (shotId: string) => {
     if (!approved || busyShot || batchRunning) return
@@ -184,7 +184,8 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
     <>
       <ReferenceGuidance reference={sb.inspiration} stage="video"/>
       {staleConcept&&<div className="inspiration-notice">当前创意已切换，已有视频保留。请回到分镜阶段生成新方案的分镜。<button className="btn-ghost" onClick={()=>goto(4)}>前往分镜 →</button></div>}
-      {!meta.ffmpeg && <div className="rounded-xl border border-amber-900/60 bg-amber-950/20 px-4 py-3 text-xs text-amber-200 leading-relaxed" role="status"><strong>视频合成待配置</strong><p className="mt-1 text-amber-200/70">本机尚未安装视频合成工具。已有成片可以播放和下载，新的字幕叠加与成片合成暂不可用。</p></div>}
+      {!preview && !meta.ffmpeg && <div className="rounded-xl border border-amber-900/60 bg-amber-950/20 px-4 py-3 text-xs text-amber-200 leading-relaxed" role="status"><strong>视频合成待配置</strong><p className="mt-1 text-amber-200/70">本机尚未安装视频合成工具。已有成片可以播放和下载，新的字幕叠加与成片合成暂不可用。</p></div>}
+      {Object.values(renders).some(render => render.stale) && <p className="foundation-notice">自动审核修复了部分分镜。对应旧镜头与成片保留供回看，请重新生成或回传标记为待更新的镜头，再合成新版。</p>}
       <Section
         title="生成设置"
         desc="选择口播音色，再生成待完成的镜头。字幕、品牌素材与配音会在合成时自动加入。"
@@ -259,6 +260,7 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
                       <span className="text-xs font-medium text-slate-200 truncate">{shot.titleCn}</span>
                       <Badge>{shot.durationSec}s</Badge>
                       {r && <Badge tone={STATUS_TONE[r.status] || 'slate'}>{STATUS_TEXT[r.status] || r.status}</Badge>}
+                      {r?.stale && <Badge tone="amber">分镜已更新 · 待重新制作</Badge>}
                       {r?.status === 'running' && <Spinner className="text-sky-400" />}
                       {r?.usedFirstFrame && <Badge tone="blue">图生视频</Badge>}
                       {r?.overlayApplied && <Badge tone="green">✓ 已叠加</Badge>}
@@ -299,7 +301,7 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
 
                     <div className="flex flex-wrap items-center gap-1.5 mt-2">
                       {shot.renderMode !== 'asset' && (
-                        <button className="btn-ghost !py-1 !text-[11px]" onClick={() => renderShot(shot.id)} disabled={!!busyShot || batchRunning || !approved || r?.status === 'running'}>
+                        <button className="btn-ghost !py-1 !text-[11px]" onClick={() => renderShot(shot.id)} disabled={!!busyShot || batchRunning || !approved || (r?.status === 'running' && !r?.stale)}>
                           {busyShot === shot.id ? <Spinner /> : r?.url ? '↻' : '▶'} {r?.url ? '重新生成' : '生成本镜'}
                         </button>
                       )}
@@ -327,7 +329,7 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
                         <>
                           <button
                             className={`btn ${r.approved ? 'btn-ghost' : 'btn-primary'} !py-1 !text-[11px]`}
-                            onClick={async () => setProject(await api.approveShotRender(project.id, shot.id, !r.approved))}
+                            disabled={r.stale} onClick={async () => setProject(await api.approveShotRender(project.id, shot.id, !r.approved))}
                           >
                             {r.approved ? '撤销通过' : '✓ 审核通过'}
                           </button>
@@ -347,6 +349,7 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
 
       <Section
         title="成片合成"
+        dataGuide="assembly"
         desc="按分镜顺序拼接通过审核的镜头，输出 1080x1920 成片并自动抽取封面。"
         right={
           <div className="flex gap-2">

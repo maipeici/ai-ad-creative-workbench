@@ -37,8 +37,8 @@ export default function Phase2Brief({ project, meta, patch, goto }: PhaseProps) 
         desc="明确这条素材「对谁说、在什么场景说、解决什么问题、用哪个有依据的卖点回应、希望用户做什么」。"
         right={dirty ? <Badge tone="amber">未保存</Badge> : <Badge tone="green">已保存</Badge>}
       >
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="space-y-4">
+        <div className="brief-fields">
+          <div className="brief-column">
             <Field label="投放渠道">
               <div className="flex flex-wrap gap-1.5">
                 {channels.map((c) => (
@@ -48,9 +48,9 @@ export default function Phase2Brief({ project, meta, patch, goto }: PhaseProps) 
                 ))}
               </div>
               {channel && (
-                <div className="mt-2 text-[10px] text-slate-500 bg-ink-900 border border-ink-600 rounded p-2.5 space-y-1 leading-relaxed">
+                <div className="brief-help brief-channel-notes">
                   <p>建议时长 {channel.recommendedDuration.join('–')}s · {channel.resolution}</p>
-                  <p className="text-amber-400">安全区：{channel.safeArea.note}</p>
+                  <p className="brief-warning">安全区：{channel.safeArea.note}</p>
                   <p>{channel.firstFrameRule}</p>
                   <p>{channel.audioRule}</p>
                 </div>
@@ -66,7 +66,7 @@ export default function Phase2Brief({ project, meta, patch, goto }: PhaseProps) 
                 ))}
               </div>
               {audience && (
-                <p className="mt-2 text-[10px] text-slate-500">
+                <p className="brief-help">
                   典型痛点：{audience.painPoints.join(' · ')}
                 </p>
               )}
@@ -80,7 +80,7 @@ export default function Phase2Brief({ project, meta, patch, goto }: PhaseProps) 
                   </button>
                 ))}
               </div>
-              {scene && <p className="mt-2 text-[10px] text-slate-600">{scene.prompt}</p>}
+              {scene && <p className="brief-help">{scene.prompt}</p>}
             </Field>
 
             <Field label="营销活动" hint="需与 Phase 1 已确认的活动事实对应">
@@ -91,7 +91,7 @@ export default function Phase2Brief({ project, meta, patch, goto }: PhaseProps) 
                 onChange={(e) => set('campaign', e.target.value)}
               />
               {confirmedCampaigns.length === 0 && (
-                <p className="mt-1.5 text-[10px] text-amber-400">
+                <p className="brief-help brief-warning">
                   当前没有已确认的活动事实，创意将只表达产品通用功能，不会出现任何优惠金额。
                 </p>
               )}
@@ -111,7 +111,7 @@ export default function Phase2Brief({ project, meta, patch, goto }: PhaseProps) 
             </Field>
           </div>
 
-          <div className="space-y-4">
+          <div className="brief-column">
             <Field label="核心卖点" hint="本条素材主打什么">
               <input
                 className="input"
@@ -160,7 +160,7 @@ export default function Phase2Brief({ project, meta, patch, goto }: PhaseProps) 
                   </button>
                 ))}
               </div>
-              {cta && <p className="mt-2 text-[10px] text-slate-500">文案：「{cta.text}」· 动作类型 {cta.action}</p>}
+              {cta && <p className="brief-help">文案：「{cta.text}」· 动作类型 {cta.action}</p>}
             </Field>
 
             <div className="grid grid-cols-2 gap-4">
@@ -208,8 +208,8 @@ export default function Phase2Brief({ project, meta, patch, goto }: PhaseProps) 
           </div>
         </div>
 
-        <div className="mt-6 pt-4 border-t border-ink-600 flex items-center justify-between gap-4">
-          <div className="text-[11px] text-slate-500 leading-relaxed">
+        <div className="brief-footer mt-6 pt-4 border-t border-ink-600 flex items-center justify-between gap-4">
+          <div className="brief-summary">
             <span className="text-slate-300">本条素材：</span>
             对「{audience?.name || '—'}」在「{scene?.name || '—'}」场景下说，
             用「{brief.sellingPoint || '—'}」回应，引导「{cta?.name || '—'}」

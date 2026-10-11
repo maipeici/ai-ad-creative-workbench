@@ -107,7 +107,7 @@ function toFfColor(hex, fallback = 'white') {
  *   ambientVolume  原始环境音音量（有口播时自动压低）
  *   logoFile       品牌角标文件，全程右上角小尺寸展示
  *   brandColor     品牌色，用于字幕描边与字幕底衬
- *   safeArea       { top, bottom } 安全区比例
+ *   safeArea       { top, bottom, left, right } 安全区比例
  *   durationSec    镜头时长，用于音频对齐
  */
 export async function applyOverlay({
@@ -142,6 +142,9 @@ export async function applyOverlay({
   // 画布基准尺寸：叠加位置按 1080x1920 计算，最终 concat 阶段统一缩放
   const CW = 1080
   const CH = 1920
+  const safeLeft = Math.round(CW * (safeArea?.left ?? 0.06))
+  const safeRight = Math.round(CW * (1 - (safeArea?.right ?? 0.08)))
+  const safeWidth = Math.max(1, safeRight - safeLeft)
   const topPad = Math.round(CH * ((safeArea?.top ?? 0.12) + 0.03))
   const subtitleTopPx = Math.round(CH * (1 - safeBottom - 0.015))
 
@@ -161,7 +164,7 @@ export async function applyOverlay({
   usableImages.forEach((img, i) => {
     inputs.push('-i', img.file)
     const inIdx = inputCount++
-    const w = Math.round(CW * (img.widthRatio || 0.3))
+    const w = Math.min(safeWidth, Math.round(CW * (img.widthRatio || 0.3)))
     const scaled = `ov${i}`
     // force_original_aspect_ratio=decrease 保证同时不超过 w 与 maxImgH
     filters.push(
@@ -169,13 +172,13 @@ export async function applyOverlay({
         `${img.opacity != null && img.opacity < 1 ? `,format=rgba,colorchannelmixer=aa=${img.opacity}` : ''}[${scaled}]`,
     )
 
-    let x = '(W-w)/2'
+    let x = `${safeLeft}+(${safeWidth}-w)/2`
     let y = `${topPad}+((${contentBottomPx}-${topPad}-h)/2)`
     const pos = img.position || 'center'
     if (pos.includes('top')) y = `${topPad}`
     if (pos.includes('bottom')) y = `${contentBottomPx}-h`
-    if (pos.includes('left')) x = `${Math.round(CW * 0.07)}`
-    if (pos.includes('right')) x = `${Math.round(CW * 0.93)}-w`
+    if (pos.includes('left')) x = `${safeLeft}`
+    if (pos.includes('right')) x = `${safeRight}-w`
 
     const out = `bg${i}`
     filters.push(`[${lastLabel}][${scaled}]overlay=${x}:${y}[${out}]`)
@@ -213,7 +216,7 @@ export async function applyOverlay({
       `[${inIdx}:v]scale=${Math.round(CW * 0.19)}:-1,format=rgba,colorchannelmixer=aa=0.82[wm]`,
     )
     filters.push(
-      `[${lastLabel}][wm]overlay=${Math.round(CW * 0.955)}-w:${Math.round(CH * ((safeArea?.top ?? 0.12) + 0.01))}[wmout]`,
+      `[${lastLabel}][wm]overlay=${safeRight}-w:${Math.round(CH * ((safeArea?.top ?? 0.12) + 0.01))}[wmout]`,
     )
     lastLabel = 'wmout'
   }
@@ -221,17 +224,18 @@ export async function applyOverlay({
   // 3) 字幕：深色底衬 + 品牌色描边白字，竖屏可读性优先
   if (subtitleLines.length) {
     // drawbox 只认 iw/ih，不能用 W/H，这里直接用像素值
-    filters.push(`[${lastLabel}]drawbox=x=0:y=${subBoxY}:w=iw:h=${subBlockH + 16}:color=black@0.42:t=fill[subbg]`)
+    filters.push(`[${lastLabel}]drawbox=x=${safeLeft}:y=${subBoxY}:w=${safeWidth}:h=${subBlockH + 16}:color=black@0.42:t=fill[subbg]`)
     lastLabel = 'subbg'
 
     subtitleLines.forEach((line, i) => {
       const yExpr = subBoxY + i * SUB_LINE_H + 10
       const out = `sub${i}`
+      const fontSize = Math.min(58, Math.max(12, Math.floor((safeWidth - 24) / Math.max(1, [...line].length))))
       filters.push(
         `[${lastLabel}]drawtext=fontfile='${escapePath(font)}':text='${escapeDrawtext(line)}'` +
-          `:fontsize=58:fontcolor=white:borderw=5:bordercolor=${toFfColor(brandColor)}@0.9` +
+          `:fontsize=${fontSize}:fontcolor=white:borderw=5:bordercolor=${toFfColor(brandColor)}@0.9` +
           `:shadowx=0:shadowy=3:shadowcolor=black@0.5` +
-          `:x=(w-text_w)/2:y=${yExpr}[${out}]`,
+          `:x=${safeLeft}+(${safeWidth}-text_w)/2:y=${yExpr}[${out}]`,
       )
       lastLabel = out
     })
@@ -251,7 +255,7 @@ export async function applyOverlay({
     audioIdx = inputCount++
   }
 
-  if (!hasVisualOverlay && !hasVo) {
+  if (!hasVisualOverlay && !hasVo && !durationSec) {
     await fsp.copyFile(inFile, outFile)
     return {
       outFile,

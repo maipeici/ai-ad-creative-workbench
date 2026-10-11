@@ -115,6 +115,15 @@ export interface BrandGuide {
   testVariableOptions: { id: string; name: string; desc: string }[]
 }
 
+export type VisualDesign = Pick<BrandGuide, 'format' | 'visualStyle' | 'cameraStyle' | 'lighting' | 'negativePromptLibrary'>
+export interface ReviewCheck { id: string; label: string; status: 'pass' | 'block' | 'needs-input'; evidence: string; suggestion: string }
+export interface AutomaticReview {
+  approved: boolean; approvedAt: string | null; checklist: Record<string, boolean>; notes: string
+  mode?: 'automatic'; status?: 'idle' | 'passed' | 'blocked' | 'needs-input' | 'stale'
+  requirements?: string[]; results?: ReviewCheck[]; checkedAt?: string; source?: string
+  report?: AutoFixResult['report']; ruleSummary?: ValidateSummary
+}
+
 export interface Brief {
   channel: string
   audience: string
@@ -227,6 +236,7 @@ export interface Storyboard {
 }
 
 export interface ShotRender {
+  stale?: boolean
   status: 'succeeded' | 'running' | 'failed' | 'manual' | 'simulated'
   url?: string
   rawUrl?: string
@@ -294,7 +304,7 @@ export interface Project {
   concepts: Concept[]
   selectedConceptId: string | null
   storyboard: Storyboard | null
-  review: { approved: boolean; approvedAt: string | null; checklist: Record<string, boolean>; notes: string }
+  review: AutomaticReview
   render: {
     model: string
     params: Record<string, unknown>
@@ -401,6 +411,8 @@ export interface ImpactResult {
 export interface Meta {
   phases: { id: number; key: string; name: string }[]
   brandGuide: BrandGuide
+  visualDesign: VisualDesign
+  reviewChecklist: string[]
   assets: AssetLib
   facts: FactLib
   channels: Channel[]

@@ -3,12 +3,12 @@ import type { Meta, ProjectSummary } from '../types'
 import Icon from './Icon'
 
 export const PHASES = [
-  { id: 1, name: '品牌与素材', desc: '选定品牌规范、素材和产品事实', icon: 'book' },
+  { id: 1, name: '创作基础', desc: '品牌、活动、素材、视觉与合规各归其位', icon: 'book' },
   { id: 2, name: '投放需求', desc: '明确受众、场景、目标与渠道', icon: 'settings' },
   { id: 3, name: '广告创意', desc: '选择有共鸣的创意与开场钩子', icon: 'spark' },
   { id: 4, name: '分镜规划', desc: '编排画面、口播和字幕', icon: 'layers' },
-  { id: 5, name: '人工审核', desc: '检查事实、合规与镜头一致性', icon: 'check' },
-  { id: 6, name: '生成与合成', desc: '生成镜头、合成成片与测试变体', icon: 'movie' },
+  { id: 5, name: '自动审核', desc: '按清单自动校验、修复并复检', icon: 'check' },
+  { id: 6, name: '成片制作', desc: '生成镜头、合成成片与测试变体', icon: 'movie' },
 ]
 
 export function projectStatus(p: ProjectSummary) {
@@ -21,13 +21,14 @@ export function formatDate(value: string) {
   return new Date(value).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })
 }
 
-export default function Dashboard({ projects, meta, lastId, busy, onOpen, onCreate }: {
+export default function Dashboard({ projects, meta, lastId, busy, onOpen, onCreate, onGuide }: {
   projects: ProjectSummary[]
   meta: Meta
   lastId?: string
   busy: boolean
   onOpen: (id: string, phase?: number) => void
   onCreate: () => void
+  onGuide?: () => void
 }) {
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
@@ -41,7 +42,7 @@ export default function Dashboard({ projects, meta, lastId, busy, onOpen, onCrea
   const metrics = [
     { label: '素材项目', value: projects.length, detail: '全部创作项目', icon: 'grid', color: 'pink' },
     { label: '已有成片', value: finished, detail: '可预览与下载', icon: 'movie', color: 'green' },
-    { label: '待审核项目', value: projects.filter(p => p.phase >= 5 && !p.approved && !p.finalVideo).length, detail: '进入生成前确认', icon: 'check', color: 'amber' },
+    { label: '待审核项目', value: projects.filter(p => p.phase >= 5 && !p.approved && !p.finalVideo).length, detail: '生成前自动检查', icon: 'check', color: 'amber' },
     { label: '规划镜头', value: projects.reduce((n, p) => n + p.shotCount, 0), detail: '已保存的分镜', icon: 'layers', color: 'blue' },
   ]
 
@@ -54,6 +55,7 @@ export default function Dashboard({ projects, meta, lastId, busy, onOpen, onCrea
           <p>从投放需求到成片，让品牌、创意和制作在一个工作台里有序协作。</p>
           <div className="flex flex-wrap items-center gap-3 mt-6">
             <button className="btn-primary" onClick={onCreate} disabled={busy}><Icon name="plus" /> 新建素材项目</button>
+            {onGuide && <button className="guide-entry hero-guide" onClick={onGuide}><Icon name="play" width="15" />90 秒了解流程</button>}
             {resume && <button className="hero-resume" onClick={() => onOpen(resume.id)} disabled={busy}>继续上次创作 <Icon name="arrow" width="16" /></button>}
           </div>
         </div>
@@ -110,7 +112,7 @@ export default function Dashboard({ projects, meta, lastId, busy, onOpen, onCrea
               <h3>{latestFilm.name}</h3><div className="flex items-center justify-between gap-3"><span className="text-xs text-slate-500">{latestFilm.shotCount} 个镜头 · {latestFilm.durationSec || '—'} 秒</span><button className="text-link" onClick={() => onOpen(latestFilm.id, 6)} disabled={busy}>查看作品 <Icon name="arrow" width="14" /></button></div>
             </> : <div className="film-empty"><Icon name="movie" width="32" height="32" /><p>你的第一条广告，即将从这里诞生。</p></div>}
           </section>
-          <div className="studio-note"><Icon name="check" width="18" /><div><strong>好创意，也要有依据</strong><p>产品事实绑定、文案合规检查与人工审核，贯穿每一次创作。</p></div></div>
+          <div className="studio-note"><Icon name="check" width="18" /><div><strong>好创意，也要有依据</strong><p>产品事实绑定、文案合规检查与自动审核，贯穿每一次创作。</p></div></div>
         </aside>
       </div>
       <section className="journey-panel">

@@ -57,7 +57,7 @@ export default function Phase3Concept(props: PhaseProps) {
       {tabs}
       <div className="concept-entry"><div><strong>用一条参考视频，开启完整创作</strong><p>上传视频 → 自动拆解爆款点 → 导入当前方案 → 生成参考分镜与视频。</p></div><button className="btn-ghost" onClick={()=>setCreativeTab('references')}>导入爆款视频 →</button></div>
       <Section
-        title="广告创意生成控制台"
+        title="广告创意 Agent"
         desc="AI 基于品牌规范、已确认事实、合规词库与投放需求生成多个创意方案。只有已确认的事实会被用于卖点表达。"
         right={<Badge tone={selected ? 'green' : 'amber'}>{selected ? '已选定方案' : '未选定'}</Badge>}
       >

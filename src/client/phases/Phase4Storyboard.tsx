@@ -6,7 +6,7 @@ import { Badge, EmptyHint, Field, IssueRow, Section, Spinner } from '../ui'
 import ShotCard from '../components/ShotCard'
 import ReferenceGuidance from '../components/ReferenceGuidance'
 
-export default function Phase4Storyboard({ project, meta, patch, setProject, notify, goto }: PhaseProps) {
+export default function Phase4Storyboard({ project, meta, patch, setProject, notify, goto, preview }: PhaseProps) {
   const [loading, setLoading] = useState(false)
   const [shotCount, setShotCount] = useState<number | ''>('')
   const [shotDuration, setShotDuration] = useState<number | ''>('')
@@ -42,7 +42,7 @@ export default function Phase4Storyboard({ project, meta, patch, setProject, not
   const target = concept?.durationSec || project.brief.durationSec
 
   const revalidate = async () => {
-    if (!sb) return
+    if (!sb || preview) return
     try {
       setValidation(await api.validate(project.id))
     } catch {
@@ -119,7 +119,7 @@ export default function Phase4Storyboard({ project, meta, patch, setProject, not
       <ReferenceGuidance reference={concept?.inspiration} stage="storyboard"/>
       {sb?.conceptId&&sb.conceptId!==concept?.id&&<p className="inspiration-notice" role="status">当前已选新的创意方案。下方仍是原方案的分镜与素材，请点击“重新生成全部”后继续制作。</p>}
       <Section
-        title="分镜生成控制台"
+        title="分镜规划 Agent"
         desc="AI 先产出全局分镜上下文（人物 / 车辆 / 场景 / 视觉锁定描述），再基于它拆分连续镜头，并自动标注哪些镜头需要后期叠加。"
         right={concept ? <Badge tone="brand">{concept.title}</Badge> : <Badge tone="red">未选创意</Badge>}
       >
@@ -292,7 +292,7 @@ export default function Phase4Storyboard({ project, meta, patch, setProject, not
 
             <div className="mt-6 flex justify-end">
               <button className="btn-primary" onClick={() => goto(5)}>
-                下一步：进入人工审核 →
+                下一步：进入自动审核 →
               </button>
             </div>
           </Section>

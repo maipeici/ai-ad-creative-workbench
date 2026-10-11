@@ -4,9 +4,21 @@
 
 **An AI workspace for turning advertising briefs into creative concepts, storyboards, reviewed shots, and finished vertical videos.**
 
+### Full workflow recording: create a 15-second ad from scratch
+
+Follow one project in about 3 minutes: **facts and assets → brief → concepts → storyboard → automatic review and repairs → video generation → narration and assembly → playback and download**. Chinese step explanations and click indicators accompany the actual interactions.
+
+https://github.com/user-attachments/assets/ea7da458-9990-423d-b896-ad58b3098b28
+
+[Download the recording (MP4, about 7.3 MB)](assets/demos/workbench-workflow.mp4) · [Steps and chapters](docs/walkthrough.md) · [Watch the resulting 15-second ad](assets/demos/workflow-result.mp4)
+
+> Recorded from a new project with actual model calls for concepts, storyboards, first frames, and video shots. It includes corrections and rechecks after review findings. Model and download waits are shortened. The interface recording uses text explanations; the ending includes the generated ad with its original audio. This demonstrates the workflow; generated visuals and asset versions still need review before an actual campaign.
+
+The home-screen **“90 秒了解流程”** button and the top-bar **“操作指南”** also provide a replayable 12-step bubble tour. That separate tour uses an isolated example without editing saved projects or calling models. [Tour guide](docs/guide.md).
+
 ![Workbench home with project progress and a recent finished video](assets/screenshots/workbench-home.png)
 
-This project uses a Huaxiaozhu ride-hailing campaign as its example workflow, focusing on 10–20 second vertical ads. Screenshots come from the running application. Local projects, uploaded files, and generated videos are excluded from Git; a fresh installation starts with no projects.
+This project uses a Huaxiaozhu ride-hailing campaign as its example workflow, focusing on 10–20 second vertical ads. Screenshots come from the running application. Local projects, uploaded files, and generated videos are excluded from Git. The repository includes the workflow recording, its resulting demo ad, a fixed tour example, and a compressed historical sample ad; a fresh installation still starts with no saved projects.
 
 [Features](#features) · [Quick start](#quick-start) · [Configuration](#configuration) · [Deployment](#deployment) · [Project structure](#project-structure)
 
@@ -27,22 +39,24 @@ Channel presets include Douyin, Tencent Ads, Kuaishou, and WeChat Channels. The 
 
 | Stage | Purpose | Output |
 | --- | --- | --- |
-| 01 Brand and assets | Select brand guidance, references, and confirmed facts | Production inputs |
+| 01 Creative foundation | Organize brand identity, campaigns, assets, visual design, and compliance | Five distinct input areas |
 | 02 Advertising brief | Define audience, scenario, channel, duration, and CTA | Structured brief |
 | 03 Creative concepts | Compare directions and opening hooks | Selected concept |
 | 04 Storyboard | Plan visuals, narration, subtitles, and timing | Editable shot cards |
-| 05 Review | Run checks and complete a human review | Issues and approval state |
-| 06 Generate and assemble | Produce shots, assemble the video, and prepare variants | Video, cover, and creative package |
+| 05 Automatic review | Check a project checklist, repair eligible issues, and recheck | Evidence, changes, and missing inputs |
+| 06 Video production | Produce shots, assemble the video, and prepare variants | Video, cover, and creative package |
 
 <a id="features"></a>
 
 ## Features and real screens
 
-### Shared brand, asset, and product context
+### Five clear areas for creative inputs
 
-Use brand guidance across the workflow. Organize reference materials and distinguish pending product facts from confirmed information. Coupon and CTA cards can be rendered programmatically.
+Separate brand positioning, colors, logos, and selling points from campaign benefits and eligibility. Keep existing material categories in the asset library. Visual design contains style, camera, lighting, and production presets. Compliance boundaries bring wording and material rules together. Shared libraries retain project-specific selections.
 
-![Brand guidance and creative inputs](assets/screenshots/brand-assets.png)
+![Brand identity and five foundation areas](assets/screenshots/brand-assets.png)
+
+![Visual style, camera and lighting presets](assets/screenshots/visual-design.png)
 
 ### A structured advertising brief
 
@@ -54,7 +68,7 @@ Specify the audience, scenario, objective, tone, duration, and CTA. Channel guid
 
 Generate multiple concepts, inspect their hooks and supporting facts, refine a direction, and select it for storyboarding.
 
-![Creative concepts and opening hooks](assets/screenshots/creative-directions.png)
+![Creative concepts Agent with generation preferences and concept details](assets/screenshots/creative-directions.png)
 
 ### Video references and script analysis
 
@@ -76,7 +90,7 @@ Direct video analysis requires Vertex Gemini; text-only analysis also supports t
 
 Record character, vehicle, scene, and style descriptions once, then manage individual shots. Each card includes its role, prompt, voiceover, subtitle, duration, and asset references.
 
-![Shot cards with previews, narration, and subtitles](assets/screenshots/storyboard.png)
+![Storyboard Agent with generation requirements and shared visual context](assets/screenshots/storyboard.png)
 
 | Rendering mode | Use |
 | --- | --- |
@@ -86,17 +100,17 @@ Record character, vehicle, scene, and style descriptions once, then manage indiv
 
 Reference images and shared descriptions help guide consistency; outputs still need visual review.
 
-### Automated checks followed by human review
+### Checklist-based automatic review and repair
 
-Check fact references, wording, available assets, rendering choices, and narration length. Review blocking issues and warnings before completing the human checklist. Rules support review; maintainers still need to keep facts and requirements current.
+Save 1–30 requirements per project. A rule engine checks facts, wording, assets, rendering choices, and narration length. The agent evaluates each requirement and may apply one bounded round of text repairs followed by a fresh review. Approval requires zero rule blockers and a complete passing checklist. Missing credentials, model failures, and incomplete evidence never produce automatic approval. Changes to inputs invalidate previous results; campaign information is rechecked on a new day. This stage reviews pre-generation storyboards and references, not rendered video pixels.
 
-![Automated checks and the human review checklist](assets/screenshots/review.png)
+![Automatic review Agent with a project checklist and repair workflow](assets/screenshots/review.png)
 
 ### Video assembly, export, and creative variants
 
 Generate, import, or retry individual shots. With FFmpeg configured, combine footage, subtitles, brand assets, and voiceover into a 1080 × 1920 video and extract a cover image. Prepare variants around one creative dimension and record the changed and reused shots.
 
-![Finished video, cover download, and creative variant controls](assets/screenshots/render-export.png)
+![Video production with shot previews, finished video, and cover download](assets/screenshots/render-export.png)
 
 The creative package download is a **JSON file**, containing the brief, concept, fact references, shared context, shot prompts, and variant information. Download video and cover files through their separate controls.
 
@@ -233,6 +247,8 @@ src/
   server/                 API, model providers, validation, storage
 assets/
   public/brand/           UI icons and logos
+  public/demo/            Compressed sample ad for the tour
+  demos/                  README walkthrough video and cover
   screenshots/            Product screenshots
 config/
   business/               Brand, channel, and validation rules

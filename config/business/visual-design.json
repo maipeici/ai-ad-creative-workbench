@@ -1,0 +1,137 @@
+{
+  "format": {
+    "aspectRatio": "9:16",
+    "resolution": "1080x1920",
+    "fps": 30,
+    "durationRange": [
+      10,
+      20
+    ],
+    "defaultDuration": 15
+  },
+  "visualStyle": {
+    "label": "真实生活感出行场景",
+    "promptFragments": [
+      "photorealistic real life footage",
+      "natural documentary style",
+      "shot on smartphone or mirrorless camera",
+      "authentic everyday Chinese urban setting",
+      "natural skin texture and real clothing fabric",
+      "shallow depth of field",
+      "true to life color grading"
+    ],
+    "description": "画面必须像真实拍摄的生活片段，贴近目标用户日常出行体验；不得呈现广告棚拍的过度修饰感，也不得出现插画、动漫、3D 渲染风格。"
+  },
+  "cameraStyle": {
+    "label": "生活化手持视角",
+    "defaultAngles": [
+      "eye-level medium shot",
+      "close-up on face",
+      "over-the-shoulder phone screen shot",
+      "low angle from curb",
+      "interior car passenger seat view",
+      "wide establishing shot",
+      "first person POV holding phone",
+      "waist-level following shot"
+    ],
+    "defaultMovements": [
+      "handheld follow",
+      "static lock-off",
+      "slow push in",
+      "slow pull out",
+      "pan to reveal",
+      "quick cut",
+      "tilt up to reveal"
+    ],
+    "promptFragments": [
+      "handheld camera with subtle natural shake",
+      "vertical 9:16 framing with subject centered",
+      "eye-level relatable perspective"
+    ]
+  },
+  "lighting": {
+    "presets": [
+      {
+        "id": "morning-commute",
+        "name": "清晨通勤",
+        "prompt": "early morning natural light, soft cool tone, long shadows, city waking up"
+      },
+      {
+        "id": "overcast-day",
+        "name": "阴天日常",
+        "prompt": "soft overcast daylight, even diffused light, neutral tone"
+      },
+      {
+        "id": "evening-rush",
+        "name": "傍晚下班",
+        "prompt": "golden hour evening light, warm tone, busy street atmosphere"
+      },
+      {
+        "id": "night-street",
+        "name": "夜晚街道",
+        "prompt": "night street lighting, shop signs and street lamps, warm practical lights, clean not gloomy"
+      },
+      {
+        "id": "rainy-day",
+        "name": "雨天出行",
+        "prompt": "rainy weather, wet pavement reflections, overcast soft light, umbrellas"
+      },
+      {
+        "id": "indoor-mall",
+        "name": "室内商场",
+        "prompt": "bright indoor mall lighting, clean commercial interior"
+      }
+    ],
+    "default": "evening-rush"
+  },
+  "negativePromptLibrary": {
+    "identity": [
+      "inconsistent character identity",
+      "face changing between shots",
+      "deformed face",
+      "distorted facial features",
+      "extra fingers",
+      "missing fingers",
+      "extra limbs",
+      "melted hands",
+      "wrong outfit",
+      "changing clothing color",
+      "celebrity likeness"
+    ],
+    "vehicle": [
+      "changing car color",
+      "changing car model",
+      "distorted car body",
+      "floating car",
+      "wrong steering wheel side",
+      "readable license plate",
+      "competitor car branding",
+      "damaged vehicle",
+      "luxury supercar"
+    ],
+    "style": [
+      "anime",
+      "cartoon",
+      "3d render",
+      "illustration",
+      "cgi look",
+      "stylized art",
+      "oil painting",
+      "overproduced studio commercial look",
+      "heavy beauty retouching",
+      "plastic skin"
+    ],
+    "quality": [
+      "blurry",
+      "low resolution",
+      "jpeg artifacts",
+      "oversaturated",
+      "flickering",
+      "morphing background",
+      "warped geometry",
+      "duplicated person",
+      "unnatural motion",
+      "jittery limbs"
+    ]
+  }
+}

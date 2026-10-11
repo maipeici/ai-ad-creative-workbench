@@ -4,6 +4,7 @@ import type { Meta, Project, ProjectSummary } from './types'
 import { Badge, Modal, Spinner, Toast } from './ui'
 import Dashboard, { PHASES, formatDate, projectStatus } from './components/Dashboard'
 import Icon from './components/Icon'
+import GuidedTour from './components/GuidedTour'
 import Phase1 from './phases/Phase1Foundation'
 import Phase2 from './phases/Phase2Brief'
 import Phase3 from './phases/Phase3Concept'
@@ -12,6 +13,8 @@ import Phase5 from './phases/Phase5Review'
 import Phase6 from './phases/Phase6Render'
 
 export interface PhaseProps {
+  preview?: boolean
+  foundationTab?: string
   project: Project
   meta: Meta
   patch: (p: Record<string, unknown>) => Promise<void>
@@ -43,6 +46,7 @@ export default function App() {
   const [newName, setNewName] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<ProjectSummary | null>(null)
   const [showSettings, setShowSettings] = useState(false)
+  const [showGuide, setShowGuide] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [sidebarSearch, setSidebarSearch] = useState('')
   const toastTimer = useRef<ReturnType<typeof setTimeout>>()
@@ -55,7 +59,10 @@ export default function App() {
     toastTimer.current = setTimeout(() => setToast(null), 4200)
   }, [])
   useEffect(() => () => clearTimeout(toastTimer.current), [])
-  const reloadMeta = useCallback(async () => setMeta(await api.meta()), [])
+  const reloadMeta = useCallback(async () => {
+    setMeta(await api.meta())
+    if (project?.id) { const fresh = await api.getProject(project.id); setProject(current => current?.id === fresh.id ? fresh : current) }
+  }, [project?.id])
   const reloadProjects = useCallback(async () => setProjects(await api.listProjects()), [])
   const load = useCallback(async () => {
     setLoading(true)
@@ -104,7 +111,7 @@ export default function App() {
       remember(p.id)
       setShowCreate(false)
       await reloadProjects()
-      notify('项目已创建，从品牌与素材开始吧')
+      notify('项目已创建，从创作基础开始吧')
     } catch (e: any) { notify(e.message, 'error') }
     finally { setBusy(false) }
   }
@@ -201,9 +208,9 @@ export default function App() {
       <header className="studio-topbar">
         <button className="mobile-menu icon-button" aria-label="展开导航" onClick={() => setMenuOpen(true)}><Icon name="menu" /></button>
         <div className="topbar-breadcrumb"><span>创意空间</span><Icon name="chevron" width="13" /><strong>{view === 'overview' ? '工作台概览' : currentPhase.name}</strong>{busy && <Spinner />}</div>
-        <div className="ml-auto flex items-center gap-3"><button className={'environment-button ' + (configured && meta.ffmpeg ? 'configured' : '')} onClick={() => setShowSettings(true)}><span className="status-dot" />{!meta.ffmpeg ? '合成待配置' : configured ? '模型已配置' : meta.videoMode === 'manual' ? '手动制作模式' : '演示模式'}<Icon name="settings" width="14" /></button><span className="topbar-avatar">花</span></div>
+        <div className="ml-auto flex items-center gap-3"><button className="guide-entry" onClick={() => setShowGuide(true)}><Icon name="book" width="15" />操作指南</button><button className={'environment-button ' + (configured && meta.ffmpeg ? 'configured' : '')} onClick={() => setShowSettings(true)}><span className="status-dot" />{!meta.ffmpeg ? '合成待配置' : configured ? '模型已配置' : meta.videoMode === 'manual' ? '手动制作模式' : '演示模式'}<Icon name="settings" width="14" /></button><span className="topbar-avatar">花</span></div>
       </header>
-      {view === 'overview' || !project ? <div className="studio-scroll"><Dashboard projects={projects} meta={meta} lastId={project?.id} busy={busy} onOpen={openProject} onCreate={prepareCreate} /></div> :
+      {view === 'overview' || !project ? <div className="studio-scroll"><Dashboard projects={projects} meta={meta} lastId={project?.id} busy={busy} onOpen={openProject} onCreate={prepareCreate} onGuide={() => setShowGuide(true)} /></div> :
         <div className="project-workspace">
           <div className="workspace-heading">
             <button className="text-link mb-3" onClick={showOverview}>← 返回项目总览</button>
@@ -231,9 +238,9 @@ export default function App() {
     </div>
     <Modal open={showCreate} title="开启一个新的广告创意" onClose={() => !busy && setShowCreate(false)}>
       <form onSubmit={e => { e.preventDefault(); void createProject() }} className="space-y-5">
-        <p className="text-sm text-slate-400 leading-relaxed">为素材项目起个名字。接下来，我们会从品牌与素材开始，逐步完成投放需求、创意、分镜与成片。</p>
+        <p className="text-sm text-slate-400 leading-relaxed">为素材项目起个名字。接下来，我们会从创作基础开始，逐步完成投放需求、创意、分镜与成片。</p>
         <div><label className="label" htmlFor="new-project-name">项目名称</label><input id="new-project-name" className="input" value={newName} onChange={e => setNewName(e.target.value)} placeholder="例如：晚高峰通勤 · 抖音 15 秒广告" required maxLength={100} /></div>
-        <div className="creation-steps">{['品牌素材', '投放需求', '创意分镜', '审核成片'].map((label, i) => <span key={label}><small>{i + 1}</small>{label}</span>)}</div>
+        <div className="creation-steps">{['创作基础', '投放需求', '创意分镜', '审核成片'].map((label, i) => <span key={label}><small>{i + 1}</small>{label}</span>)}</div>
         <div className="flex justify-end gap-2 pt-2"><button type="button" className="btn-ghost" onClick={() => setShowCreate(false)} disabled={busy}>取消</button><button type="submit" className="btn-primary" disabled={busy || !newName.trim()}>{busy ? <Spinner /> : <Icon name="plus" width="16" />}创建项目</button></div>
       </form>
     </Modal>
@@ -254,5 +261,6 @@ export default function App() {
       <div className="flex justify-end mt-5"><button className="btn-ghost" onClick={async () => { try { await reloadMeta(); notify('运行状态已刷新') } catch (e: any) { notify(e.message, 'error') } }}><Icon name="retry" width="15" />刷新状态</button></div>
     </Modal>
     <Toast msg={toast?.msg || null} tone={toast?.tone} />
+    {showGuide && <GuidedTour meta={meta} onClose={() => setShowGuide(false)} />}
   </div>
 }

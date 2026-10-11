@@ -1,6 +1,8 @@
 import type { SVGProps } from 'react'
 
 const paths: Record<string, string> = {
+  play: 'M8 4l12 8-12 8z',
+  pause: 'M8 4v16 M16 4v16',
   grid: 'M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z',
   plus: 'M12 5v14 M5 12h14',
   search: 'M21 21l-4.5-4.5 M19 10.5a8.5 8.5 0 1 1-17 0 8.5 8.5 0 0 1 17 0',

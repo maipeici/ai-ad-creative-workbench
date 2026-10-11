@@ -1,22 +1,24 @@
 import React, { useEffect, useId, useRef, useState } from 'react'
 
 export function Section({
+  dataGuide,
   title,
   desc,
   right,
   children,
 }: {
+  dataGuide?: string
   title: string
   desc?: string
   right?: React.ReactNode
   children: React.ReactNode
 }) {
   return (
-    <section className="card p-5">
+    <section className="card p-5" data-guide={dataGuide}>
       <header className="flex items-start justify-between gap-4 mb-4">
         <div>
-          <h3 className="text-sm font-semibold text-slate-100">{title}</h3>
-          {desc && <p className="text-xs text-slate-500 mt-1 leading-relaxed">{desc}</p>}
+          <h3 className="section-title">{title}</h3>
+          {desc && <p className="section-description">{desc}</p>}
         </div>
         {right}
       </header>
@@ -27,10 +29,10 @@ export function Section({
 
 export function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
-    <div>
+    <div className="form-field">
       <label className="label">
-        {label}
-        {hint && <span className="ml-2 text-slate-600 font-normal">{hint}</span>}
+        <span className="field-title">{label}</span>
+        {hint && <span className="field-hint">{hint}</span>}
       </label>
       {children}
     </div>
