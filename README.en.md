@@ -39,7 +39,7 @@ Keep the brief, creative decisions, prompts, assets, reviews, and rendering resu
 
 Channel presets include Douyin, Tencent Ads, Kuaishou, and WeChat Channels. The application supports **creative production**; it supports manual CSV performance imports, but does not publish to ad accounts, execute budgets, or automatically retrieve campaign results.
 
-## The six-stage workflow
+## The seven-stage workflow
 
 | Stage | Purpose | Output |
 | --- | --- | --- |
@@ -65,7 +65,15 @@ Video Production displays one card per video with shot progress and previews. Lo
 
 Performance Iteration is the seventh stage. Associate one or more videos with CSV results, including creative IDs, periods, CTR/CVR/CPA and optional revenue/ROAS. Suggestions are hypotheses, with checks for sparse samples, mismatched periods and stale videos. A revision changes only the opening or closing shot, reuses fixed clips and preserves the parent video and evidence snapshot within the same project. Campaign execution stays in the advertising platform. Creating a revision makes no model call.
 
-![Performance iteration without invented campaign results](assets/screenshots/performance-iteration.png)
+The page has three permanent sections: **performance comparison → remix from a base version → next-iteration suggestions**. Choose a base card or carry a suggestion into an editable opening/CTA shot. Derived versions stay visible with their parent and changed variable.
+
+Projects without campaign results open a clearly labeled **Demo** mode with five synthetic examples, low-sample warnings and interactive remix script previews. Demo changes live only in page memory, reset on reload or leaving this stage, and never modify real projects or call generation models. Switch to **Real campaigns** to associate actual videos and import CSV data.
+
+![Performance comparison and parent-version history — synthetic demo data](assets/screenshots/performance-iteration.png)
+
+![Base-version cards and focused remix actions — demo](assets/screenshots/performance-remix.png)
+
+![Data-backed hypotheses and suggested changes for the next round — demo](assets/screenshots/performance-suggestions.png)
 
 CSV imports calculate CTR, click-attributed CVR, and CPA. Matching intervals replace previous imports; overlapping intervals are rejected. Comparisons are descriptive, without automatic winners or significance claims. A saved next-step recommendation can create the next task. [CSV template](assets/examples/experiment-results.csv).
 
