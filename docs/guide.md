@@ -28,11 +28,11 @@ https://github.com/user-attachments/assets/14ff8fe4-a855-4626-a5ac-5ae34d96caf6
 | 00:45 | 投放需求 / Brief | 渠道、人群、场景、目标与 CTA |
 | 00:52.5 | 广告创意 / Concepts | 选择创意和开场钩子 |
 | 01:00 | 分镜规划 / Storyboard | 共享上下文与镜头拆分 |
-| 01:07.5 | 自动审核 / Automatic review | 按清单校验、修复与复检 |
-| 01:15 | 成片制作 / Production | 历史样片、下载与后续测试 |
+| 01:07.5 | 视频制作 / Production | 批量生成镜头并合成成片 |
+| 01:15 | 自动审核 / Automatic review | 实际视频统一审核，通过后同页打包下载 |
 | 01:22.5 | 开始创作 / Start creating | 回到工作台创建自己的项目 |
 
-[下载 MP4](../assets/demos/workbench-guide.mp4)
+[下载历史版 MP4](../assets/demos/workbench-guide.mp4)（录制于流程调整前，当前顺序以工作台内导览为准）
 
 ## English quick guide
 

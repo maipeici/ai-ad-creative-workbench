@@ -32,6 +32,6 @@ export default function VersionPlanPanel({ project, setProject, notify, openMate
     {!plan && <Field label="其他固定要求（可选）"><input className="input" value={notes} placeholder="例如：始终采用人物痛点展示 → 产品解决 → 引导下单" onChange={e => setNotes(e.target.value)} /></Field>}
     <div className="batch-toolbar mt-4"><Field label="视频版本总数（包含基础版本）"><input aria-label="视频版本总数" type="number" min={Math.max(2, existing)} max={60} className="input w-28" value={count} onChange={e => setCount(Number(e.target.value))} /></Field><button className="btn-primary" disabled={busy || !allowed.length || !hook.trim() || !!plan && count <= existing || project.batch?.job?.status === 'running'} onClick={() => void create()}>{busy && <Spinner />}{plan ? `追加 ${Math.max(0, count - existing)} 个版本` : `建立 ${count} 个视频版本`}</button></div>
     <details className="business-disclosure"><summary>指定新增版本的变化要求（可选）</summary><textarea className="input mt-3" rows={3} value={instructions} onChange={e => setInstructions(e.target.value)} placeholder="每行对应一个新增版本，仅在允许范围内变化，例如：人物提袋赶路；人物看表等车。留空由 Agent 设计。" /></details>
-    {existing > 1 && <div className="version-plan-next"><p>在上方“版本脚本”中批量准备脚本，完成自动审核后进入视频制作。多个版本的自然差异不能直接作为单变量实验。</p><button className="btn-ghost" onClick={() => goto(6)}>查看视频制作队列 →</button></div>}
+    {existing > 1 && <div className="version-plan-next"><p>在上方“版本脚本”中批量准备脚本，准备好脚本后进入视频制作，成片完成后统一自动审核。多个版本的自然差异不能直接作为单变量实验。</p><button className="btn-ghost" onClick={() => goto(6)}>查看视频制作队列 →</button></div>}
   </Section>
 }

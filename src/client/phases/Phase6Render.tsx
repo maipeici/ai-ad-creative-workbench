@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import ReferenceGuidance from '../components/ReferenceGuidance'
-import FinalQualityPanel from '../components/FinalQualityPanel'
 import BatchPanel from '../components/BatchPanel'
 import type { PhaseProps } from '../App'
 import { api } from '../api'
@@ -78,7 +77,7 @@ function SingleVideoProduction({ project, meta, patch, setProject, notify, goto,
 
   const renders = project.render?.shots || {}
   const staleConcept = Boolean(sb.conceptId && sb.conceptId !== project.selectedConceptId)
-  const approved = project.review?.approved && !staleConcept
+  const approved = !staleConcept
   const lockedShot = (id: string) => Boolean(project._experimentRenderLocked || project.experimentLink && project.experimentLink.label !== 'A' && !project.experimentLink.editableShotIds.includes(id))
   const pendingShots = sb.shots.filter(s => !lockedShot(s.id) && s.renderMode !== 'asset' && (!renders[s.id]?.url || renders[s.id]?.stale) && !['running', 'manual'].includes(renders[s.id]?.status || ''))
   const doneCount = sb.shots.filter((s) => renders[s.id]?.url && !renders[s.id]?.stale).length
@@ -143,8 +142,7 @@ function SingleVideoProduction({ project, meta, patch, setProject, notify, goto,
         setManualCmd(res.manual)
         notify('未检测到 ffmpeg，已生成手动合成命令', 'error')
       } else {
-        notify('成片已生成，正在自动检查画面与声音…')
-        try { setProject(await api.reviewFinalVideo(project.id)); notify('成片质检完成，请查看逐项结果') } catch (error: any) { notify('成片已保存；质检未完成：' + error.message, 'error') }
+        notify('成片已生成，下一步进入自动审核，通过后可打包下载')
       }
     } catch (e: any) {
       notify(e.message, 'error')
@@ -164,14 +162,14 @@ function SingleVideoProduction({ project, meta, patch, setProject, notify, goto,
       {project._experimentRenderLocked && <p className="business-context">A 版已被其他实验版本引用，视频保持锁定。仍可查看、质检和导出；需要更换基准时，请回源任务建立新实验。</p>}
       {staleConcept&&<div className="inspiration-notice">当前创意已切换，已有视频保留。请回到分镜阶段生成新方案的分镜。<button className="btn-ghost" onClick={()=>goto(4)}>前往分镜 →</button></div>}
 
-      {Object.values(renders).some(render => render.stale) && <p className="foundation-notice">自动审核修复了部分分镜。对应旧镜头与成片保留供回看，请重新生成或回传标记为待更新的镜头，再合成新版。</p>}
+      {Object.values(renders).some(render => render.stale) && <p className="foundation-notice">分镜或素材已调整。对应旧镜头与成片保留供回看，请重新生成或回传标记为待更新的镜头，再合成新版。</p>}
       <DetailsWhen when={!!finalVideo && !finalVideo.stale && !runningKey && !batchRunning} label="调整镜头与生成设置">
       <ReferenceGuidance reference={sb.inspiration} stage="video"/>
       {!preview && !meta.ffmpeg && <div className="rounded-xl border border-amber-900/60 bg-amber-950/20 px-4 py-3 text-xs text-amber-200 leading-relaxed" role="status"><strong>视频合成待配置</strong><p className="mt-1 text-amber-200/70">本机尚未安装视频合成工具。已有成片可以播放和下载，新的字幕叠加与成片合成暂不可用。</p></div>}
       <Section
         title="生成设置"
         desc="选择口播音色，再生成待完成的镜头。字幕、品牌素材与配音会在合成时自动加入。"
-        right={<Badge tone={approved ? 'green' : 'red'}>{approved ? '分镜已审核' : '分镜未审核'}</Badge>}
+        right={<Badge tone={approved ? 'blue' : 'amber'}>{approved ? '生成前自动检查' : '分镜待更新'}</Badge>}
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Field label="口播音色" hint={meta.ttsEnabled ? '合成时自动为每个镜头配音' : '配音暂不可用，请检查模型配置'}>
@@ -187,7 +185,7 @@ function SingleVideoProduction({ project, meta, patch, setProject, notify, goto,
             </div>
           </Field>
         </div>
-        {!approved && <p className="mt-3 text-xs text-amber-400">分镜尚未审核，请先完成审核再开始生成。<button className="underline ml-2" onClick={() => goto(5)}>去审核 →</button></p>}
+        {!approved && <p className="mt-3 text-xs text-amber-400">创意已变更，请先更新分镜再开始生成。<button className="underline ml-2" onClick={() => goto(4)}>去更新分镜 →</button></p>}
         <details className="mt-4 rounded-lg border border-ink-600 bg-ink-900/40 p-3">
           <summary className="cursor-pointer text-xs text-slate-400">高级生成设置</summary>
           <fieldset disabled={!!project.experimentLink} className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -317,13 +315,13 @@ function SingleVideoProduction({ project, meta, patch, setProject, notify, goto,
 
       </DetailsWhen>
       <Section
-        title={finalVideo ? '成片预览与下载' : '成片合成'}
+        title={finalVideo ? '成片预览' : '成片合成'}
         dataGuide="assembly"
-        desc="按分镜顺序合成视频、字幕与配音，提取封面后自动发起成片质检。"
+        desc="按分镜顺序合成视频、字幕与配音。制作完成后进入自动审核，审核通过即可打包下载。"
         right={
           <div className="flex gap-2">
             <button className="btn-primary" onClick={() => assemble(false)} disabled={assembling || project._experimentRenderLocked || !approved || !meta.ffmpeg}>
-              {assembling && <Spinner />} {finalVideo ? '重新合成并质检' : '合成并自动质检'}
+              {assembling && <Spinner />} {finalVideo ? '重新合成视频' : '合成完整视频'}
             </button>
           </div>
         }
@@ -349,16 +347,14 @@ function SingleVideoProduction({ project, meta, patch, setProject, notify, goto,
                 <Badge tone="blue">素材 {project.render.finalVideo.assetCount ?? 0} 镜</Badge>
               </div>
               <div>合成于：{new Date(project.render.finalVideo.assembledAt).toLocaleString('zh-CN')}</div>
-              <a className="btn-primary !py-1 !text-xs" href={project.render.finalVideo.url} download>
-                下载成片
-              </a>
-              {!finalVideo?.stale && <a className="btn-ghost !py-1 !text-xs ml-2" href={`/api/projects/${project.id}/delivery.zip`} download>下载交付包 ZIP</a>}
-              <p className="business-help">交付包包含成片与当前质检报告，下载不代表已通过平台审核。</p>
+
+
+              <p className="business-help">在自动审核页集中查看结果并下载通过的成片。</p>
             </div>
           </div>
         ) : (
           <EmptyHint>
-            完成自动审核与镜头制作后即可合成。
+            所有镜头就绪后即可合成，生成前会自动检查必要的脚本与素材条件。
             {!meta.subtitleFont && <span className="block mt-2 text-amber-400">未找到中文字体，字幕无法烧录。</span>}
           </EmptyHint>
         )}
@@ -379,7 +375,7 @@ function SingleVideoProduction({ project, meta, patch, setProject, notify, goto,
         )}
       </Section>
 
-      {finalVideo && <FinalQualityPanel project={project} onUpdate={setProject} notify={notify} goto={goto} />}
+      {finalVideo && <button className="btn-primary" onClick={()=>goto(5)}>成片已完成，进入自动审核 →</button>}
       {deliveryActions}
       <details className="stage-disclosure"><summary>导出创作数据与历史草稿</summary><div className="p-4 space-y-3"><p className="business-help">保存脚本、生成指令与素材引用，供归档或外部工具接续制作。</p><a className="btn-ghost" href={'/api/projects/' + project.id + '/package?download=1'} download>导出创作数据 JSON</a><p className="business-help">建议素材命名：{materialName}.mp4</p>{project.variants?.length > 0 && <details><summary>历史变体草稿（{project.variants.length}）</summary>{project.variants.map(v => <p key={v.id} className="business-help">{v.variantName}：{v.hypothesis} · {v.changeSummary}</p>)}</details>}</div></details>
 

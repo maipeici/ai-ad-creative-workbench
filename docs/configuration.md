@@ -66,4 +66,4 @@ Linux 字体路径示例：`/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.t
 
 品牌自身信息保存在 `config/business/brand-guide.json`；视觉风格、镜头、光照和制作规格独立存放于 `config/business/visual-design.json`。生成接口仍会合并读取两者，已有项目无需重新绑定。
 
-自动审核复用文本模型配置。项目审核清单、逐项结论和修复报告保存在本地 `data/runtime/projects.json`。没有可用文本模型时仍可检查规则，但不会自动审核通过。已有人工通过标记需要重新运行自动审核。
+自动审核使用 Vertex Gemini 视频理解，对合成后的实际成片进行统一检查。品牌与平台规则、项目补充要求和审核报告保存在本地。视频不超过 14 MB；没有可用视频模型时无法审核通过。生成前仍运行本地基础检查，旧版脚本审核标记不能代替成片审核。

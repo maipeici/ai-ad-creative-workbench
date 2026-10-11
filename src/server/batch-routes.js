@@ -1,12 +1,12 @@
 import { getProject, updateBatch } from './store.js'
-import { batchView, createBatch, runCreativePipeline } from './batch.js'
+import { batchView, creativeSummary, createBatch, runCreativePipeline } from './batch.js'
 import { failure } from './experiments.js'
-import { deliveryFiles, zipFiles } from './delivery.js'
+import { deliveryFiles, zipFiles, assertDeliverable, isFinalVideoApproved } from './delivery.js'
 import { assertStoryboardCurrent } from './inspiration-guidance.js'
 import { randomUUID } from 'node:crypto'
 import { hasFfmpeg } from './providers/ffmpeg.js'
 
-export function registerBatchRoutes(app, { wrap, invoke, loadContext }) {
+export function registerBatchRoutes(app, { wrap, invoke, loadContext, readProject = getProject, packageFiles = deliveryFiles }) {
   const running = new Map()
   // Prevent edits from racing a paid generation request or a batch save.
   app.use('/api/projects/:id', async (req, res, next) => {
@@ -26,6 +26,7 @@ export function registerBatchRoutes(app, { wrap, invoke, loadContext }) {
     if (!p) throw failure('项目不存在', 404)
     const root = p.batchId ? await getProject(p.batchId) : p
     const batch = batchView(root)
+    batch.items = await Promise.all(batch.items.map(async item=>creativeSummary((await loadContext(item.id)).project)))
     if (batch.job?.status === 'running' && !running.has(root.id)) {
       batch.job.status = 'paused'; batch.job.message = '服务已重启；已完成内容保留，可继续未完成素材。'
     }
@@ -76,17 +77,20 @@ export function registerBatchRoutes(app, { wrap, invoke, loadContext }) {
     })().catch(error => console.error('[batch]', error.message))
   }))
   app.get('/api/projects/:id/batch/delivery.zip', wrap(async (req, res) => {
-    const parent = await getProject(req.params.id)
+    const parent = await readProject(req.params.id)
     if (!parent || parent.batchId) throw failure('请选择素材所属项目')
     const requested = String(req.query.ids || '').split(',').filter(Boolean)
-    const items = batchView(parent).items.filter(i => requested.length ? requested.includes(i.id) : i.videoUrl && !i.stale)
-    if (!items.length || requested.some(id => !items.some(i => i.id === id))) throw failure('请选择已有当前成片的素材')
+    const available=batchView(parent).items
+    if(requested.some(id=>!available.some(i=>i.id===id)))throw failure('请选择本项目中的有效素材')
+    const candidates=await Promise.all(available.filter(i=>!requested.length||requested.includes(i.id)).map(async i=>(await loadContext(i.id)).project))
+    const approved=requested.length?candidates:candidates.filter(isFinalVideoApproved)
+    if(!approved.length)throw failure('暂无通过自动审核的当前成片，请先完成审核',409)
+    const items=approved.map(creativeSummary)
     const files = []
-    for (const item of items) {
-      const { project } = await loadContext(item.id)
+    for (const project of approved) {
+      assertDeliverable(project)
       assertStoryboardCurrent(project)
-      if (!project.render.finalVideo || project.render.finalVideo.stale || project.storyboard?.shots.some(s => project.render.shots[s.id]?.stale)) throw failure(`${item.name} 的成片需更新`, 409)
-      files.push(...await deliveryFiles(project))
+      files.push(...await packageFiles(project))
     }
     files.push({ name: 'batch-manifest.json', bytes: JSON.stringify({ project: parent.name, count: items.length, items }, null, 2) })
     res.set('Content-Disposition', `attachment; filename="batch-${parent.id}.zip"`).type('application/zip').send(zipFiles(files))

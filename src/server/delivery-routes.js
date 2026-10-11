@@ -1,5 +1,5 @@
 import { upsertProject } from './store.js'
-import { deliveryFiles, zipFiles, reviewFinalVideo, qualityFingerprint } from './delivery.js'
+import { deliveryFiles, zipFiles, reviewFinalVideo, qualityFingerprint, assertDeliverable } from './delivery.js'
 import { assertStoryboardCurrent } from './inspiration-guidance.js'
 import { failure } from './experiments.js'
 import { reviewInputFingerprint } from './review-state.js'
@@ -19,12 +19,14 @@ export function registerDeliveryRoutes(app, { wrap, loadContext, workflowAction 
       if (qualityFingerprint(latest.project) !== before || reviewInputFingerprint(latest) !== contextBefore) throw failure('质检期间成片或资料已变更，请重新检查', 409)
       review.contextFingerprint = contextBefore
       latest.project.render.qualityReview = review
+      latest.project.phase = 5 // Stable persisted phase id; displayed as step 06 after production.
       await upsertProject(latest.project)
       res.json(latest.project)
     } finally { running.delete(req.params.id) }
   }))
   app.get('/api/projects/:id/delivery.zip', wrap(async (req, res) => {
     const { project } = await loadContext(req.params.id)
+    assertDeliverable(project)
     assertStoryboardCurrent(project)
     if (project.render?.finalVideo?.stale) throw failure('当前成片已过期，请重新合成后交付', 409)
     if (project.storyboard?.shots.some(s => project.render.shots[s.id]?.stale)) throw failure('镜头已变更，请重新制作当前成片后交付', 409)
@@ -38,6 +40,7 @@ export function registerDeliveryRoutes(app, { wrap, loadContext, workflowAction 
     const files = []
     for (const version of experiment.versions) {
       const { project: candidate } = await loadContext(version.projectId)
+      assertDeliverable(candidate)
       if (!candidate?.render.finalVideo) throw failure(`${version.label} 版尚未完成成片`)
       if (candidate.render.finalVideo.stale) throw failure(`${version.label} 版成片已过期，请重新合成`)
       assertStoryboardCurrent(candidate)

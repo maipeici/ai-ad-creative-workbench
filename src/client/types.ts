@@ -347,6 +347,8 @@ export interface Project {
 }
 
 export interface ProjectSummary {
+  approvedCount?: number
+  pendingReviewCount?: number
   creativeCount?: number
   completedCount?: number
   experimentLink?: Project['experimentLink'] | null
@@ -371,7 +373,7 @@ export interface QualityReview {
   source: string
   checkedAt: string
   scope: string
-  results: { id: string; label: string; status: string; evidence: string; timing: string; suggestion: string }[]
+  results: { id: string; label: string; status: string; evidence: string; timing: string; suggestion: string; source?: string; sourceUrl?: string }[]
 }
 export interface WorkspaceResources {
   defaults: { assets: Record<string, string[]>; facts: string[]; brandGuideId?: string }
@@ -483,6 +485,7 @@ export interface ReviewPolicy {
   rules: { id: string; group: string; label: string; source: string; sourceUrl?: string; requiredInput?: boolean }[]
 }
 export interface CreativeSummary {
+  deliverable: boolean
   scriptSource?: string
   id: string; name: string; conceptId: string | null; instruction: string; phase: number
   shotCount: number; readyShots: number; approved: boolean; reviewStatus: string

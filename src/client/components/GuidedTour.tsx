@@ -122,8 +122,8 @@ export default function GuidedTour({ meta, onClose }: { meta: Meta; onClose: () 
       <button data-tour-close className="tour-exit" onClick={onClose}>退出导览 <Icon name="close" width="16" /></button>
     </header>
     <nav className="tour-chapters" aria-label="导览阶段">
-      {chapters.map(chapter => <button key={chapter.id} className={step.phase === chapter.id ? 'active' : ''} aria-current={step.phase === chapter.id ? 'step' : undefined}
-        onClick={() => { setPlaying(false); go(TOUR_STEPS.findIndex(s => s.phase === chapter.id)) }}><span>{chapter.id === 0 ? '◎' : `0${chapter.id}`}</span>{chapter.name}</button>)}
+      {chapters.map((chapter,index) => <button key={chapter.id} className={step.phase === chapter.id ? 'active' : ''} aria-current={step.phase === chapter.id ? 'step' : undefined}
+        onClick={() => { setPlaying(false); go(TOUR_STEPS.findIndex(s => s.phase === chapter.id)) }}><span>{chapter.id === 0 ? '◎' : `0${index}`}</span>{chapter.name}</button>)}
     </nav>
     <div className="tour-body">
       <div className="tour-stage">
@@ -131,7 +131,7 @@ export default function GuidedTour({ meta, onClose }: { meta: Meta; onClose: () 
         <div ref={preview} className="tour-preview" key={step.id} aria-label={`${step.label}示例界面`}>
           {step.phase === 0 && <Dashboard projects={[summary]} meta={meta} busy={false} onCreate={noop} onOpen={noop} />}
           {phase && <div className="phase-content">
-            <div className="phase-intro"><div><div className="eyebrow">STEP 0{phase.id}</div><h1>{phase.name}</h1><p>{phase.desc}</p></div></div>
+            <div className="phase-intro"><div><div className="eyebrow">STEP 0{PHASES.findIndex(p=>p.id===phase.id)+1}</div><h1>{phase.name}</h1><p>{phase.desc}</p></div></div>
             {step.phase === 1 && <Phase1 {...props} foundationTab={step.tab} />}
             {step.phase === 2 && <Phase2 {...props} />}
             {step.phase === 3 && <Phase3 {...props} />}
@@ -139,7 +139,7 @@ export default function GuidedTour({ meta, onClose }: { meta: Meta; onClose: () 
             {step.phase === 5 && <Phase5 {...props} />}
             {step.phase === 6 && <Phase6 {...props} />}
           </div>}
-          {last && <div className="tour-finish"><div className="tour-finish-icon"><Icon name="check" width="32" height="32" /></div><p className="eyebrow">READY TO CREATE</p><h1>把第一个想法，<br />变成一条好广告。</h1><p>品牌资料 → 投放需求 → 创意 → 分镜 → 自动审核 → 成片</p><div className="tour-finish-checks"><span>准备品牌与已确认事实</span><span>写清人群、场景和目标</span><span>逐步生成、校验与制作</span></div><small>真实生成需要配置相应模型；视频合成需要 FFmpeg。</small></div>}
+          {last && <div className="tour-finish"><div className="tour-finish-icon"><Icon name="check" width="32" height="32" /></div><p className="eyebrow">READY TO CREATE</p><h1>把第一个想法，<br />变成一条好广告。</h1><p>品牌资料 → 投放需求 → 创意 → 分镜 → 视频制作 → 自动审核与下载</p><div className="tour-finish-checks"><span>准备品牌与已确认事实</span><span>写清人群、场景和目标</span><span>逐步生成、校验与制作</span></div><small>真实生成需要配置相应模型；视频合成需要 FFmpeg。</small></div>}
         </div>
       </div>
       <aside className="tour-guide-column" aria-label="当前步骤讲解">

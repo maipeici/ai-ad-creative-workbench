@@ -6,7 +6,8 @@ import { constrainVersionStoryboard, versionPrompt } from './video-versions.js'
 import { registerInspirationRoutes } from './inspiration-routes.js'
 import { registerExperimentRoutes } from './experiment-routes.js'
 import { registerDeliveryRoutes } from './delivery-routes.js'
-import { compositionFingerprint } from './delivery.js'
+import { compositionFingerprint, isFinalVideoApproved } from './delivery.js'
+import { productionPreflight } from './production-preflight.js'
 import { fingerprint } from './experiments.js'
 import { getWorkspace, saveWorkspace, inheritResources, validateWorkspace } from './workspace.js'
 import { bindStoryboardReference, conceptFingerprint, assertStoryboardCurrent, normalizeReferenceUse } from './inspiration-guidance.js'
@@ -106,8 +107,8 @@ const PHASES = [
   { id: 2, key: 'brief', name: '投放需求' },
   { id: 3, key: 'concept', name: '广告创意' },
   { id: 4, key: 'storyboard', name: '分镜规划' },
-  { id: 5, key: 'review', name: '自动审核' },
   { id: 6, key: 'render', name: '视频制作' },
+  { id: 5, key: 'review', name: '自动审核' },
 ]
 
 function newProject(name) {
@@ -482,7 +483,9 @@ app.get('/api/projects', wrap(async (_req, res) => {
   const projects = await listProjects()
   res.json(await Promise.all(projects.map(async summary => {
     const { project } = await loadContext(summary.id)
-    return { ...summary, approved: Boolean(project.review?.approved) }
+    const candidates = [project, ...await Promise.all((project.creatives || []).map(async p => (await loadContext(p.id)).project))]
+    const approvedCount = candidates.filter(isFinalVideoApproved).length
+    return { ...summary, approved: approvedCount > 0, approvedCount, pendingReviewCount: candidates.filter(p=>p.render?.finalVideo&&!p.render.finalVideo.stale&&!isFinalVideoApproved(p)).length }
   })))
 }))
 
@@ -920,6 +923,10 @@ app.get(
 
 /* --------------------- Phase 6：成片制作 --------------------- */
 
+app.post('/api/projects/:id/production-preflight', workflowAction('preflight', async(req,res)=>{
+  res.json(productionPreflight(await loadContext(req.params.id)))
+}))
+
 app.post(
   '/api/projects/:id/render/shots/:shotId',
   workflowAction('render', async (req, res) => {
@@ -929,9 +936,6 @@ app.post(
     if (!shot) return res.status(404).json({ error: '镜头不存在' })
 
     {
-      if (!project.review?.approved) {
-        return res.status(400).json({ error: '分镜尚未通过自动审核或内容已变更，请先完成自动审核' })
-      }
       const v = validateStoryboard({ project, brandGuide, compliance, factLib, picked, channel })
       const shotIssues = v.shots.find((s) => s.shotId === shot.id)?.issues || []
       const blockers = [...v.global, ...shotIssues].filter((i) => i.severity === 'block')
@@ -1269,12 +1273,13 @@ app.post(
 app.post(
   '/api/projects/:id/render/assemble',
   workflowAction('assemble', async (req, res) => {
-    const { project, picked, channel, brandGuide } = await loadContext(req.params.id)
+    const ctx = await loadContext(req.params.id)
+    const { project, picked, channel, brandGuide } = ctx
     assertStoryboardCurrent(project)
     const sb = project.storyboard
     if (!sb) return res.status(400).json({ error: '尚未生成分镜' })
 
-    if (!project.review?.approved) return res.status(400).json({ error: '请先完成当前版本的自动审核，再合成成片。' })
+    productionPreflight(ctx)
     if (sb.shots.some(shot => project.render.shots[shot.id]?.stale)) return res.status(400).json({ error: '存在自动修复前的旧镜头，请重新生成或回传后再合成。' })
     const missing = sb.shots.filter((s) => !project.render.shots[s.id]?.url)
     if (missing.length) {

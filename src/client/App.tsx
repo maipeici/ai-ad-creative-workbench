@@ -183,7 +183,7 @@ export default function App() {
       2: Boolean(project.brief?.audience && project.brief?.scene && project.brief?.cta),
       3: Boolean(project.selectedConceptId),
       4: Boolean(project.storyboard?.shots?.length),
-      5: Boolean(project.review?.approved),
+      5: Boolean(project.render?.qualityReview?.status === 'passed' && !project.render.finalVideo?.stale),
       6: Boolean(project.render?.finalVideo && !project.render.finalVideo.stale),
     } as Record<number, boolean>
   }, [project])
@@ -204,6 +204,8 @@ export default function App() {
   const openExperiments = () => { const root = project?.batchId || project?.experimentLink?.parentId; if (root) void openProject(root, 7); else void changeView('experiments') }
   const phaseProps: PhaseProps | null = project ? { project, meta, patch, setProject: setProjectAndRefresh, reloadMeta, notify, goto: phase => { void navigate(phase) }, gotoFoundation: tab => { setFoundationTab(tab); void navigate(1) }, foundationTab, openReferences, openExperiments, creativeTab, onCreativeTabChange: setCreativeTab, registerBeforeLeave, openMaterial: openProject, videoDetail: videoDetailId === project.id, closeVideoDetail: () => setVideoDetailId(null), inspectVideo: async id => { const opened = await openProject(id, 6); if (opened !== false) setVideoDetailId(id); return opened } } : null
   const currentPhase = PHASES.find(ph => ph.id === activePhase) || PHASES[0]
+  const phaseIndex = PHASES.findIndex(ph=>ph.id===activePhase)
+  const nextPhase = PHASES[phaseIndex+1], previousPhase=PHASES[phaseIndex-1]
   const visibleProjects = projects.filter(p => !p.experimentLink && p.name.toLowerCase().includes(sidebarSearch.trim().toLowerCase()))
   const configured = !meta.providers.video.startsWith('mock') && !meta.providers.video.startsWith('manual')
   const showOverview = () => { void changeView('overview') }
@@ -250,12 +252,12 @@ export default function App() {
             </div>
           </div>
           <nav ref={phaseNavigation} className="phase-navigation" aria-label="创作阶段">
-            {PHASES.map(ph => <button key={ph.id} className={(activePhase === ph.id ? 'active ' : '') + (phaseReady[ph.id] ? 'ready' : '')} disabled={!!project.experimentLink && !project.batchId && ph.id < 4} onClick={() => void navigate(ph.id)} aria-current={activePhase === ph.id ? 'step' : undefined}><span className="phase-number">{phaseReady[ph.id] ? <Icon name="check" width="13" height="13" /> : '0' + ph.id}</span><span>{ph.name}</span></button>)}
+            {PHASES.map((ph,index) => <button key={ph.id} className={(activePhase === ph.id ? 'active ' : '') + (phaseReady[ph.id] ? 'ready' : '')} disabled={!!project.experimentLink && !project.batchId && ph.id < 4} onClick={() => void navigate(ph.id)} aria-current={activePhase === ph.id ? 'step' : undefined}><span className="phase-number">{phaseReady[ph.id] ? <Icon name="check" width="13" height="13" /> : '0' + (index+1)}</span><span>{ph.name}</span></button>)}
           </nav>
-          {activePhase < 6 && <BatchPanel project={project} phase={activePhase} onOpen={openProject} onUpdate={setProjectAndRefresh} notify={notify} beforeOpen={async () => { await beforeLeave.current?.() }} />}
+          {activePhase === 4 && <BatchPanel project={project} phase={activePhase} onOpen={openProject} onUpdate={setProjectAndRefresh} notify={notify} beforeOpen={async () => { await beforeLeave.current?.() }} />}
           <div className="phase-scroll" key={project.id + '-' + activePhase}>
             <div className="phase-content animate-in">
-              {(activePhase !== 6 || videoDetailId === project.id || project.experimentLink) && <div className="phase-intro"><div><div className="eyebrow">STEP {'0' + activePhase}</div><h1>{currentPhase.name}</h1><p>{currentPhase.desc}</p></div></div>}
+              {(activePhase !== 6 || videoDetailId === project.id || project.experimentLink) && <div className="phase-intro"><div><div className="eyebrow">STEP {'0' + (phaseIndex+1)}</div><h1>{currentPhase.name}</h1><p>{currentPhase.desc}</p></div></div>}
               {project.experimentLink && <div className="business-context">实验 {project.experimentLink.label} 版 · {project.experimentLink.label === 'A' ? '基准脚本已锁定，可继续制作视频。' : '只修改指定镜头，固定镜头沿用基准版。'}<button className="btn-ghost" onClick={() => void openProject(project.experimentLink!.parentId, 7)}>返回素材测试 →</button></div>}
               {phaseProps && activePhase === 1 && <Phase1 {...phaseProps} />}
               {phaseProps && activePhase === 2 && <Phase2 {...phaseProps} />}
@@ -263,7 +265,7 @@ export default function App() {
               {phaseProps && activePhase === 4 && <Phase4 {...phaseProps} />}
               {phaseProps && activePhase === 5 && <Phase5 {...phaseProps} />}
               {phaseProps && activePhase === 6 && <Phase6 {...phaseProps} />}
-              <div className="phase-footer-nav"><button className="btn-ghost" disabled={!!project.experimentLink && activePhase === 4} onClick={() => activePhase === 1 ? showOverview() : void navigate(activePhase - 1)}>{activePhase === 1 ? '返回总览' : '← 上一阶段'}</button>{activePhase < 6 && (activePhase !== 3 || project.storyboard || (project.batch?.items.length || 0) > 1) && <button className="btn-primary" onClick={() => void navigate(activePhase + 1)}>{activePhase === 3 ? '继续已有素材的分镜' : '下一阶段：' + PHASES[activePhase].name}<Icon name="arrow" width="16" /></button>}</div>
+              <div className="phase-footer-nav"><button className="btn-ghost" disabled={!!project.experimentLink && activePhase === 4} onClick={() => activePhase === 1 ? showOverview() : void navigate(previousPhase.id)}>{activePhase === 1 ? '返回总览' : '← 上一阶段'}</button>{nextPhase && (activePhase !== 3 || project.storyboard || (project.batch?.items.length || 0) > 1) && <button className="btn-primary" onClick={() => void navigate(nextPhase.id)}>{activePhase === 3 ? '继续已有素材的分镜' : '下一阶段：' + nextPhase.name}<Icon name="arrow" width="16" /></button>}</div>
             </div>
           </div>
         </div>}

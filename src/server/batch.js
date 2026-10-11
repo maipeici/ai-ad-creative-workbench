@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { failure } from './experiments.js'
 import { assertStoryboardCurrent } from './inspiration-guidance.js'
 import { makeVersionPlan, VERSION_CHANGES } from './video-versions.js'
+import { isFinalVideoApproved } from './delivery.js'
 
 // The original project's video remains in place. Additional creatives are nested
 // records, projected through the existing single-video endpoints for compatibility.
@@ -25,7 +26,7 @@ export function creativeSummary(project) {
     shotCount: shots.length, readyShots: shots.filter(s => project.render?.shots?.[s.id]?.url && !project.render.shots[s.id].stale).length,
     approved: Boolean(project.review?.approved), reviewStatus: project.review?.status || 'idle',
     videoUrl: video?.url || null, stale: Boolean(video?.stale), cover: project.render?.cover || null,
-    qualityStatus: project.render?.qualityReview?.status || 'idle', experimentLink: project.experimentLink || null,
+    qualityStatus: project.render?.qualityReview?.status || 'idle', deliverable: isFinalVideoApproved(project), experimentLink: project.experimentLink || null,
   }
 }
 export function batchView(parent) {
@@ -72,16 +73,20 @@ export async function runCreativePipeline(id, stage, { load, invoke, progress, c
   assertStoryboardCurrent(p)
   if (stage !== 'storyboard' && !p.storyboard?.shots?.length) throw failure('请先在分镜规划中准备此版本的脚本', 422)
   if (stage !== 'storyboard' && p.storyboard?.source?.startsWith('mock')) throw failure('当前仍是示例脚本，请先在分镜规划中重新生成或确认真实脚本', 422)
-  if (stage === 'produce' && !p.review?.approved) throw failure('自动审核未通过，请先在自动审核阶段完成品牌、平台与创意一致性检查', 422)
+  if (stage === 'review') {
+    if (!p.render?.finalVideo || p.render.finalVideo.stale) throw failure('请先制作当前版本的完整视频，再运行自动审核', 422)
+    if (!isFinalVideoApproved(p)) await step('quality')
+    p = await load(id)
+    if (!isFinalVideoApproved(p)) throw failure('自动审核发现问题或缺少依据，请查看此版本的定位与修复建议', 422)
+    return '成片审核通过，可打包下载'
+  }
   if (!p.storyboard?.shots?.length || p.storyboard.source?.startsWith('mock')) {
     const result = await step('storyboard', { userPreference: p.creativeInstruction || '' })
     if (!['gemini', 'llm'].includes(result.source)) throw failure('模型未完成真实分镜生成，已保留示例供查看；请检查模型后单条重新生成', 503)
     p = await load(id)
   }
   if (stage === 'storyboard') return '分镜已就绪'
-  if (!p.review?.approved) { await step('review', { autoRepair: !p.experimentLink }); p = await load(id) }
-  if (!p.review?.approved) throw failure('自动审核未通过，请查看该素材的规则与修复建议', 422)
-  if (stage === 'review') return '自动审核通过'
+  await step('preflight')
   for (const shot of p.storyboard.shots) {
     p = await load(id)
     let render = p.render.shots[shot.id]
@@ -101,9 +106,5 @@ export async function runCreativePipeline(id, stage, { load, invoke, progress, c
     const result = await step('assemble')
     if (!result.ffmpeg) throw failure('镜头已保存，需配置 FFmpeg 后继续合成', 422)
   }
-  p = await load(id)
-  if (p.render.qualityReview?.status !== 'passed') await step('quality')
-  p = await load(id)
-  if (p.render.qualityReview?.status !== 'passed') throw failure('成片已保存，质检发现问题或待补充，请展开该素材查看', 422)
-  return '成片与质检已完成'
+  return '成片已完成，请进入自动审核'
 }

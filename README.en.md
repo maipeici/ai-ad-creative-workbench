@@ -2,7 +2,7 @@
 
 [简体中文](README.md) · **English**
 
-**An AI workspace for turning advertising briefs into creative concepts, storyboards, reviewed shots, and finished vertical videos.**
+**An AI workspace for turning advertising briefs into creative concepts, storyboards, finished vertical videos, and final-video review.**
 
 **One project = one creative idea + multiple video versions.** Define a base storyboard, keep its hook strategy, structure, timing, claims and CTA fixed, and select allowed variations. Produce complete videos together in Video Production. [Workflow details (Chinese)](docs/experiments.md).
 
@@ -16,7 +16,7 @@ https://github.com/user-attachments/assets/ea7da458-9990-423d-b896-ad58b3098b28
 
 > Recorded from a new project with actual model calls for concepts, storyboards, first frames, and video shots. It includes corrections and rechecks after review findings. Model and download waits are shortened. The interface recording uses text explanations; the ending includes the generated ad with its original audio. This demonstrates the workflow; generated visuals and asset versions still need review before an actual campaign.
 
-> The recording shows the earlier single-video workflow. Current screenshots cover batch production, combined rules, and material testing.
+> The recording shows the earlier single-video workflow. The current order is Video Production → Automatic Review and Download; current screenshots and instructions describe this flow.
 
 The home-screen **“90 秒了解流程”** button and the top-bar **“操作指南”** also provide a replayable 12-step bubble tour. That separate tour uses an isolated example without editing saved projects or calling models. [Tour guide](docs/guide.md).
 
@@ -47,8 +47,8 @@ Channel presets include Douyin, Tencent Ads, Kuaishou, and WeChat Channels. The 
 | 02 Advertising brief | Define audience, scenario, channel, duration, and CTA | Structured brief |
 | 03 Creative concepts | Choose one idea from alternative candidates | One core creative |
 | 04 Storyboard | Define the base script, fixed elements and variation scope | Scripts for each video version |
-| 05 Automatic review | Combine brand and platform rules, repair and recheck | Rule sources, evidence, and missing inputs |
-| 06 Video production | Produce shots, inspect actual video/audio, and export | Video, cover, copy, and ZIP bundle |
+| 05 Video production | Generate clips, add overlays and narration, assemble videos | Multiple complete videos |
+| 06 Automatic review | Review actual video/audio and compliance, download approved versions here | Findings and approved ZIP bundles |
 
 <a id="features"></a>
 
@@ -56,9 +56,9 @@ Channel presets include Douyin, Tencent Ads, Kuaishou, and WeChat Channels. The 
 
 ### Batch production and optional material testing
 
-Maintain shared data within Brand and assets. Select one idea, finish its base script, and create up to 60 versions within an explicit variation scope. Existing scripts and videos remain intact. Prepare scripts and run reviews in their corresponding stages.
+Maintain shared data within Brand and assets. Select one idea, finish its base script, and create up to 60 versions within an explicit variation scope. Existing scripts and videos remain intact. Prepare scripts, produce complete videos, then review the finished outputs.
 
-Video Production displays one card per complete video, with preparation requirements, shot progress, previews, quality status and batch delivery. It processes reviewed scripts only, retains completed work, and continues past individual failures. Multiple variations do not imply a controlled single-variable experiment.
+Video Production displays one card per video with shot progress and previews. Local preflight checks run before generation without requiring a separate script review. Finished videos go to Automatic Review, where passing versions can be downloaded together. Completed work is retained and individual failures do not stop siblings. Multiple variations do not imply a controlled single-variable experiment.
 
 ![Same-creative video versions and batch production](assets/screenshots/batch-production.png)
 
@@ -118,21 +118,17 @@ Record character, vehicle, scene, and style descriptions once, then manage indiv
 
 Reference images and shared descriptions help guide consistency; outputs still need visual review.
 
-### Checklist-based automatic review and repair
+### Produce first, then review and download
 
-Maintain brand requirements once under Compliance boundaries. Review combines brand rules, selected platform rules, production checks, and optional project additions; results record sources and evidence. Approval requires zero blockers and complete passing results. Missing platform rules, credentials, or evidence leave items pending. Eligible text repairs receive a fresh review, and referenced input changes invalidate earlier results. This stage checks planned scripts and references.
+Produce clips, add subtitles, brand assets and narration, and assemble complete videos. Generation runs local readiness checks; it does not require a separate Agent script approval.
 
-Bundled platform rules are limited public-source baselines. WeChat Channels currently requires supplied rules. The editor stores rule text, an HTTPS source URL, and a version; maintain applicability to your industry and placement. Passing does not guarantee approval by the advertising platform.
+![Batch video production](assets/screenshots/batch-production.png)
 
-![Automatic review Agent combining brand and platform rules](assets/screenshots/review.png)
+Automatic Review inspects the actual video and audio against brand rules, platform rules, creative consistency and optional project requirements. Findings include evidence, timestamps and repair suggestions. Fix the relevant script or production settings, reassemble, and recheck. Paid clips are not regenerated automatically.
 
-### Video assembly, export, and creative variants
+Passing videos can be packaged directly on the review page, either selected versions or all approved versions. There is no separate delivery stage. ZIP bundles include videos, available covers, copy and review reports (up to 250 MB). Unreviewed, failed or stale videos are excluded. Video understanding requires Vertex Gemini and a local video up to 14 MB. Workbench approval does not replace the ad platform's own review.
 
-Queue multiple videos or generate, import, and retry individual shots. FFmpeg combines footage, subtitles, assets, and narration and extracts a cover. Final quality checks inspect actual video/audio and the same brand/platform rules with Vertex Gemini (up to 14 MB). Failures retain the video without automatically regenerating paid shots.
-
-![Finished video preview, downloads, and quality inspection](assets/screenshots/render-export.png)
-
-The **ZIP delivery bundle** includes video, available cover, copy, and metadata with quality status. Batches and tests can export multiple completed videos together, up to 250 MB per ZIP. JSON export remains available; stale videos must be rebuilt before delivery.
+![Final-video review and approved downloads](assets/screenshots/review.png)
 
 <a id="quick-start"></a>
 
@@ -179,8 +175,8 @@ On Windows, after installing dependencies, you can also double-click **`scripts/
 1. Create a project, upload your own assets, and verify the product facts.
 2. Fill in the brief, generate concepts, and select a direction.
 3. Create a storyboard and check each shot's timing, narration, and references.
-4. Resolve blocking issues and complete the human review.
-5. Generate or import footage, assemble the video, and download the output.
+4. Generate or import footage and assemble complete videos.
+5. Review the finished videos, fix findings and recheck, then download approved versions on the same page.
 
 Without model credentials, text generation uses Mock data and image previews use placeholders. Mock videos are solid-color timing clips when FFmpeg is available. Without FFmpeg, video generation returns a simulated status without producing a file.
 

@@ -82,6 +82,6 @@ export function refreshReview(ctx) {
   } else if (review?.checkedAt && review.fingerprint !== reviewInputFingerprint(ctx)) {
     invalidateReview(ctx.project)
   }
-  if (ctx.project.render?.qualityReview && ctx.project.render.qualityReview.contextFingerprint !== reviewInputFingerprint(ctx)) ctx.project.render.qualityReview.status = 'stale'
+  if (ctx.project.render?.qualityReview && (ctx.project.render.qualityReview.reviewVersion !== 2 || ctx.project.render.qualityReview.contextFingerprint !== reviewInputFingerprint(ctx))) ctx.project.render.qualityReview.status = 'stale'
   return ctx.project
 }

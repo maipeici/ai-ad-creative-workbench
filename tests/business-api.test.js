@@ -25,7 +25,7 @@ test('isolated business workflow: inherited brief → locked A/B → result impo
       const data = await response.json(); assert.equal(response.status, status, JSON.stringify(data)); return data
     }
     const meta = await request('/api/meta')
-    assert.equal(meta.phases[4].name, '自动审核')
+    assert.deepEqual(meta.phases.slice(4).map(p=>p.name), ['视频制作','自动审核'])
     const defaultFact = meta.facts.facts.find(f => f.status === 'confirmed' && !f.validTo && !f.validFrom)
     await request('/api/workspace', 'PATCH', { defaults: { assets: {}, facts: defaultFact ? [defaultFact.id] : [] } })
     const source = await request('/api/projects', 'POST', { name: 'Isolated A/B test, not real performance' })
@@ -58,8 +58,7 @@ test('isolated business workflow: inherited brief → locked A/B → result impo
     const next = await request(experimentRoute + '/next-task', 'POST', {})
     assert.match(next.brief.notes, /下一轮测试行动引导/); assert.equal(next.storyboard, null); assert.equal(next.experiments, undefined)
     const zip = await fetch(base + experimentRoute + '/delivery.zip')
-    assert.equal(zip.status, 200); assert.match(zip.headers.get('Content-Type'), /application\/zip/)
-    assert.equal(Buffer.from(await zip.arrayBuffer()).readUInt32LE(0), 0x04034b50)
+    assert.equal(zip.status, 409, 'unreviewed experiment videos cannot be packaged')
     const changed = structuredClone(b.version.storyboard); changed.shots[0].vo = '新镜头内容'
     const patched = await request(variantRoute, 'PATCH', { storyboard: changed })
     assert.equal(patched._impact, null, 'Editing one shot must not report unrelated global changes')
@@ -128,10 +127,7 @@ test('isolated business workflow: inherited brief → locked A/B → result impo
     assert.equal(controlledB.version.render.shots.s1.url, '/media/fixture.mp4')
     assert.equal(controlledB.version.render.shots.s0, undefined)
     const batchZip = await fetch(base + batchRoute + '/batch/delivery.zip?ids=' + first.id + ',' + second.id)
-    assert.equal(batchZip.status, 200)
-    const zipBytes = Buffer.from(await batchZip.arrayBuffer())
-    assert.equal(zipBytes.readUInt32LE(0), 0x04034b50)
-    assert.ok(zipBytes.includes(Buffer.from('batch-manifest.json')))
+    assert.equal(batchZip.status, 409, 'unreviewed batch videos cannot be packaged')
     await request(batchRoute, 'DELETE')
     await request('/api/projects/' + first.id, 'GET', undefined, 404)
     child.kill(); await once(child, 'exit'); child = null

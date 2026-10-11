@@ -45,8 +45,8 @@ test('creative projection shares brief while controlled variants can preserve th
   assert.equal(projectCreative(p, item).brief.channel, 'old-channel')
   assert.equal(projectCreative(p, item).experiments, undefined)
 })
-test('production resumes an existing remote shot without resubmission, skips completed clips, assembles and checks quality', async () => {
-  const p = filmed(); p.review.approved = true; p.render.finalVideo = null
+test('production resumes an existing remote shot without resubmission, skips completed clips and assembles before review', async () => {
+  const p = filmed(); p.review.approved = false; p.render.finalVideo = null
   p.render.shots.s1 = { status: 'running', taskId: 'remote-existing' }
   const calls = []
   const result = await runCreativePipeline(p.id, 'produce', { load: async () => p, progress: async () => {}, cancelled: () => false, wait: async () => {}, invoke: async (_, key) => {
@@ -55,12 +55,12 @@ test('production resumes an existing remote shot without resubmission, skips com
     if (key === 'assemble') { p.render.finalVideo = { url: '/media/new.mp4' }; return { ffmpeg: true } }
     if (key === 'quality') p.render.qualityReview = { status: 'passed' }
   } })
-  assert.deepEqual(calls, ['poll', 'assemble', 'quality']); assert.match(result, /完成/)
+  assert.deepEqual(calls, ['preflight', 'poll', 'assemble']); assert.match(result, /完成/)
 })
-test('review blocker prevents paid video submission and cancellation preserves current state', async () => {
+test('local preflight prevents paid video submission and cancellation preserves current state', async () => {
   const p = filmed(); const calls = []
-  await assert.rejects(runCreativePipeline(p.id, 'produce', { load: async () => p, invoke: async (_, action) => calls.push(action), progress: async () => {}, cancelled: () => false }), /审核未通过/)
-  assert.deepEqual(calls, [], 'production cannot silently rewrite or approve scripts')
+  await assert.rejects(runCreativePipeline(p.id, 'produce', { load: async () => p, invoke: async (_, action) => {calls.push(action);throw new Error("基础检查：缺少素材")}, progress: async () => {}, cancelled: () => false }), /基础检查/)
+  assert.deepEqual(calls, ['preflight'], 'local check precedes paid submission')
   await assert.rejects(runCreativePipeline(p.id, 'review', { load: async () => p, invoke: async () => assert.fail('must not submit'), progress: async () => {}, cancelled: () => true }), /暂停/)
 })
 test('brand and platform rules are combined; missing platform coverage cannot be overridden by the model', async () => {

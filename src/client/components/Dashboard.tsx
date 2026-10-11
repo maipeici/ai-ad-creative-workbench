@@ -7,15 +7,17 @@ export const PHASES = [
   { id: 2, name: '投放需求', desc: '明确受众、场景、目标与渠道', icon: 'settings' },
   { id: 3, name: '广告创意', desc: '选定本项目的一条核心创意', icon: 'spark' },
   { id: 4, name: '分镜规划', desc: '确认基础脚本，设置变化范围与视频版本', icon: 'layers' },
-  { id: 5, name: '自动审核', desc: '同时检查品牌要求与投放平台规则', icon: 'check' },
-  { id: 6, name: '视频制作', desc: '同一创意批量生成多个视频，逐条质检与交付', icon: 'movie' },
+  // IDs stay stable for saved projects; array order defines the visible workflow.
+  { id: 6, name: '视频制作', desc: '同一创意批量生成多个完整视频', icon: 'movie' },
+  { id: 5, name: '自动审核', desc: '统一审核成片，打包下载通过的视频', icon: 'check' },
 ]
 
 export function projectStatus(p: ProjectSummary) {
+  if (p.approvedCount) return { label: p.approvedCount + ' 条审核通过', tone: 'green' }
+  if (p.pendingReviewCount) return { label: p.pendingReviewCount + ' 条成片待审核', tone: 'amber' }
   if (p.completedCount) return { label: `${p.completedCount}/${p.creativeCount || 1} 条已有成片`, tone: 'green' }
   if (p.finalVideo) return { label: '已有成片', tone: 'green' }
-  if (p.approved) return { label: '待生成', tone: 'blue' }
-  if (p.phase >= 5) return { label: '待审核', tone: 'amber' }
+  if (p.phase >= 5) return { label: '制作中', tone: 'blue' }
   return { label: '创作中', tone: 'brand' }
 }
 export function formatDate(value: string) {
@@ -43,7 +45,7 @@ export default function Dashboard({ projects, meta, lastId, busy, onOpen, onCrea
   const metrics = [
     { label: '素材项目', value: projects.length, detail: '全部创作项目', icon: 'grid', color: 'pink' },
     { label: '已有成片', value: finished, detail: '可预览与下载', icon: 'movie', color: 'green' },
-    { label: '待审核项目', value: projects.filter(p => p.phase >= 5 && !p.approved && !p.finalVideo).length, detail: '生成前自动检查', icon: 'check', color: 'amber' },
+    { label: '待审核项目', value: projects.filter(p => p.pendingReviewCount).length, detail: '成片完成后统一审核', icon: 'check', color: 'amber' },
     { label: '视频素材', value: projects.reduce((n, p) => n + (p.creativeCount || 1), 0), detail: '每条素材独立制作', icon: 'layers', color: 'blue' },
   ]
 
@@ -53,7 +55,7 @@ export default function Dashboard({ projects, meta, lastId, busy, onOpen, onCrea
         <div className="hero-copy">
           <div className="eyebrow"><span className="live-dot" /> AI CREATIVE STUDIO</div>
           <h1>让好创意，<br className="sm:hidden" />更快成为好广告<span>。</span></h1>
-          <p>一条核心创意，一份共用脚本框架，多个视频版本。从品牌准备、自动审核到批量制作。</p>
+          <p>一条核心创意，一份共用脚本框架，多个视频版本。从品牌准备、批量制作到成片审核。</p>
           <div className="flex flex-wrap items-center gap-3 mt-6">
             <button className="btn-primary" onClick={onCreate} disabled={busy}><Icon name="plus" /> 新建素材项目</button>
             {onGuide && <button className="guide-entry hero-guide" onClick={onGuide}><Icon name="play" width="15" />90 秒了解流程</button>}
@@ -98,7 +100,7 @@ export default function Dashboard({ projects, meta, lastId, busy, onOpen, onCrea
                 <div className="flex items-start justify-between gap-3"><div className={'project-mark ' + (p.finalVideo ? 'finished' : '')}><Icon name={p.finalVideo ? 'movie' : phase.icon} width="24" height="24" /></div><span className={'status-pill ' + status.tone}>{status.label}</span></div>
                 <h3>{p.name}</h3>
                 <p className="project-channel">{meta.channels.find(c => c.id === p.channel)?.name || '尚未选择渠道'}{p.durationSec ? ' · ' + p.durationSec + ' 秒' : ''}</p>
-                <div className="mini-progress" aria-label={'当前阶段：' + phase.name}>{PHASES.map(ph => <span key={ph.id} className={p.finalVideo || ph.id <= p.phase ? 'filled' : ''} />)}</div>
+                <div className="mini-progress" aria-label={'当前阶段：' + phase.name}>{PHASES.map(ph => <span key={ph.id} className={p.finalVideo || PHASES.findIndex(item=>item.id===ph.id) <= PHASES.findIndex(item=>item.id===p.phase) ? 'filled' : ''} />)}</div>
                 <div className="project-card-footer"><span>{p.creativeCount || 1} 条素材 <span className="mx-1">·</span> {formatDate(p.updatedAt)} 更新</span><span className="project-open">{p.finalVideo ? '查看成片' : phase.name}<Icon name="arrow" width="15" /></span></div>
               </button>
             })}
@@ -118,7 +120,7 @@ export default function Dashboard({ projects, meta, lastId, busy, onOpen, onCrea
       </div>
       <section className="journey-panel">
         <div className="section-heading"><div><h2>一条清晰的创作路径</h2><p>每一步都可回看、调整，再继续。</p></div><span className="small-label">WORKFLOW</span></div>
-        <div className="journey-grid">{PHASES.map(ph => <div className="journey-step" key={ph.id}><span>{'0' + ph.id}</span><h3>{ph.name}</h3><p>{ph.desc}</p></div>)}</div>
+        <div className="journey-grid">{PHASES.map((ph,index) => <div className="journey-step" key={ph.id}><span>{'0' + (index+1)}</span><h3>{ph.name}</h3><p>{ph.desc}</p></div>)}</div>
       </section>
       <footer className="studio-footer"><span>花小猪 · AI 广告创意工作台</span><span>让每一次创意，都有清晰的下一步。</span></footer>
     </div>
