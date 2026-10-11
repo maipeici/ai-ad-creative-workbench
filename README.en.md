@@ -58,7 +58,9 @@ Channel presets include Douyin, Tencent Ads, Kuaishou, and WeChat Channels. The 
 
 Maintain shared data within Brand and assets. Select directions and versions: each item keeps independent storyboards, reviews, clips, and videos. A serial queue retains completed work and continues past individual failures. Pausing retains remote jobs; resuming polls them without resubmitting. The screenshot shows 12 pending items, not 12 newly rendered videos.
 
-![Twelve pending creative items in one project](assets/screenshots/batch-production.png)
+Batch controls live in the project-level material drawer; stage pages focus on the current item. Once a video is ready, open material testing from delivery.
+
+![Project material drawer with status filters and batch actions](assets/screenshots/batch-production.png)
 
 Material testing has four steps: select outputs, define the comparison, import data, and record findings. Compare complete concepts descriptively, or control the first/last shot while keeping other content and fixed clips identical. One baseline can start a controlled test before creating a variant. Screenshots contain no invented performance figures.
 
@@ -106,7 +108,7 @@ Direct video analysis requires Vertex Gemini; text-only analysis also supports t
 
 Record character, vehicle, scene, and style descriptions once, then manage individual shots. Each card includes its role, prompt, voiceover, subtitle, duration, and asset references.
 
-![Storyboard Agent with generation requirements and shared visual context](assets/screenshots/storyboard.png)
+![Current material storyboard with editable shot cards](assets/screenshots/storyboard.png)
 
 | Rendering mode | Use |
 | --- | --- |
@@ -128,7 +130,7 @@ Bundled platform rules are limited public-source baselines. WeChat Channels curr
 
 Queue multiple videos or generate, import, and retry individual shots. FFmpeg combines footage, subtitles, assets, and narration and extracts a cover. Final quality checks inspect actual video/audio and the same brand/platform rules with Vertex Gemini (up to 14 MB). Failures retain the video without automatically regenerating paid shots.
 
-![Video production with shot previews, finished video, and cover download](assets/screenshots/render-export.png)
+![Finished video preview, downloads, and quality inspection](assets/screenshots/render-export.png)
 
 The **ZIP delivery bundle** includes video, available cover, copy, and metadata with quality status. Batches and tests can export multiple completed videos together, up to 250 MB per ZIP. JSON export remains available; stale videos must be rebuilt before delivery.
 

@@ -27,6 +27,10 @@ export function Section({
   )
 }
 
+export function DetailsWhen({ when, label, children }: { when: boolean; label: string; children: React.ReactNode }) {
+  return when ? <details className="stage-disclosure"><summary>{label}</summary>{children}</details> : <>{children}</>
+}
+
 export function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
     <div className="form-field">
@@ -85,13 +89,14 @@ export function CopyButton({ text, label = '复制' }: { text: string; label?: s
 }
 
 export function Modal({
-  open, title, onClose, children, wide,
+  open, title, onClose, children, wide, drawer,
 }: {
   open: boolean
   title: string
   onClose: () => void
   children: React.ReactNode
   wide?: boolean
+  drawer?: boolean
 }) {
   const dialog = useRef<HTMLDivElement>(null)
   const close = useRef(onClose)
@@ -118,13 +123,13 @@ export function Modal({
   }, [open])
   if (!open) return null
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4 sm:p-6" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
-      <div ref={dialog} role="dialog" aria-modal="true" aria-labelledby={titleId} className={'card w-full ' + (wide ? 'max-w-4xl' : 'max-w-xl') + ' my-8 shadow-2xl'}>
+    <div className={drawer ? 'material-drawer-backdrop' : 'fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4 sm:p-6'} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div ref={dialog} role="dialog" aria-modal="true" aria-labelledby={titleId} className={drawer ? 'material-drawer card' : 'card w-full ' + (wide ? 'max-w-4xl' : 'max-w-xl') + ' my-8 shadow-2xl'}>
         <div className="flex items-center justify-between px-5 py-4 border-b border-ink-600">
           <h3 id={titleId} className="text-sm font-semibold">{title}</h3>
-          <button className="text-slate-500 hover:text-slate-200 text-xl leading-none p-1" onClick={onClose} aria-label="关闭弹窗">×</button>
+          <button className="text-slate-500 hover:text-slate-200 text-xl leading-none p-1" onClick={onClose} aria-label={drawer ? '关闭素材管理' : '关闭弹窗'}>×</button>
         </div>
-        <div className="p-5">{children}</div>
+        <div className={drawer ? 'material-drawer-body' : 'p-5'}>{children}</div>
       </div>
     </div>
   )

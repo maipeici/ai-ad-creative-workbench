@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { api } from './api'
 import type { Meta, Project, ProjectSummary } from './types'
-import { Badge, Modal, Spinner, Toast } from './ui'
+import { Modal, Spinner, Toast } from './ui'
 import Dashboard, { PHASES, formatDate, projectStatus } from './components/Dashboard'
 import Icon from './components/Icon'
 import GuidedTour from './components/GuidedTour'
@@ -16,13 +16,13 @@ import Phase5 from './phases/Phase5Review'
 import Phase6 from './phases/Phase6Render'
 
 export interface PhaseProps {
-  resourceMode?: boolean
   openReferences?: () => void
   openExperiments?: () => void
   registerBeforeLeave?: (save: (() => Promise<void>) | null) => void
   creativeTab?: 'concepts' | 'references'
   preview?: boolean
   foundationTab?: string
+  gotoFoundation?: (tab: string) => void
   project: Project
   meta: Meta
   patch: (p: Record<string, unknown>) => Promise<void>
@@ -46,6 +46,7 @@ export default function App() {
   const [activePhase, setActivePhase] = useState(1)
   const [view, setView] = useState<'overview' | 'project' | 'experiments'>('overview')
   const [creativeTab, setCreativeTab] = useState<'concepts' | 'references'>('concepts')
+  const [foundationTab, setFoundationTab] = useState('brand')
   const beforeLeave = useRef<(() => Promise<void>) | null>(null)
   const registerBeforeLeave = useCallback((save: (() => Promise<void>) | null) => { beforeLeave.current = save }, [])
   const [toast, setToast] = useState<{ msg: string; tone?: 'error' | 'ok' } | null>(null)
@@ -99,14 +100,16 @@ export default function App() {
       await beforeLeave.current?.()
       const p = await api.getProject(id)
       const projectMeta = await api.meta(p.brandGuideId)
-      if (sequence !== openSequence.current) return
+      if (sequence !== openSequence.current) return false
       setProject(p)
       setMeta(projectMeta)
+      if ((project?.batchId || project?.id) !== (p.batchId || p.id)) setFoundationTab('brand')
       setActivePhase(phase || p.phase || 1)
       setView(phase === 7 ? 'experiments' : 'project')
       setMenuOpen(false)
       remember(p.batchId || id)
-    } catch (e: any) { notify(e.message, 'error') }
+      return true
+    } catch (e: any) { notify(e.message, 'error'); return false }
     finally { if (sequence === openSequence.current) setBusy(false) }
   }
   const prepareCreate = () => {
@@ -123,6 +126,7 @@ export default function App() {
       setProject(p)
       setMeta(await api.meta(p.brandGuideId))
       setActivePhase(1)
+      setFoundationTab('brand')
       setView('project')
       remember(p.id)
       setShowCreate(false)
@@ -192,11 +196,10 @@ export default function App() {
   const changeView = async (next: typeof view) => { try { await beforeLeave.current?.(); setView(next); setMenuOpen(false) } catch {} }
   const openReferences = () => { if (!project) { notify('先选择或新建一个推广任务，参考库会结合任务生成建议'); return }; setCreativeTab('references'); void navigate(3) }
   const openExperiments = () => { const root = project?.batchId || project?.experimentLink?.parentId; if (root) void openProject(root, 7); else void changeView('experiments') }
-  const phaseProps: PhaseProps | null = project ? { project, meta, patch, setProject: setProjectAndRefresh, reloadMeta, notify, goto: phase => { void navigate(phase) }, openReferences, openExperiments, creativeTab, registerBeforeLeave } : null
+  const phaseProps: PhaseProps | null = project ? { project, meta, patch, setProject: setProjectAndRefresh, reloadMeta, notify, goto: phase => { void navigate(phase) }, gotoFoundation: tab => { setFoundationTab(tab); void navigate(1) }, foundationTab, openReferences, openExperiments, creativeTab, registerBeforeLeave } : null
   const currentPhase = PHASES.find(ph => ph.id === activePhase) || PHASES[0]
   const visibleProjects = projects.filter(p => !p.experimentLink && p.name.toLowerCase().includes(sidebarSearch.trim().toLowerCase()))
   const configured = !meta.providers.video.startsWith('mock') && !meta.providers.video.startsWith('manual')
-  const completed = Object.values(phaseReady).filter(Boolean).length
   const showOverview = () => { void changeView('overview') }
   const channelName = (id?: string) => meta.channels.find(c => c.id === id)?.name || '未选择渠道'
 
@@ -238,18 +241,15 @@ export default function App() {
             <button className="text-link mb-3" onClick={showOverview}>← 返回项目总览</button>
             <div className="workspace-title-row"><div className="min-w-0 flex-1"><input className="project-name-input" aria-label="项目名称" value={project.name} readOnly={!!project.batchId} onChange={e => setProject({ ...project, name: e.target.value })} onBlur={e => { if (project.batchId) return; const name = e.target.value.trim(); if (name && name !== projects.find(p => p.id === (project.batchId || project.id))?.name) void patch({ name }).catch(() => {}); else if (!name) setProject({ ...project, name: projects.find(p => p.id === project.id)?.name || '未命名素材项目' }) }} />
               <div className="workspace-meta"><span>{channelName(project.brief?.channel)}</span><span>·</span><span>{project.brief?.durationSec || '—'} 秒</span><span>·</span><span>{project.storyboard?.shots?.length || 0} 个镜头</span><span className="save-indicator">{saving ? '正在保存…' : project.name !== projects.find(p => p.id === (project.batchId || project.id))?.name ? '编辑中' : '已保存'}</span></div></div>
-              <div className="workspace-progress"><strong>{completed}<small> / 6</small></strong><span>阶段已就绪</span></div>
             </div>
           </div>
           <nav ref={phaseNavigation} className="phase-navigation" aria-label="创作阶段">
             {PHASES.map(ph => <button key={ph.id} className={(activePhase === ph.id ? 'active ' : '') + (phaseReady[ph.id] ? 'ready' : '')} disabled={!!project.experimentLink && !project.batchId && ph.id < 4} onClick={() => void navigate(ph.id)} aria-current={activePhase === ph.id ? 'step' : undefined}><span className="phase-number">{phaseReady[ph.id] ? <Icon name="check" width="13" height="13" /> : '0' + ph.id}</span><span>{ph.name}</span></button>)}
           </nav>
-          <div className="project-tools"><span>{project.batch?.items.length || 1} 条视频素材 · 共享一份投放需求</span><button className="text-link" onClick={openExperiments}>素材测试（可选） →</button></div>
+          <BatchPanel project={project} phase={activePhase} onOpen={openProject} onUpdate={setProjectAndRefresh} notify={notify} beforeOpen={async () => { await beforeLeave.current?.() }} />
           <div className="phase-scroll" key={project.id + '-' + activePhase}>
             <div className="phase-content animate-in">
-              <div className="phase-intro"><div><div className="eyebrow">STEP {'0' + activePhase}</div><h1>{currentPhase.name}</h1><p>{currentPhase.desc}</p></div><Badge tone={phaseReady[activePhase] ? 'green' : 'slate'}>{phaseReady[activePhase] ? '本阶段已就绪' : '待完善'}</Badge></div>
-              {activePhase >= 4 && <BatchPanel project={project} phase={activePhase} onOpen={openProject} onUpdate={setProjectAndRefresh} notify={notify} onTests={openExperiments} />}
-              {project.creativeName && activePhase >= 4 && <p className="creative-current">正在编辑：<strong>{project.creativeName}</strong></p>}
+              <div className="phase-intro"><div><div className="eyebrow">STEP {'0' + activePhase}</div><h1>{currentPhase.name}</h1><p>{currentPhase.desc}</p></div></div>
               {project.experimentLink && <div className="business-context">实验 {project.experimentLink.label} 版 · {project.experimentLink.label === 'A' ? '基准脚本已锁定，可继续制作视频。' : '只修改指定镜头，固定镜头沿用基准版。'}<button className="btn-ghost" onClick={() => void openProject(project.experimentLink!.parentId, 7)}>返回素材测试 →</button></div>}
               {phaseProps && activePhase === 1 && <Phase1 {...phaseProps} />}
               {phaseProps && activePhase === 2 && <Phase2 {...phaseProps} />}
@@ -257,7 +257,7 @@ export default function App() {
               {phaseProps && activePhase === 4 && <Phase4 {...phaseProps} />}
               {phaseProps && activePhase === 5 && <Phase5 {...phaseProps} />}
               {phaseProps && activePhase === 6 && <Phase6 {...phaseProps} />}
-              <div className="phase-footer-nav"><button className="btn-ghost" disabled={!!project.experimentLink && activePhase === 4} onClick={() => activePhase === 1 ? showOverview() : void navigate(activePhase - 1)}>{activePhase === 1 ? '返回总览' : '← 上一阶段'}</button>{activePhase < 6 && <button className="btn-primary" onClick={() => void navigate(activePhase + 1)}>下一阶段：{PHASES[activePhase].name}<Icon name="arrow" width="16" /></button>}</div>
+              <div className="phase-footer-nav"><button className="btn-ghost" disabled={!!project.experimentLink && activePhase === 4} onClick={() => activePhase === 1 ? showOverview() : void navigate(activePhase - 1)}>{activePhase === 1 ? '返回总览' : '← 上一阶段'}</button>{activePhase < 6 && (activePhase !== 3 || project.storyboard || (project.batch?.items.length || 0) > 1) && <button className="btn-primary" onClick={() => void navigate(activePhase + 1)}>{activePhase === 3 ? '继续已有素材的分镜' : '下一阶段：' + PHASES[activePhase].name}<Icon name="arrow" width="16" /></button>}</div>
             </div>
           </div>
         </div>}

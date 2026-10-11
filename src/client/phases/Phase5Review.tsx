@@ -1,28 +1,23 @@
 import { useEffect, useState } from 'react'
 import type { PhaseProps } from '../App'
 import { api } from '../api'
-import type { AutoFixResult, Shot, ValidateResult } from '../types'
-import { Badge, CopyButton, EmptyHint, IssueRow, RenderModeBadge, RoleBadge, Section, Spinner } from '../ui'
-import ShotCard from '../components/ShotCard'
+import type { AutoFixResult, ValidateResult } from '../types'
+import { Badge, EmptyHint, IssueRow, RoleBadge, Section, Spinner } from '../ui'
 import AutomaticReviewPanel from '../components/AutomaticReviewPanel'
 
-export default function Phase5Review({ project, meta, patch, setProject, notify, goto, preview }: PhaseProps) {
+export default function Phase5Review({ project, meta, patch, setProject, notify, goto, gotoFoundation, preview }: PhaseProps) {
   const sb = project.storyboard
-  const [pkg, setPkg] = useState<any>(null)
   const [validation, setValidation] = useState<ValidateResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [fixing, setFixing] = useState<string | null>(null)
   const [fixReport, setFixReport] = useState<AutoFixResult | null>(project.review?.report ? { report: project.review.report, before: project.review.ruleSummary, after: project.review.ruleSummary } as AutoFixResult : null)
-  const selectedAssetIds = Object.values(project.assets || {}).flat()
-  const selectedFactIds = project.facts || []
 
   const load = async () => {
     if (!sb || preview) return
     setLoading(true)
     try {
-      const [p, v, fresh] = await Promise.all([api.getPackage(project.id), api.validate(project.id), api.getProject(project.id)])
+      const [v, fresh] = await Promise.all([api.validate(project.id), api.getProject(project.id)])
       setProject(fresh)
-      setPkg(p)
       setValidation(v)
     } catch (e: any) {
       notify(e.message, 'error')
@@ -69,7 +64,7 @@ export default function Phase5Review({ project, meta, patch, setProject, notify,
     finally { setFixing(null) }
   }
 
-  const panel = <AutomaticReviewPanel project={project} meta={meta} patch={patch} runReview={runReview} busy={fixing !== null} goto={goto} notify={notify} />
+  const panel = <AutomaticReviewPanel project={project} meta={meta} patch={patch} runReview={runReview} busy={fixing !== null} goto={goto} onRules={() => gotoFoundation?.('compliance')} notify={notify} />
   useEffect(() => {
     load()
   }, [project.updatedAt, project.id])
@@ -77,25 +72,16 @@ export default function Phase5Review({ project, meta, patch, setProject, notify,
   if (!sb || preview) return panel
 
   const blockers = validation?.summary.blockers || 0
-  const updateShot = (id: string, p: Partial<Shot>) =>
-    patch({ storyboard: { ...sb, shots: sb.shots.map((s) => (s.id === id ? { ...s, ...p } : s)) } })
-  const issuesOf = (shotId: string) => validation?.shots.find((s) => s.shotId === shotId)?.issues || []
-
   return (
     <>
       {panel}
-      <Section
-        title="自动校验与修复"
-        desc="合规词库、事实绑定、生成方式、官方素材与口播语速的自动检查。每条问题都给出具体改法，可一键修复。阻断项清零后才能通过审核。"
+      <details className="stage-disclosure" open={blockers > 0 || undefined}><summary>规则扫描明细 · {blockers} 项阻断 / {validation?.summary.warnings || 0} 项提醒</summary><Section
+        title="规则扫描问题"
+        desc="这些问题也会纳入上方自动审核。需要单独处理时，可在此定位并修复。"
         right={
           <div className="flex items-center gap-2 flex-wrap">
             <Badge tone={blockers ? 'red' : 'green'}>阻断 {blockers}</Badge>
             <Badge tone={validation?.summary.warnings ? 'amber' : 'slate'}>提醒 {validation?.summary.warnings || 0}</Badge>
-            {!!validation?.summary.autoFixable && (
-              <button className="btn-primary !py-1 !text-xs" onClick={() => runFix({})} disabled={fixing !== null || !!project.experimentLink}>
-                {fixing === 'all' && <Spinner />} 一键修复全部（{validation.summary.autoFixable}）
-              </button>
-            )}
             <button className="btn-ghost !py-1 !text-xs" onClick={load} disabled={loading || fixing !== null}>
               {loading && <Spinner />} 重新检查
             </button>
@@ -114,7 +100,7 @@ export default function Phase5Review({ project, meta, patch, setProject, notify,
               <div className="text-[11px] text-slate-300 bg-ink-900 border border-ink-600 rounded p-3 leading-relaxed">
                 <p className="font-medium text-brand-soft mb-1">有 {validation.summary.needsUpload} 个镜头引用了未上传的官方素材</p>
                 <p className="text-slate-500">
-                  App 界面与 Logo 禁止 AI 生成。<span className="text-slate-300">推荐</span>：去 Phase 1 上传真实截图/录屏。
+                  App 界面与 Logo 禁止 AI 生成。<span className="text-slate-300">推荐</span>：回到品牌素材上传真实截图/录屏。
                   若本次先不展示界面，可用下面的「移除未上传素材引用并修复」，系统会移除引用并同步调整文案。
                 </p>
                 <button
@@ -228,7 +214,7 @@ export default function Phase5Review({ project, meta, patch, setProject, notify,
                   <span className="text-amber-300 font-medium">{m.scope}</span>
                   <span className="text-slate-400 ml-2">{m.label || m.reason}</span>
                   {m.action === 'upload-asset' && (
-                    <button className="ml-2 text-[10px] text-brand hover:text-brand-soft" onClick={() => goto(1)}>
+                    <button className="ml-2 text-[10px] text-brand hover:text-brand-soft" onClick={() => gotoFoundation?.('assets')}>
                       去上传 →
                     </button>
                   )}
@@ -237,95 +223,9 @@ export default function Phase5Review({ project, meta, patch, setProject, notify,
             </div>
           </div>
         )}
-      </Section>
-
-      <details className="business-disclosure"><summary>高级详情 · 模型指令与素材引用</summary><Section
-        title="编译后的最终生成指令"
-        desc="实际送给视频模型的内容。注意 overlay 类镜头的文字与界面不在 Prompt 里，而是在 Phase 6 精确叠加。"
-        right={
-          <a className="btn-ghost !py-1 !text-xs" href={`/api/projects/${project.id}/package?download=1`} download>
-            导出生产包 JSON
-          </a>
-        }
-      >
-        {!pkg ? (
-          <EmptyHint>加载中…</EmptyHint>
-        ) : (
-          <>
-            {pkg.factsUsed?.length > 0 && (
-              <div className="mb-3 bg-ink-900 border border-ink-600 rounded p-3">
-                <div className="label">本素材引用的事实依据</div>
-                <div className="space-y-1">
-                  {pkg.factsUsed.map((f: any) => (
-                    <p key={f.id} className="text-[11px] text-slate-400">
-                      <code className="text-emerald-400">{f.id}</code> {f.title} — {f.statement}
-                      {f.source && <span className="text-slate-600"> · 来源：{f.source}</span>}
-                    </p>
-                  ))}
-                </div>
-              </div>
-            )}
-            <div className="space-y-2">
-              {pkg.shots.map((s: any) => (
-                <details key={s.id} className="bg-ink-900 border border-ink-600 rounded-lg">
-                  <summary className="cursor-pointer px-3 py-2 text-xs text-slate-300 flex items-center gap-2 flex-wrap">
-                    <span className="tag bg-brand/15 text-brand-soft">#{s.index}</span>
-                    <RoleBadge role={s.role} />
-                    <RenderModeBadge mode={s.renderMode} />
-                    <span className="truncate flex-1 min-w-0">{s.titleCn}</span>
-                    <span className="text-slate-600 text-[10px]">
-                      {s.durationSec}s · {s.refImages?.length || 0} 参考图
-                    </span>
-                  </summary>
-                  <div className="px-3 pb-3 space-y-2">
-                    {s.vo && <KV label="口播" value={s.vo} />}
-                    {s.subtitle && <KV label="字幕（后期烧录）" value={s.subtitle} />}
-                    {s.overlayItems?.length > 0 && <KV label="需叠加" value={s.overlayItems.join(' / ')} />}
-                    {s.overlayAssets?.length > 0 && (
-                      <KV
-                        label="叠加素材"
-                        value={s.overlayAssets.map((a: any) => `${a.name}${a.ready ? '' : '（未上传）'}`).join(' / ')}
-                      />
-                    )}
-                    {s.factRefs?.length > 0 && <KV label="事实依据" value={s.factRefs.join(', ')} />}
-                    <PromptBlock label="PROMPT" text={s.prompt} />
-                    <PromptBlock label="NEGATIVE PROMPT" text={s.negativePrompt} dim />
-                  </div>
-                </details>
-              ))}
-            </div>
-          </>
-        )}
       </Section></details>
 
-      <div className="business-context">需要调整画面或文案？在分镜页统一修改，保留问题定位和审核记录。<button className="btn-ghost" onClick={() => goto(4)}>修改分镜 →</button></div>
+      {(blockers > 0 || project.review.status === 'blocked') && <div className="phase-scope-note">需要手动修改画面或文案？<button className="text-link" onClick={() => goto(4)}>返回分镜修改 →</button></div>}
     </>
-  )
-}
-
-function KV({ label, value }: { label: string; value: string }) {
-  return (
-    <p className="text-[11px] text-slate-400">
-      <span className="text-slate-600">{label}：</span>
-      {value}
-    </p>
-  )
-}
-
-function PromptBlock({ label, text, dim }: { label: string; text: string; dim?: boolean }) {
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-[10px] font-semibold text-slate-500">{label}</span>
-        <CopyButton text={text} />
-      </div>
-      <p
-        className={`text-[10px] font-mono leading-relaxed p-2.5 rounded border border-ink-600 ${
-          dim ? 'text-slate-600 bg-ink-800/50' : 'text-slate-300 bg-ink-800'
-        }`}
-      >
-        {text}
-      </p>
-    </div>
   )
 }

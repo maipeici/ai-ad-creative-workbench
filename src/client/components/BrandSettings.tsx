@@ -11,7 +11,7 @@ export function BrandSelector({ project, meta, patch, reloadMeta, notify }: Phas
     await patch({ brandGuideId, assets: Object.fromEntries(Object.keys(project.assets).map(k => [k, []])), facts: [], brief: { campaign: '', campaignFactId: '', sellingPoint: '' } })
   }
   const fields = [['productName', '品牌名称'], ['positioning', '产品定位'], ['productNameEn', '英文名称'], ['category', '产品品类'], ['primaryColor', '品牌主色'], ['secondaryColor', '辅助色']]
-  return <Section title="本项目使用的品牌" desc="在这里选择、新增和维护品牌。品牌资料可复用，这批素材共用同一品牌与投放需求。">
+  return <div className="brand-selector">
     <div className="batch-toolbar"><select aria-label="选择品牌" className="input max-w-sm" value={project.brandGuideId || 'hxz-ad-v1'} disabled={busy} onChange={async e => { setBusy(true); try { await choose(e.target.value) } catch (error: any) { notify(error.message, 'error') } finally { setBusy(false) } }}>{meta.brands?.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}</select>
       <button className="btn-ghost" onClick={() => { setMode('new'); setDraft({ productName: '', positioning: '', primaryColor: '#FF3E7F', secondaryColor: '#FFE4EE' }) }}>新增品牌</button>
       <button className="btn-ghost" onClick={() => { setMode('edit'); setDraft(Object.fromEntries(fields.map(([key]) => [key, String((meta.brandGuide.brandIdentity as any)[key] || '')]))) }}>编辑品牌</button>
@@ -24,7 +24,7 @@ export function BrandSelector({ project, meta, patch, reloadMeta, notify }: Phas
         setMode(null); notify('品牌资料已保存')
       } catch (e: any) { notify(e.message, 'error') } finally { setBusy(false) } }}>保存{mode === 'new' ? '并选用' : '品牌'}</button><button className="btn-ghost" onClick={() => setMode(null)}>取消</button></div>
     </div>}
-  </Section>
+  </div>
 }
 
 export function ComplianceSettings({ project, meta, reloadMeta, notify }: PhaseProps) {

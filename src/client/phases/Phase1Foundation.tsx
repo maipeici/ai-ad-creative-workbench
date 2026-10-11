@@ -13,7 +13,7 @@ const FOUNDATION_TABS = [
   { id: 'compliance', label: '合规边界说明', desc: '表达边界 · 使用规则' },
 ]
 export default function Phase1Foundation(props: PhaseProps) {
-  const { project, meta, patch, reloadMeta, notify, goto, foundationTab, resourceMode, openReferences } = props
+  const { project, meta, patch, reloadMeta, notify, foundationTab } = props
   const { brandGuide, compliance } = meta
   const brandId = project.brandGuideId || 'hxz-ad-v1'
   const assets = { ...meta.assets, items: meta.assets.items.filter(a => (a.brandId || 'hxz-ad-v1') === brandId || !['brand', 'productUI', 'overlay'].includes(a.category) && !a.brandId) }
@@ -154,15 +154,9 @@ export default function Phase1Foundation(props: PhaseProps) {
           </button>
         ))}
       </nav>
-      <div className="foundation-scope">
-        <Badge tone="brand">共享资料 · 项目独立选用</Badge>
-        <span>{resourceMode ? '这里的勾选会作为新任务的默认资料；已有任务保持原来的选用。' : '在本环节新增或选择品牌、活动与素材；所选内容用于整批视频。'}</span>
-        {!resourceMode && <button className="btn-ghost ml-auto" onClick={async () => { try { await api.saveWorkspace({ defaults: { assets: project.assets, facts: project.facts, brandGuideId: project.brandGuideId } }); notify('已设为新任务默认资料') } catch (e: any) { notify(e.message, 'error') } }}>将本次选用设为默认</button>}
-      </div>
-
-      {tab === 'brand' && <BrandSelector {...props} />}
       {tab === 'compliance' && <ComplianceSettings {...props} />}
-      {tab === 'brand' && <Section title="品牌基础信息" desc="品牌是谁、提供什么价值，以及识别品牌所需的 Logo 和品牌色。">
+      {tab === 'brand' && <Section title="品牌基础信息" desc="选择或新增品牌，明确定位、识别与核心卖点。">
+        <BrandSelector {...props} />
         <div className="brand-identity-grid">
           <div className="brand-logo-card">
             {logoAsset?.refImage ? <img src={logoAsset.refImage} alt={brandGuide.brandIdentity.productName + ' Logo'} /> : <div className="brand-logo-empty">Logo 待上传</div>}
@@ -202,7 +196,7 @@ export default function Phase1Foundation(props: PhaseProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
           {visual.lighting.presets.map(preset => <div className="foundation-detail" key={preset.id}>
             <div className="flex items-center gap-2 mb-2"><strong className="text-xs">{preset.name}</strong>{preset.id === visual.lighting.default && <Badge tone="brand">默认</Badge>}</div>
-            <p className="text-[11px] text-slate-400 leading-relaxed">{preset.prompt}</p>
+            <details className="mt-2"><summary className="text-xs text-slate-400 cursor-pointer">查看光照提示词</summary><p className="text-[11px] text-slate-400 leading-relaxed mt-2">{preset.prompt}</p></details>
           </div>)}
         </div>
         <div className="foundation-detail mt-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -215,7 +209,7 @@ export default function Phase1Foundation(props: PhaseProps) {
         </details>
       </Section>}
 
-      {tab === 'compliance' && <Section title="通用表达扫描" desc="词库提供快速风险提示，Agent 再结合上下文、品牌要求与平台规则判断。">
+      {tab === 'compliance' && <details className="stage-disclosure"><summary>查看通用风险词库（自动扫描）</summary><Section title="通用表达扫描" desc="词库提供快速风险提示，Agent 再结合上下文、品牌要求与平台规则判断。">
         <div className="label mt-6">自动扫描规则 · {compliance.rules.length} 类</div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           {compliance.rules.map(rule => <div className="foundation-detail" key={rule.id}>
@@ -225,7 +219,7 @@ export default function Phase1Foundation(props: PhaseProps) {
           </div>)}
         </div>
         <p className="foundation-notice">审核不会补造活动权益、承诺或官方素材。缺少依据时，结果会列出需要补充的资料。</p>
-      </Section>}
+      </Section></details>}
 
       {['brand', 'campaign', 'compliance'].includes(tab) && <Section
         title={tab === 'brand' ? '核心卖点与产品事实' : tab === 'campaign' ? '营销活动与权益' : '补充合规依据'}
@@ -240,40 +234,6 @@ export default function Phase1Foundation(props: PhaseProps) {
           </div>
         }
       >
-        {factLib.notice && (
-          <p className="text-[11px] text-amber-300 bg-amber-950/30 border border-amber-800/50 rounded p-2.5 mb-3 leading-relaxed">
-            {factLib.notice}
-          </p>
-        )}
-
-        {tab === 'campaign' && <div className="bg-ink-900 border border-ink-600 rounded p-3 mb-4">
-          <div className="flex items-start gap-2">
-            <span className="text-brand text-sm shrink-0">⊞</span>
-            <div className="min-w-0 flex-1">
-              <p className="text-[11px] text-slate-300 font-medium">优惠卡片由系统生成，不从网络获取</p>
-              <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">
-                活动金额、门槛和有效期以你提供并确认的资料为准。
-                系统使用已配置的品牌色与 Logo 按固定版式生成优惠卡，金额、门槛、有效期全部取自下方「已确认」的事实条目，
-                确认后点击事实卡片上的「生成优惠卡素材」即可产出可叠加的 PNG。
-              </p>
-              <div className="flex items-end gap-2 mt-2.5">
-                <div className="flex-1">
-                  <div className="text-[10px] text-slate-500 mb-1">生成 CTA 按钮素材（会过合规扫描）</div>
-                  <input
-                    className="input !py-1 !text-[11px]"
-                    placeholder="例如：点击下载，立即叫车"
-                    value={ctaText}
-                    onChange={(e) => setCtaText(e.target.value)}
-                  />
-                </div>
-                <button className="btn-ghost !py-1 !text-[11px]" onClick={makeCta} disabled={cardBusy === 'cta'}>
-                  {cardBusy === 'cta' ? '生成中…' : '生成 CTA 卡'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>}
-
         <div className="space-y-4">
           {factLib.factTypes.filter(ft => factTypes.includes(ft.id)).map((ft) => {
             const items = factLib.facts.filter((f) => f.type === ft.id)
@@ -305,7 +265,6 @@ export default function Phase1Foundation(props: PhaseProps) {
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-xs font-medium text-slate-200">{f.title}</span>
                               <FactStatus status={f.status} />
-                              <code className="text-[10px] text-slate-600">{f.id}</code>
                             </div>
                             <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">{f.statement}</p>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
@@ -452,15 +411,25 @@ export default function Phase1Foundation(props: PhaseProps) {
           })}
         </div>
 
-        <div className="mt-6 flex items-center justify-between gap-4">
-          <p className="text-[11px] text-slate-600">
-            {selectedFacts.length === 0 && <span className="text-amber-400">建议先勾选至少一条已确认的产品事实</span>}
-          </p>
-          {!resourceMode && <button className="btn-primary" onClick={() => goto(2)}>
-            下一步：填写投放需求 →
-          </button>}
-        </div>
       </Section>}
+
+      {tab === 'assets' && <details className="stage-disclosure"><summary>制作 CTA 按钮素材（可选）</summary><div className="p-5"><p className="business-help">使用品牌色生成可复用的按钮图片，保存到素材资源库。</p>              <div className="flex items-end gap-2 mt-2.5">
+                <div className="flex-1">
+                  <div className="text-[10px] text-slate-500 mb-1">生成 CTA 按钮素材（会过合规扫描）</div>
+                  <input
+                    className="input !py-1 !text-[11px]"
+                    placeholder="例如：点击下载，立即叫车"
+                    value={ctaText}
+                    onChange={(e) => setCtaText(e.target.value)}
+                  />
+                </div>
+                <button className="btn-ghost !py-1 !text-[11px]" onClick={makeCta} disabled={cardBusy === 'cta'}>
+                  {cardBusy === 'cta' ? '生成中…' : '生成 CTA 卡'}
+                </button>
+              </div>
+</div></details>}
+
+      {tab === 'assets' && <div className="phase-scope-note"><span>已选 {totalAssets} 项素材 · {selectedFacts.length} 条事实</span><button className="text-link" onClick={async () => { try { await api.saveWorkspace({ defaults: { assets: project.assets, facts: project.facts, brandGuideId: project.brandGuideId } }); notify('已设为新项目默认资料') } catch (e: any) { notify(e.message, 'error') } }}>设为新项目默认选用</button></div>}
 
       {/* 新增素材弹窗 */}
       <Modal open={!!newAssetCat} title="添加素材" onClose={() => setNewAssetCat(null)}>

@@ -38,7 +38,7 @@ export default function ExperimentPanel({ project, projects, notify, onOpen, onU
   return <div className="business-page">
     <div className="business-heading"><div><p className="eyebrow">MATERIAL TESTING</p><h1>素材测试</h1><p>用真实投放数据回答：哪种表达更值得继续做？这是可选环节，不影响批量制作与交付。</p></div><button className="btn-primary" disabled={!root || !!busy} onClick={() => setCreating(!creating)}>{creating ? '收起新测试' : '选择素材，建立测试'}</button></div>
     <div className="test-steps">{[['01','选素材','从本批成片中选择'],['02','设对照','明确差异与判断指标'],['03','导入数据','使用同口径投放结果'],['04','看结果','记录下一轮改什么']].map(([n,title,desc]) => <div key={n}><span>{n}</span><strong>{title}</strong><small>{desc}</small></div>)}</div>
-    <div className="batch-toolbar"><label className="label !mb-0" htmlFor="test-project">当前项目</label><select id="test-project" className="input max-w-lg" value={root || ''} onChange={e => onOpen(e.target.value, 7)}><option value="" disabled>选择项目</option>{projects.filter(p => !p.experimentLink).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select><button className="text-link" disabled={!root} onClick={() => root && onOpen(root, 6)}>返回本批成片 →</button></div>
+    <div className="batch-toolbar"><label className="label !mb-0" htmlFor="test-project">当前项目</label><select id="test-project" className="input max-w-lg" value={root || ''} onChange={e => onOpen(e.target.value, 7)}><option value="" disabled>选择项目</option>{projects.filter(p => !p.experimentLink).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select><button className="text-link" disabled={!root} onClick={() => root && onOpen(root, 6)}>返回成片交付 →</button></div>
     {creating && project && <Section title="建立素材测试" desc="直接引用已有素材，不会复制一个新项目。可以先选一条基准素材，再制作单变量版本。">
       <div className="test-mode-grid">{[['comparison','多素材对比','比较不同创意的实际表现，适合筛选方向。'],['single-variable','单变量测试','只改变开头或 CTA，其他镜头与条件保持一致。']].map(([id,title,desc]) => <button key={id} className={'test-mode ' + (form.mode === id ? 'active' : '')} onClick={() => setForm({ ...form, mode: id })}><strong>{title}</strong><span>{desc}</span></button>)}</div>
       <div className="label mt-5">选择本批素材 · 第一条选中的素材作为 A 对照</div>
@@ -49,7 +49,7 @@ export default function ExperimentPanel({ project, projects, notify, onOpen, onU
       <button className="btn-primary mt-4" disabled={!!busy || picked.length < (form.mode === 'comparison' ? 2 : 1) || !form.hypothesis.trim()} onClick={() => run('create', async () => { const result = await api.createExperiment(root!, { ...form, creativeIds: picked }); onUpdate(result.project); await refresh(result.experiment.id); setCreating(false); notify('测试已建立，已关联所选素材') })}>建立测试 · 已选 {picked.length} 条素材</button>
     </Section>}
     {error && <p role="alert" className="inspiration-error">{error}</p>}
-    {!items.length && !creating && <div className="business-empty"><h2>先做一批素材，再验证表达</h2><p>完成视频后选出要比较的素材，确定一个核心指标，再导入广告后台的实际数据。</p><button className="btn-ghost mt-4" disabled={!root} onClick={() => root && onOpen(root, 6)}>查看本批素材</button></div>}
+    {!items.length && !creating && <div className="business-empty"><h2>还没有素材测试</h2><p>点击「选择素材，建立测试」，选出已有成片、确定比较问题，再导入真实投放数据。</p></div>}
     {!!items.length && <div className="business-selector">{items.map(e => <button key={e.id} className={e.id === selected ? 'chip-on' : 'chip-off'} disabled={!!busy} onClick={() => setSelected(e.id)}>{e.title}</button>)}</div>}
     {current && <>
       <Section title={current.title} desc={current.hypothesis} right={<Badge tone="blue">{current.mode === 'comparison' ? '多素材对比' : '单变量测试'} · {metricNames[metric]}</Badge>}>

@@ -24,7 +24,6 @@ export default function Phase3Concept(props: PhaseProps) {
   useEffect(()=>{if(creativeTab==='concepts'&&appliedId)appliedCard.current?.scrollIntoView({block:'start',behavior:'smooth'})},[creativeTab,appliedId])
 
   const concepts = project.concepts || []
-  const selected = concepts.find((c) => c.id === project.selectedConceptId) || null
   const factById = new Map(meta.facts.facts.map((f) => [f.id, f]))
 
   const generate = async (keepExisting: boolean) => {
@@ -60,12 +59,9 @@ export default function Phase3Concept(props: PhaseProps) {
   return (
     <>
       {tabs}
-      <div className="business-context">勾选多个创意方向，按每个方向的版本数创建一批视频素材。不同方向属于创意探索；单变量测试可在成片后单独建立。</div>
-      <div className="concept-entry"><div><strong>用一条参考视频，开启完整创作</strong><p>上传视频 → 自动拆解爆款点 → 导入当前方案 → 生成参考分镜与视频。</p></div><button className="btn-ghost" onClick={()=>setCreativeTab('references')}>导入爆款视频 →</button></div>
       <Section
         title="广告创意 Agent"
-        desc="AI 基于品牌规范、已确认事实、合规词库与投放需求生成多个创意方案。只有已确认的事实会被用于卖点表达。"
-        right={<Badge tone={selected ? 'green' : 'amber'}>{selected ? '已选定方案' : '未选定'}</Badge>}
+        desc="基于品牌与投放需求生成多个方向；也可先从「爆款参考」导入视频拆解建议。勾选方案后统一创建素材。"
       >
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4 items-end">
           <Field label="创意指令 / 偏好（可选）">
@@ -148,7 +144,6 @@ export default function Phase3Concept(props: PhaseProps) {
 
                 {c.id===appliedId&&<p className="reference-applied" role="status">参考已导入 · 当前方案已选中</p>}
                 <ReferenceGuidance reference={c.inspiration}/>
-                {on&&c.inspiration&&<button className="btn-primary w-full" onClick={()=>goto(4)}>用此参考方案生成分镜 →</button>}
                 {blockers.length > 0 && (
                   <div className="mt-3 space-y-1">
                     {blockers.map((h, i) => (
@@ -180,15 +175,6 @@ export default function Phase3Concept(props: PhaseProps) {
                     )}
                   </Row>
 
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <Row label="击中痛点">
-                      <p className="text-[11px] text-slate-400">{c.painPoint}</p>
-                    </Row>
-                    <Row label="人群场景匹配">
-                      <p className="text-[11px] text-slate-400">{c.audienceFit}</p>
-                    </Row>
-                  </div>
-
                   <Row label="核心卖点">
                     {isEditing ? (
                       <input className="input" value={c.sellingPoint} onChange={(e) => update(c.id, 'sellingPoint', e.target.value)} />
@@ -213,6 +199,24 @@ export default function Phase3Concept(props: PhaseProps) {
                       )}
                     </div>
                   </Row>
+
+                  <Row label="结尾 CTA">
+                    {isEditing ? (
+                      <input className="input" value={c.ctaText} onChange={(e) => update(c.id, 'ctaText', e.target.value)} />
+                    ) : (
+                      <p className="text-xs text-amber-300">{c.ctaText}</p>
+                    )}
+                  </Row>
+
+                  <details className="creative-details" open={isEditing || undefined}><summary>查看内容结构与创作依据</summary>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <Row label="击中痛点">
+                      <p className="text-[11px] text-slate-400">{c.painPoint}</p>
+                    </Row>
+                    <Row label="人群场景匹配">
+                      <p className="text-[11px] text-slate-400">{c.audienceFit}</p>
+                    </Row>
+                  </div>
 
                   <Row label="产品出现方式">
                     <p className="text-[11px] text-slate-400">{c.productAppearance}</p>
@@ -244,14 +248,6 @@ export default function Phase3Concept(props: PhaseProps) {
                     </div>
                   </Row>
 
-                  <Row label="结尾 CTA">
-                    {isEditing ? (
-                      <input className="input" value={c.ctaText} onChange={(e) => update(c.id, 'ctaText', e.target.value)} />
-                    ) : (
-                      <p className="text-xs text-amber-300">{c.ctaText}</p>
-                    )}
-                  </Row>
-
                   {c.whyItWorks && (
                     <div className="text-[11px] text-slate-500 bg-ink-900 border border-ink-600 rounded p-2.5 leading-relaxed">
                       💡 {c.whyItWorks}
@@ -262,6 +258,8 @@ export default function Phase3Concept(props: PhaseProps) {
                       🧪 可验证假设：{c.testHypothesis}
                     </div>
                   )}
+
+                  </details>
 
                   {isEditing && (
                     <div className="flex items-center gap-2">

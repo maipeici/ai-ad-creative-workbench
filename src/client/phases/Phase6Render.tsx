@@ -4,7 +4,7 @@ import FinalQualityPanel from '../components/FinalQualityPanel'
 import type { PhaseProps } from '../App'
 import { api } from '../api'
 import type { ShotRender } from '../types'
-import { Badge, CopyButton, EmptyHint, Field, Modal, RenderModeBadge, RoleBadge, Section, Spinner } from '../ui'
+import { Badge, CopyButton, DetailsWhen, EmptyHint, Field, Modal, RenderModeBadge, RoleBadge, Section, Spinner } from '../ui'
 import { buildMaterialName } from '../utils'
 
 const STATUS_TONE: Record<string, string> = {
@@ -65,7 +65,10 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
     }
   }, [runningKey, project.id, setProject])
 
-  if (!sb) return <EmptyHint>还没有分镜，请先完成 Phase 4 / 5。</EmptyHint>
+  const finalVideo = project.render?.finalVideo
+  const readyFilms = project.batch?.items.filter(item => item.videoUrl && !item.stale).length || (finalVideo && !finalVideo.stale ? 1 : 0)
+  const deliveryActions = readyFilms > 0 && <div className="delivery-actions"><div><strong>投放与比较</strong><p>选择已完成素材开展投放测试，再导入数据比较表现。</p></div><div className="flex gap-2 flex-wrap">{(project.batch?.items.length || 0) > 1 && <a className="btn-ghost" href={`/api/projects/${project.batchId || project.id}/batch/delivery.zip`} download>下载本批成片 ZIP（{readyFilms}）</a>}<button className="btn-primary" onClick={openExperiments}>进入素材测试 →</button></div></div>
+  if (!sb) return <><EmptyHint>当前素材还没有分镜。<button className="text-link ml-2" onClick={() => goto(4)}>前往分镜规划 →</button></EmptyHint>{deliveryActions}</>
 
   const renders = project.render?.shots || {}
   const staleConcept = Boolean(sb.conceptId && sb.conceptId !== project.selectedConceptId)
@@ -167,11 +170,13 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
 
   return (
     <>
-      <ReferenceGuidance reference={sb.inspiration} stage="video"/>
       {project._experimentRenderLocked && <p className="business-context">A 版已被其他实验版本引用，视频保持锁定。仍可查看、质检和导出；需要更换基准时，请回源任务建立新实验。</p>}
       {staleConcept&&<div className="inspiration-notice">当前创意已切换，已有视频保留。请回到分镜阶段生成新方案的分镜。<button className="btn-ghost" onClick={()=>goto(4)}>前往分镜 →</button></div>}
-      {!preview && !meta.ffmpeg && <div className="rounded-xl border border-amber-900/60 bg-amber-950/20 px-4 py-3 text-xs text-amber-200 leading-relaxed" role="status"><strong>视频合成待配置</strong><p className="mt-1 text-amber-200/70">本机尚未安装视频合成工具。已有成片可以播放和下载，新的字幕叠加与成片合成暂不可用。</p></div>}
+
       {Object.values(renders).some(render => render.stale) && <p className="foundation-notice">自动审核修复了部分分镜。对应旧镜头与成片保留供回看，请重新生成或回传标记为待更新的镜头，再合成新版。</p>}
+      <DetailsWhen when={!!finalVideo && !finalVideo.stale && !runningKey && !batchRunning} label="调整镜头与生成设置">
+      <ReferenceGuidance reference={sb.inspiration} stage="video"/>
+      {!preview && !meta.ffmpeg && <div className="rounded-xl border border-amber-900/60 bg-amber-950/20 px-4 py-3 text-xs text-amber-200 leading-relaxed" role="status"><strong>视频合成待配置</strong><p className="mt-1 text-amber-200/70">本机尚未安装视频合成工具。已有成片可以播放和下载，新的字幕叠加与成片合成暂不可用。</p></div>}
       <Section
         title="生成设置"
         desc="选择口播音色，再生成待完成的镜头。字幕、品牌素材与配音会在合成时自动加入。"
@@ -183,12 +188,11 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
               {(meta.voices || []).map(v => <option key={v.id} value={v.id} title={v.desc}>{v.name}</option>)}
             </select>
           </Field>
-          <Field label="生成与导出">
+          <Field label="镜头生成">
             <div className="flex gap-2">
               <button className="btn-primary flex-1" onClick={renderAll} disabled={batchRunning || !!busyShot || !approved || !pendingShots.length}>
                 {batchRunning && <Spinner />}{batchRunning ? '提交中 ' + batchProgress.done + '/' + batchProgress.total : pendingShots.length ? '生成待完成镜头（' + pendingShots.length + '）' : '全部镜头已提交'}
               </button>
-              <a className="btn-ghost" href={'/api/projects/' + project.id + '/package?download=1'} download>导出创作数据 JSON</a>
             </div>
           </Field>
         </div>
@@ -207,8 +211,7 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
             </Field>
           </fieldset>
         </details>
-        <p className="mt-3 text-[11px] text-slate-500">批量生成会保留已有镜头，只提交尚未完成的部分。需要调整时，可在下方单独重新生成对应镜头。</p>
-        <p className="mt-2 text-[11px] text-slate-600">建议素材命名：<code className="text-brand-soft">{materialName}.mp4</code></p>
+        <p className="mt-3 text-[11px] text-slate-500">生成时会保留已有镜头，只提交尚未完成的部分。需要调整时，可在下方单独重新生成对应镜头。</p>
       </Section>
       <Section
         title={`镜头制作（${doneCount}/${sb.shots.length} 已就绪）`}
@@ -281,7 +284,7 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
                     {(shot.overlayItems || []).length > 0 && (
                       <p className="text-[10px] text-brand-soft mt-0.5">需叠加：{shot.overlayItems.join(' / ')}</p>
                     )}
-                    {r?.message && <p className="text-[11px] text-amber-400 mt-1">{r.message}</p>}
+                    {r?.message && (!r.url || r.status === 'running' || r.status === 'failed') && <p className="text-[11px] text-amber-400 mt-1">{r.message}</p>}
                     {r?.error && <p className="text-[11px] text-red-400 mt-1">{r.error}</p>}
                     {needsOv && <p className="text-[11px] text-brand mt-1">该镜头需要叠加字幕与素材后才能用于成片</p>}
 
@@ -328,14 +331,15 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
         </div>
       </Section>
 
+      </DetailsWhen>
       <Section
-        title="成片合成"
+        title={finalVideo ? '成片预览与下载' : '成片合成'}
         dataGuide="assembly"
         desc="按分镜顺序合成视频、字幕与配音，提取封面后自动发起成片质检。"
         right={
           <div className="flex gap-2">
             <button className="btn-primary" onClick={() => assemble(false)} disabled={assembling || project._experimentRenderLocked || !approved || !meta.ffmpeg}>
-              {assembling && <Spinner />} 合成并自动质检
+              {assembling && <Spinner />} {finalVideo ? '重新合成并质检' : '合成并自动质检'}
             </button>
           </div>
         }
@@ -364,12 +368,13 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
               <a className="btn-primary !py-1 !text-xs" href={project.render.finalVideo.url} download>
                 下载成片
               </a>
+              {!finalVideo?.stale && <a className="btn-ghost !py-1 !text-xs ml-2" href={`/api/projects/${project.id}/delivery.zip`} download>下载交付包 ZIP</a>}
+              <p className="business-help">交付包包含成片与当前质检报告，下载不代表已通过平台审核。</p>
             </div>
           </div>
         ) : (
           <EmptyHint>
             完成自动审核与镜头制作后即可合成。
-            {!meta.ffmpeg && <span className="block mt-2 text-amber-400">当前环境未安装 ffmpeg，叠加与合成不可用。</span>}
             {!meta.subtitleFont && <span className="block mt-2 text-amber-400">未找到中文字体，字幕无法烧录。</span>}
           </EmptyHint>
         )}
@@ -390,28 +395,9 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
         )}
       </Section>
 
-      <FinalQualityPanel project={project} onUpdate={setProject} notify={notify} goto={goto} />
-      <div className="business-context">围绕同一推广任务比较素材版本，在素材测试中管理基准版、实验版和投放结果。<button className="btn-primary" onClick={openExperiments}>进入素材测试 →</button></div>
-      {project.variants?.length > 0 && <details className="business-disclosure"><summary>历史变体草稿（{project.variants.length}）</summary>{project.variants.map(v => <p key={v.id} className="business-help">{v.variantName}：{v.hypothesis} · {v.changeSummary}</p>)}</details>}
-
-      <Section title="发现问题？回到对应阶段" desc="工作流支持局部迭代，修改全局设定时系统会标记受影响的镜头。">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-          {[
-            [1, '更换素材 / 事实', 'Foundation'],
-            [2, '修改投放需求', 'Brief'],
-            [3, '调整创意方向', 'Concept'],
-            [4, '修改分镜', 'Storyboard'],
-            [5, '重新审核', 'Review'],
-          ].map(([id, label, sub]) => (
-            <button key={id as number} className="card p-3 text-left hover:border-brand/50 transition-colors" onClick={() => goto(id as number)}>
-              <div className="text-xs font-medium text-slate-200">{label}</div>
-              <div className="text-[10px] text-slate-600 mt-0.5">
-                Phase {id} · {sub}
-              </div>
-            </button>
-          ))}
-        </div>
-      </Section>
+      {finalVideo && <FinalQualityPanel project={project} onUpdate={setProject} notify={notify} goto={goto} />}
+      {deliveryActions}
+      <details className="stage-disclosure"><summary>导出创作数据与历史草稿</summary><div className="p-4 space-y-3"><p className="business-help">保存脚本、生成指令与素材引用，供归档或外部工具接续制作。</p><a className="btn-ghost" href={'/api/projects/' + project.id + '/package?download=1'} download>导出创作数据 JSON</a><p className="business-help">建议素材命名：{materialName}.mp4</p>{project.variants?.length > 0 && <details><summary>历史变体草稿（{project.variants.length}）</summary>{project.variants.map(v => <p key={v.id} className="business-help">{v.variantName}：{v.hypothesis} · {v.changeSummary}</p>)}</details>}</div></details>
 
       <Modal open={!!manualFor} title="回传已确认素材或外部生成视频" onClose={() => setManualFor(null)}>
         <div className="space-y-3">

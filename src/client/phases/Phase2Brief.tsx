@@ -3,7 +3,7 @@ import type { PhaseProps } from '../App'
 import type { Brief } from '../types'
 import { Badge, Field, Section } from '../ui'
 
-export default function Phase2Brief({ project, meta, patch, goto, openReferences, openExperiments, registerBeforeLeave }: PhaseProps) {
+export default function Phase2Brief({ project, meta, patch, goto, registerBeforeLeave }: PhaseProps) {
   const { brandGuide, channels } = meta
   const [brief, setBrief] = useState<Brief>(project.brief)
   const [dirty, setDirty] = useState(false)
@@ -36,7 +36,7 @@ export default function Phase2Brief({ project, meta, patch, goto, openReferences
 
   return (
     <>
-      <div className="brand-resource-summary"><strong>{brandGuide.brandIdentity.productName}</strong><span className="text-sm text-slate-400">已选 {project.facts.length} 条事实 · {Object.values(project.assets).flat().length} 项素材</span><button className="btn-ghost ml-auto" onClick={() => goto(1)}>调整本次选用</button></div>
+      <div className="phase-scope-note"><span>品牌：{brandGuide.brandIdentity.productName}</span><button className="text-link" onClick={() => goto(1)}>调整品牌与资料</button></div>
       <Section
         title="本次推广任务"
         desc="明确这批素材「对谁说、在什么场景说、解决什么问题、用哪个有依据的卖点回应、希望用户做什么」。"
@@ -55,9 +55,9 @@ export default function Phase2Brief({ project, meta, patch, goto, openReferences
               {channel && (
                 <div className="brief-help brief-channel-notes">
                   <p>建议时长 {channel.recommendedDuration.join('–')}s · {channel.resolution}</p>
-                  <p className="brief-warning">安全区：{channel.safeArea.note}</p>
+                  <details><summary className="cursor-pointer">查看平台制作规格</summary><p className="brief-warning">安全区：{channel.safeArea.note}</p>
                   <p>{channel.firstFrameRule}</p>
-                  <p>{channel.audioRule}</p>
+                  <p>{channel.audioRule}</p></details>
                 </div>
               )}
             </Field>
@@ -85,7 +85,6 @@ export default function Phase2Brief({ project, meta, patch, goto, openReferences
                   </button>
                 ))}
               </div>
-              {scene && <p className="brief-help">{scene.prompt}</p>}
             </Field>
 
             <Field label="选用营销活动" hint="直接关联活动事实，无需重复填写权益">
@@ -100,7 +99,7 @@ export default function Phase2Brief({ project, meta, patch, goto, openReferences
           </div>
 
           <div className="brief-column">
-            <Field label="核心卖点" hint="本条素材主打什么">
+            <Field label="核心卖点" hint="这批素材围绕什么卖点创作">
               <input
                 className="input"
                 placeholder="例如：一键叫车，行前可看预估价"
@@ -149,7 +148,7 @@ export default function Phase2Brief({ project, meta, patch, goto, openReferences
                   </button>
                 ))}
               </div>
-              {cta && <p className="brief-help">文案：「{cta.text}」· 动作类型 {cta.action}</p>}
+              {cta && <p className="brief-help">文案：「{cta.text}」</p>}
             </Field>
 
             <div className="grid grid-cols-2 gap-4">
@@ -167,16 +166,12 @@ export default function Phase2Brief({ project, meta, patch, goto, openReferences
                   className="w-full accent-brand"
                 />
               </Field>
-              <Field label="参考视频">
-                <button className="btn-ghost" onClick={openReferences}>从统一参考库选用 →</button>
-                {brief.reference && <p className="brief-help">历史参考备注：{brief.reference}</p>}
-              </Field>
             </div>
 
             <Field label="承接页面 / App 页面" hint="记录广告点击后到达的位置，用于核对承诺与转化路径">
               <input className="input" value={brief.landingUrl || ''} onChange={e => set('landingUrl', e.target.value)} placeholder="落地页地址或 App 内页面名称" />
             </Field>
-            <div className="grid grid-cols-2 gap-4"><Field label="计划交付数量"><input type="number" min="1" max="100" className="input" value={brief.deliveryCount || 1} onChange={e => set('deliveryCount', Number(e.target.value))} /></Field><Field label="交付截止日期"><input type="date" className="input" value={brief.dueDate || ''} onChange={e => set('dueDate', e.target.value)} /></Field></div>
+            <div className="grid grid-cols-2 gap-4"><Field label="计划交付数量"><input type="number" min="1" max="60" className="input" value={brief.deliveryCount || 1} onChange={e => set('deliveryCount', Number(e.target.value))} /></Field><Field label="交付截止日期"><input type="date" className="input" value={brief.dueDate || ''} onChange={e => set('dueDate', e.target.value)} /></Field></div>
             <Field label="制作条件限制（可选）">
               <input
                 className="input"
@@ -199,7 +194,7 @@ export default function Phase2Brief({ project, meta, patch, goto, openReferences
 
         <div className="brief-footer mt-6 pt-4 border-t border-ink-600 flex items-center justify-between gap-4">
           <div className="brief-summary">
-            <span className="text-slate-300">本条素材：</span>
+            <span className="text-slate-300">这批素材：</span>
             对「{audience?.name || '—'}」在「{scene?.name || '—'}」场景下说，
             用「{brief.sellingPoint || '—'}」回应，引导「{cta?.name || '—'}」
           </div>
@@ -207,16 +202,10 @@ export default function Phase2Brief({ project, meta, patch, goto, openReferences
             <button className="btn-ghost" onClick={save} disabled={!dirty}>
               保存
             </button>
-            <button
-              className="btn-primary"
-              onClick={() => goto(3)}
-            >
-              下一步：生成广告创意 →
-            </button>
           </div>
         </div>
+        {brief.reference && <details className="business-disclosure mt-4"><summary>历史参考备注</summary><p className="business-help">{brief.reference}</p></details>}
       </Section>
-      <div className="business-context">需要验证不同素材的效果？先确定创意与基准分镜，再锁定一个变量建立实验。<button className="btn-ghost" onClick={openExperiments}>查看素材测试 →</button></div>
     </>
   )
 }
