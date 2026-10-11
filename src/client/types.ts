@@ -300,6 +300,7 @@ export interface Variant {
 }
 
 export interface Project {
+  iteration?: { parentProjectId:string; sourceExperimentId:string; variable:string; changeSummary:string; instruction:string }
   versionPlan?: { concept: Concept; template: Storyboard; hookStrategy: string; fixedNotes: string; allowedChanges: string[]; createdAt: string } | null
   brandGuideId?: string
   batchId?: string
@@ -381,11 +382,13 @@ export interface WorkspaceResources {
   updatedAt?: string
 }
 export interface ExperimentReport {
-  mode?: 'comparison' | 'single-variable'
+  mode?: 'tracking' | 'comparison' | 'single-variable'
   id: string; parentId: string; parentName: string; title: string; variable: string; primaryMetric: string; hypothesis: string
   editableShotId: string; editableShotIndex: number; evidence: string; comparable: boolean
   plan: { audience: string; budget: string; period: string; attribution: string; trafficMethod: string }
-  versions: { label: string; projectId: string; name: string; source: string; available: boolean; videoUrl?: string; cover?: string; readyShots: number; shotCount: number; staleVideo: boolean; staleData: boolean; hasData: boolean; totals: { impressions: number; clicks: number; conversions: number; spend: number }; metrics: { ctr: number | null; cvr: number | null; cpa: number | null } }[]
+  versions: { label: string; projectId: string; name: string; source: string; available: boolean; videoUrl?: string; cover?: string; readyShots: number; shotCount: number; staleVideo: boolean; staleData: boolean; hasData: boolean; parentProjectId?:string; changeSummary?:string; adCreativeIds:string[]; periods:string[]; sources:string[]; totals: { impressions: number; clicks: number; conversions: number; spend: number; revenue:number|null }; metrics: { ctr: number | null; cvr: number | null; cpa: number | null; roas:number|null } }[]
+  insights: {projectId:string;label:string;status:string;title:string;evidence:string;nextAction:string;variable:string}[]
+  iterations: {projectId:string;name:string;parentProjectId:string;changeSummary:string;experimentId:string;videoUrl?:string}[]
   conclusion: string; nextAction: string
 }
 

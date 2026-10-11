@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
+import { iterationInsights } from './iteration-insights.js'
 
 export const EXPERIMENT_VARIABLES = { hook: '开头内容', cta: '结尾行动引导' }
 export const PRIMARY_METRICS = { ctr: '点击率 CTR', cvr: '点击转化率 CVR', cpa: '转化成本 CPA' }
@@ -126,11 +127,13 @@ export function normalizeObservations(rows, experiment, projects) {
       metrics[key] = n
     }
     if (metrics.clicks > metrics.impressions || metrics.conversions > metrics.clicks) throw failure('本模板使用点击归因转化：转化数不能超过点击，点击不能超过曝光')
+    const revenue = row.revenue === undefined || row.revenue === '' ? null : Number(row.revenue)
+    if (revenue !== null && (!Number.isFinite(revenue) || revenue < 0)) throw failure('成交金额 revenue 需为非负数，未提供时留空')
     const key = `${version.projectId}:${row.startDate}:${row.endDate}`
     if (seen.has(key)) throw failure('同一版本和统计区间不能重复导入')
     seen.add(key)
     return { key, projectId: version.projectId, version: version.label, startDate: row.startDate, endDate: row.endDate,
-      source: row.source.slice(0, 500), ...metrics, videoUrl: project.render.finalVideo.url, importedAt: new Date().toISOString() }
+      source: row.source.slice(0, 500), adCreativeId: String(row.adCreativeId || '').slice(0, 200), revenue, ...metrics, videoUrl: project.render.finalVideo.url, importedAt: new Date().toISOString() }
   })
 }
 export function mergeObservations(previous, incoming) {
@@ -142,17 +145,24 @@ export function mergeObservations(previous, incoming) {
   return merged
 }
 export function experimentReport(experiment, projects) {
-  const versions = experiment.versions.map(version => {
+  const versions = experiment.versions.map((version,index) => {
     const project = projects.find(p => p.id === version.projectId)
     const observations = experiment.observations.filter(row => row.projectId === version.projectId)
     const totals = observations.reduce((a, row) => { for (const k of ['impressions', 'clicks', 'conversions', 'spend']) a[k] += row[k]; return a }, { impressions: 0, clicks: 0, conversions: 0, spend: 0 })
+    totals.revenue = observations.length && observations.every(r=>Number.isFinite(r.revenue)) ? observations.reduce((n,r)=>n+r.revenue,0) : null
     return { ...version, available: Boolean(project), videoUrl: project?.render.finalVideo?.url, cover: project?.render.cover,
+      parentProjectId: project?.iteration?.parentProjectId || version.parentProjectId || (index>0 && !['tracking','comparison'].includes(experiment.mode) ? experiment.versions[0].projectId : undefined),
+      changeSummary: project?.iteration?.changeSummary || version.changeSummary || (index>0 && !['tracking','comparison'].includes(experiment.mode) ? experiment.variable==='cta'?'仅改结尾 CTA':'仅改开头' : undefined),
+      adCreativeIds: [...new Set(observations.map(r=>r.adCreativeId).filter(Boolean))],
+      periods: observations.map(r=>`${r.startDate} ~ ${r.endDate}`), sources: [...new Set(observations.map(r=>r.source))],
       shotCount: project?.storyboard?.shots.length || 0, readyShots: Object.values(project?.render.shots || {}).filter(r => r.url && !r.stale).length,
-      staleVideo: Boolean(project?.render.finalVideo?.stale), staleData: Boolean(project?.render.finalVideo?.stale) || observations.some(row => row.videoUrl !== project?.render.finalVideo?.url), hasData: observations.length > 0, totals,
-      metrics: { ctr: totals.impressions ? totals.clicks / totals.impressions : null, cvr: totals.clicks ? totals.conversions / totals.clicks : null, cpa: totals.conversions ? totals.spend / totals.conversions : null } }
+      staleVideo: Boolean(project?.render.finalVideo?.stale || project?.storyboard?.shots.some(s=>project.render.shots[s.id]?.stale)), staleData: Boolean(project?.render.finalVideo?.stale || project?.storyboard?.shots.some(s=>project.render.shots[s.id]?.stale)) || observations.some(row => row.videoUrl !== project?.render.finalVideo?.url), hasData: observations.length > 0, totals,
+      metrics: { ctr: totals.impressions ? totals.clicks / totals.impressions : null, cvr: totals.clicks ? totals.conversions / totals.clicks : null, cpa: totals.conversions ? totals.spend / totals.conversions : null, roas: totals.revenue !== null && totals.spend > 0 ? totals.revenue / totals.spend : null } }
   })
   const periods = experiment.versions.map(v => experiment.observations.filter(r => r.projectId === v.projectId).map(r => `${r.startDate}/${r.endDate}`).sort().join(','))
   const comparable = versions.length > 1 && versions.every(v => v.hasData && !v.staleData && v.metrics[experiment.primaryMetric] !== null && v.totals.impressions > 0) && periods.every(p => p === periods[0])
-  return { ...experiment, versions, comparable,
+  const report = { ...experiment, versions, comparable,
+    iterations: projects.filter(p=>p.iteration?.sourceExperimentId===experiment.id).map(p=>({projectId:p.id,name:p.creativeName||p.name,parentProjectId:p.iteration.parentProjectId,changeSummary:p.iteration.changeSummary,experimentId:p.experimentLink?.experimentId,videoUrl:p.render?.finalVideo?.url})),
     evidence: comparable ? '同统计区间的描述性比较；未验证分流执行与统计显著性，不自动判定胜出。' : '请为各版本导入相同统计区间且对应当前成片的数据，再比较效果。' }
+  return {...report,insights:iterationInsights(report)}
 }

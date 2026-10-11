@@ -10,6 +10,7 @@ export const PHASES = [
   // IDs stay stable for saved projects; array order defines the visible workflow.
   { id: 6, name: '视频制作', desc: '同一创意批量生成多个完整视频', icon: 'movie' },
   { id: 5, name: '自动审核', desc: '统一审核成片，打包下载通过的视频', icon: 'check' },
+  { id: 7, name: '投放迭代', desc: '关联效果数据，找到下一轮修改方向，复用镜头继续创作', icon: 'layers' },
 ]
 
 export function projectStatus(p: ProjectSummary) {
@@ -70,7 +71,7 @@ export default function Dashboard({ projects, meta, lastId, busy, onOpen, onCrea
             <div className="art-line long" /><div className="art-line short" />
             <div className="art-play"><Icon name="movie" width="22" height="22" /> 创意 → 成片</div>
           </div>
-          <div className="art-label"><span className="live-dot" /> 6 阶段创作流程</div>
+          <div className="art-label"><span className="live-dot" /> 7 阶段创作流程</div>
         </div>
       </section>
 

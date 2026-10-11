@@ -64,7 +64,6 @@ export default function BatchPanel({project,phase,production,audit,ffmpeg,onOpen
       </article>
     })}</div>
     {production&&complete>0&&<div className="delivery-actions"><div><strong>{complete} 条视频已完成</strong><p>下一步统一审核，审核通过后即可打包下载。</p></div><button className="btn-primary" onClick={()=>void onOpen(root,5)}>进入自动审核 →</button></div>}
-    {audit&&passed.length>0&&onExperiment&&<button className="btn-ghost" onClick={onExperiment}>进入素材测试 →</button>}
   </>
   if(board)return <section className="production-board" aria-label={audit?'成片自动审核与下载':'批量视频制作'}>{content}</section>
   return <><div className="project-material-bar"><span>同一创意 · {batch.items.length} 个视频版本</span><label className="material-switcher"><span>当前版本</span><select aria-label="切换当前版本" value={project.id} onChange={e=>{const item=batch.items.find(i=>i.id===e.target.value);if(item)void openItem(item,phase)}}>{batch.items.map((item,i)=><option key={item.id} value={item.id}>{String(i+1).padStart(2,'0')} · {item.name}</option>)}</select></label>{running&&<span className="material-running"><Spinner/>处理中</span>}<button className="btn-ghost" onClick={async()=>{try{await beforeOpen();setBatch(await api.batch(root));setOpen(true)}catch(e:any){notify(e.message,'error')}}}>版本脚本</button></div><Modal open={open} drawer title="准备各版本脚本" onClose={()=>setOpen(false)}>{content}</Modal></>

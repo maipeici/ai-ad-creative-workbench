@@ -139,7 +139,7 @@ export default function GuidedTour({ meta, onClose }: { meta: Meta; onClose: () 
             {step.phase === 5 && <Phase5 {...props} />}
             {step.phase === 6 && <Phase6 {...props} />}
           </div>}
-          {last && <div className="tour-finish"><div className="tour-finish-icon"><Icon name="check" width="32" height="32" /></div><p className="eyebrow">READY TO CREATE</p><h1>把第一个想法，<br />变成一条好广告。</h1><p>品牌资料 → 投放需求 → 创意 → 分镜 → 视频制作 → 自动审核与下载</p><div className="tour-finish-checks"><span>准备品牌与已确认事实</span><span>写清人群、场景和目标</span><span>逐步生成、校验与制作</span></div><small>真实生成需要配置相应模型；视频合成需要 FFmpeg。</small></div>}
+          {last && <div className="tour-finish"><div className="tour-finish-icon"><Icon name="check" width="32" height="32" /></div><p className="eyebrow">READY TO CREATE</p><h1>把第一个想法，<br />变成一条好广告。</h1><p>品牌资料 → 投放需求 → 创意 → 分镜 → 视频制作 → 自动审核与下载 → 投放迭代</p><div className="tour-finish-checks"><span>准备品牌与已确认事实</span><span>写清人群、场景和目标</span><span>逐步生成、校验与制作</span></div><small>真实生成需要配置相应模型；视频合成需要 FFmpeg。</small></div>}
         </div>
       </div>
       <aside className="tour-guide-column" aria-label="当前步骤讲解">

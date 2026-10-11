@@ -6,7 +6,7 @@ import { isFinalVideoApproved } from './delivery.js'
 
 // The original project's video remains in place. Additional creatives are nested
 // records, projected through the existing single-video endpoints for compatibility.
-export const CREATIVE_FIELDS = ['creativeName', 'creativeInstruction', 'versionPlan', 'sharedSnapshot', 'phase', 'concepts', 'selectedConceptId', 'storyboard', 'review', 'render', 'variants', 'experimentLink', 'createdAt', 'updatedAt']
+export const CREATIVE_FIELDS = ['creativeName', 'creativeInstruction', 'iteration', 'versionPlan', 'sharedSnapshot', 'phase', 'concepts', 'selectedConceptId', 'storyboard', 'review', 'render', 'variants', 'experimentLink', 'createdAt', 'updatedAt']
 export function creativeRecord(project) {
   return Object.fromEntries(['id', ...CREATIVE_FIELDS].filter(key => project[key] !== undefined).map(key => [key, structuredClone(project[key])]))
 }

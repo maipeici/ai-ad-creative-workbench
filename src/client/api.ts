@@ -40,6 +40,7 @@ export const api = {
   workspace: () => req<WorkspaceResources>('/api/workspace'),
   saveWorkspace: (changes: Partial<WorkspaceResources>) => req<WorkspaceResources>('/api/workspace', { method: 'PATCH', body: body(changes) }),
   experiments: () => req<ExperimentReport[]>('/api/experiments'),
+  iterateFromPerformance: (id: string, experimentId: string, input: Record<string,unknown>) => req<{project:Project;version:Project;experiment:ExperimentReport}>(`/api/projects/${id}/experiments/${experimentId}/iterate`,{method:'POST',body:body(input)}),
   nextExperimentTask: (id: string, experimentId: string) => req<Project>(`/api/projects/${id}/experiments/${experimentId}/next-task`, { method: 'POST', body: '{}' }),
   createExperiment: (id: string, input: Record<string, unknown>) => req<{ project: Project; experiment: ExperimentReport }>(`/api/projects/${id}/experiments`, { method: 'POST', body: body(input) }),
   experimentVersion: (id: string, experimentId: string, input: Record<string, unknown>) => req<{ project: Project; version: Project }>(`/api/projects/${id}/experiments/${experimentId}/versions`, { method: 'POST', body: body(input) }),

@@ -21,16 +21,16 @@ export function assertSingleVariable(projects, variable) {
   if (projects.length > 1 && new Set(projects.map(changed)).size !== projects.length) throw failure('测试版本必须在指定镜头存在实际差异，不能重复选择相同内容')
 }
 export function createMaterialTest(parent, projects, input) {
-  if (!['comparison', 'single-variable'].includes(input.mode) || !PRIMARY_METRICS[input.primaryMetric]) throw failure('请选择测试方式和主要指标')
-  if (!projects.length || projects.length > 12 || projects.some(p => !p.render?.finalVideo?.url || p.render.finalVideo.stale)) throw failure('请选择 1–12 条当前成片；可先选一条基准素材，再制作实验版')
+  if (!['tracking', 'comparison', 'single-variable'].includes(input.mode) || !PRIMARY_METRICS[input.primaryMetric]) throw failure('请选择记录方式和主要指标')
+  if (!projects.length || projects.length > 60 || projects.some(p => !p.render?.finalVideo?.url || p.render.finalVideo.stale || p.storyboard?.shots.some(s=>p.render.shots[s.id]?.stale))) throw failure('请选择 1–60 条当前成片')
   if (input.mode === 'comparison' && projects.length < 2) throw failure('多素材对比至少选择两条成片；只有一条时可先建立单变量基准')
   if (!String(input.hypothesis || '').trim()) throw failure('请填写这次想验证的问题')
   if (input.mode === 'single-variable') assertSingleVariable(projects, input.variable)
   const source = projects[0]
   const editable = input.variable === 'cta' ? source.storyboard?.shots.at(-1) : source.storyboard?.shots[0]
   return { id: randomUUID(), mode: input.mode, title: String(input.title || '素材效果对比').slice(0, 100), hypothesis: String(input.hypothesis).slice(0, 1000),
-    primaryMetric: input.primaryMetric, variable: input.mode === 'comparison' ? 'multiple' : input.variable,
+    primaryMetric: input.primaryMetric, variable: input.mode === 'single-variable' ? input.variable : 'multiple',
     editableShotId: editable?.id, editableShotIndex: editable?.index, createdAt: new Date().toISOString(),
     plan: { audience: input.audience || parent.brief.audience, budget: input.budget || '', period: input.period || '', attribution: input.attribution || '点击后 7 天', trafficMethod: input.trafficMethod || 'observational' },
-    versions: projects.map((p, i) => ({ label: String.fromCharCode(65 + i), projectId: p.id, name: p.creativeName || p.concepts?.find(c => c.id === p.selectedConceptId)?.title || '素材', source: 'existing' })), observations: [], conclusion: '', nextAction: '' }
+    versions: projects.map((p, i) => ({ label: i < 26 ? String.fromCharCode(65 + i) : `V${i+1}`, projectId: p.id, name: p.creativeName || p.concepts?.find(c => c.id === p.selectedConceptId)?.title || '素材', source: 'existing' })), observations: [], conclusion: '', nextAction: '' }
 }

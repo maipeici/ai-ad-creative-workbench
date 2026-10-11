@@ -4,6 +4,7 @@ import { createExperiment, createExperimentVersion, parseCsv, normalizeObservati
 import { assertStoryboardCurrent } from './inspiration-guidance.js'
 import { llmJson } from './providers/llm.js'
 import { randomUUID } from 'node:crypto'
+import { createPerformanceIteration } from './performance-iteration.js'
 
 export function registerExperimentRoutes(app, wrap) {
   const active = new Set()
@@ -84,7 +85,14 @@ export function registerExperimentRoutes(app, wrap) {
   }))
   app.get('/api/projects/:id/experiments/:experimentId/template.csv', wrap(async (req, res) => {
     const { experiment } = await find(req)
-    res.set('Content-Disposition', 'attachment; filename="experiment-results.csv"').type('text/csv').send('\uFEFFversion,startDate,endDate,impressions,clicks,conversions,spend,source\r\n' + experiment.versions.map(v => `${v.label},,,,,,,`).join('\r\n'))
+    res.set('Content-Disposition', 'attachment; filename="experiment-results.csv"').type('text/csv').send('\uFEFFversion,startDate,endDate,impressions,clicks,conversions,spend,source,adCreativeId,revenue\r\n' + experiment.versions.map(v => `${v.projectId},,,,,,,,,`).join('\r\n'))
+  }))
+  app.post('/api/projects/:id/experiments/:experimentId/iterate', withLock(async (req,res)=>{
+    const {parent,experiment}=await find(req)
+    const created=createPerformanceIteration(parent,experiment,await getAllProjects(),req.body)
+    parent.experiments.push(created.experiment)
+    await upsertProjects([parent,created.project])
+    res.json({project:await getProject(parent.id),version:await getProject(created.project.id),experiment:experimentReport(created.experiment,await getAllProjects())})
   }))
   app.post('/api/projects/:id/experiments/:experimentId/results', withLock(async (req, res) => {
     const { parent, experiment } = await find(req)

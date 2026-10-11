@@ -109,6 +109,7 @@ const PHASES = [
   { id: 4, key: 'storyboard', name: '分镜规划' },
   { id: 6, key: 'render', name: '视频制作' },
   { id: 5, key: 'review', name: '自动审核' },
+  { id: 7, key: 'iteration', name: '投放迭代' },
 ]
 
 function newProject(name) {
@@ -521,7 +522,7 @@ app.patch(
     if (changes.render) delete changes.render.qualityReview
     delete changes.reviewPolicy
     if (Object.hasOwn(changes, 'versionPlan')) return res.status(400).json({ error: '请在分镜规划中建立视频版本' })
-    for (const key of ['experimentLink', 'experiments', 'creatives', 'batch', 'batchId', 'batchJob', 'sharedSnapshot']) if (Object.hasOwn(changes, key)) return res.status(400).json({ error: '请使用实验工作区修改实验记录' })
+    for (const key of ['iteration', 'experimentLink', 'experiments', 'creatives', 'batch', 'batchId', 'batchJob', 'sharedSnapshot']) if (Object.hasOwn(changes, key)) return res.status(400).json({ error: '请在投放迭代中修改记录' })
     // Approval is computed by the review endpoint; clients only edit requirements and notes.
     if (Object.hasOwn(changes, 'review')) {
       changes.review = {}

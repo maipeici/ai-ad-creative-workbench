@@ -49,6 +49,7 @@ Channel presets include Douyin, Tencent Ads, Kuaishou, and WeChat Channels. The 
 | 04 Storyboard | Define the base script, fixed elements and variation scope | Scripts for each video version |
 | 05 Video production | Generate clips, add overlays and narration, assemble videos | Multiple complete videos |
 | 06 Automatic review | Review actual video/audio and compliance, download approved versions here | Findings and approved ZIP bundles |
+| 07 Performance iteration | Link videos to campaign results and create focused revisions | Metrics, hypotheses and parent-version history |
 
 <a id="features"></a>
 
@@ -62,9 +63,9 @@ Video Production displays one card per video with shot progress and previews. Lo
 
 ![Same-creative video versions and batch production](assets/screenshots/batch-production.png)
 
-Material testing has four steps: select outputs, define the comparison, import data, and record findings. Compare complete concepts descriptively, or control the first/last shot while keeping other content and fixed clips identical. One baseline can start a controlled test before creating a variant. Screenshots contain no invented performance figures.
+Performance Iteration is the seventh stage. Associate one or more videos with CSV results, including creative IDs, periods, CTR/CVR/CPA and optional revenue/ROAS. Suggestions are hypotheses, with checks for sparse samples, mismatched periods and stale videos. A revision changes only the opening or closing shot, reuses fixed clips and preserves the parent video and evidence snapshot within the same project. Campaign execution stays in the advertising platform. Creating a revision makes no model call.
 
-![Material testing with existing videos and a primary metric](assets/screenshots/material-testing.png)
+![Performance iteration without invented campaign results](assets/screenshots/performance-iteration.png)
 
 CSV imports calculate CTR, click-attributed CVR, and CPA. Matching intervals replace previous imports; overlapping intervals are rejected. Comparisons are descriptive, without automatic winners or significance claims. A saved next-step recommendation can create the next task. [CSV template](assets/examples/experiment-results.csv).
 

@@ -25,7 +25,7 @@ test('isolated business workflow: inherited brief → locked A/B → result impo
       const data = await response.json(); assert.equal(response.status, status, JSON.stringify(data)); return data
     }
     const meta = await request('/api/meta')
-    assert.deepEqual(meta.phases.slice(4).map(p=>p.name), ['视频制作','自动审核'])
+    assert.deepEqual(meta.phases.slice(4).map(p=>p.name), ['视频制作','自动审核','投放迭代'])
     const defaultFact = meta.facts.facts.find(f => f.status === 'confirmed' && !f.validTo && !f.validFrom)
     await request('/api/workspace', 'PATCH', { defaults: { assets: {}, facts: defaultFact ? [defaultFact.id] : [] } })
     const source = await request('/api/projects', 'POST', { name: 'Isolated A/B test, not real performance' })
@@ -126,6 +126,17 @@ test('isolated business workflow: inherited brief → locked A/B → result impo
     assert.equal(controlledB.version.batchId, batchProject.id)
     assert.equal(controlledB.version.render.shots.s1.url, '/media/fixture.mp4')
     assert.equal(controlledB.version.render.shots.s0, undefined)
+    const tracking=await request(batchRoute+'/experiments','POST',{mode:'tracking',creativeIds:[first.id],primaryMetric:'ctr',hypothesis:'记录效果并迭代'})
+    const trackingRoute=batchRoute+'/experiments/'+tracking.experiment.id
+    await request(trackingRoute+'/results','POST',{content:csv.split('\n').slice(0,2).join('\n')})
+    const iteration=await request(trackingRoute+'/iterate','POST',{projectId:first.id,variable:'hook',instruction:'验证开头表达',changes:{vo:'基于效果的新开头'}})
+    assert.equal(iteration.version.iteration.parentProjectId,first.id)
+    assert.equal(iteration.version.render.shots.s1.url,'/media/fixture.mp4')
+    assert.equal(iteration.version.render.shots.s0,undefined)
+    assert.equal((await request('/api/projects/'+iteration.version.id)).iteration.sourceExperimentId,tracking.experiment.id)
+    const tracked=(await request('/api/experiments')).find(e=>e.id===tracking.experiment.id)
+    assert.equal(tracked.iterations.length,1)
+    assert.ok(tracked.insights.length)
     const batchZip = await fetch(base + batchRoute + '/batch/delivery.zip?ids=' + first.id + ',' + second.id)
     assert.equal(batchZip.status, 409, 'unreviewed batch videos cannot be packaged')
     await request(batchRoute, 'DELETE')

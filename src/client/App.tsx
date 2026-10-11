@@ -50,7 +50,7 @@ export default function App() {
   const [project, setProject] = useState<Project | null>(null)
   const [activePhase, setActivePhase] = useState(1)
   const [videoDetailId, setVideoDetailId] = useState<string | null>(null)
-  const [view, setView] = useState<'overview' | 'project' | 'experiments'>('overview')
+  const [view, setView] = useState<'overview' | 'project'>('overview')
   const [creativeTab, setCreativeTab] = useState<'concepts' | 'references'>('concepts')
   const [foundationTab, setFoundationTab] = useState('brand')
   const beforeLeave = useRef<(() => Promise<void>) | null>(null)
@@ -111,7 +111,7 @@ export default function App() {
       setMeta(projectMeta)
       if ((project?.batchId || project?.id) !== (p.batchId || p.id)) setFoundationTab('brand')
       setActivePhase(phase || p.phase || 1)
-      setView(phase === 7 ? 'experiments' : 'project')
+      setView('project')
       setMenuOpen(false)
       remember(p.batchId || id)
       return true
@@ -198,10 +198,10 @@ export default function App() {
       {loading ? <p className="flex items-center gap-2"><Spinner /> 正在准备你的创作空间…</p> : <><p>工作台暂时无法加载，请确认本地服务已启动。</p><p className="text-xs text-red-300 max-w-md break-words">{loadError}</p><button className="btn-primary mt-3" onClick={load}><Icon name="retry" /> 重新加载</button></>}
     </div>
   }
-  const navigate = async (phase: number) => { try { if (project?.experimentLink && !project.batchId && phase < 4) { notify('实验需求已锁定，请返回源任务调整'); return }; await beforeLeave.current?.(); if (project?.batchId && phase < 4) { await openProject(project.batchId, phase); return }; setActivePhase(phase); setView('project') } catch { /* Keep unsaved edits visible. */ } }
+  const navigate = async (phase: number) => { try { if (project?.experimentLink && !project.batchId && phase < 4) { notify('实验需求已锁定，请返回源任务调整'); return }; await beforeLeave.current?.(); const owner=project?.batchId||project?.experimentLink?.parentId; if (owner && (phase < 4 || phase === 7)) { await openProject(owner, phase); return }; setActivePhase(phase); setView('project') } catch { /* Keep unsaved edits visible. */ } }
   const changeView = async (next: typeof view) => { try { await beforeLeave.current?.(); setView(next); setMenuOpen(false) } catch {} }
   const openReferences = () => { if (!project) { notify('先选择或新建一个推广任务，参考库会结合任务生成建议'); return }; setCreativeTab('references'); void navigate(3) }
-  const openExperiments = () => { const root = project?.batchId || project?.experimentLink?.parentId; if (root) void openProject(root, 7); else void changeView('experiments') }
+  const openExperiments = () => { void navigate(7) }
   const phaseProps: PhaseProps | null = project ? { project, meta, patch, setProject: setProjectAndRefresh, reloadMeta, notify, goto: phase => { void navigate(phase) }, gotoFoundation: tab => { setFoundationTab(tab); void navigate(1) }, foundationTab, openReferences, openExperiments, creativeTab, onCreativeTabChange: setCreativeTab, registerBeforeLeave, openMaterial: openProject, videoDetail: videoDetailId === project.id, closeVideoDetail: () => setVideoDetailId(null), inspectVideo: async id => { const opened = await openProject(id, 6); if (opened !== false) setVideoDetailId(id); return opened } } : null
   const currentPhase = PHASES.find(ph => ph.id === activePhase) || PHASES[0]
   const phaseIndex = PHASES.findIndex(ph=>ph.id===activePhase)
@@ -240,10 +240,10 @@ export default function App() {
     <div className="studio-main">
       <header className="studio-topbar">
         <button className="mobile-menu icon-button" aria-label="展开导航" onClick={() => setMenuOpen(true)}><Icon name="menu" /></button>
-        <div className="topbar-breadcrumb"><span>创意空间</span><Icon name="chevron" width="13" /><strong>{view === 'overview' ? '工作台概览' : view === 'experiments' ? '素材测试' : currentPhase.name}</strong>{busy && <Spinner />}</div>
+        <div className="topbar-breadcrumb"><span>创意空间</span><Icon name="chevron" width="13" /><strong>{view === 'overview' ? '工作台概览' : currentPhase.name}</strong>{busy && <Spinner />}</div>
         <div className="ml-auto flex items-center gap-3"><button className="guide-entry" onClick={() => setShowGuide(true)}><Icon name="book" width="15" />操作指南</button><button className={'environment-button ' + (configured && meta.ffmpeg ? 'configured' : '')} onClick={() => setShowSettings(true)}><span className="status-dot" />{!meta.ffmpeg ? '合成待配置' : configured ? '模型已配置' : meta.videoMode === 'manual' ? '手动制作模式' : '演示模式'}<Icon name="settings" width="14" /></button><span className="topbar-avatar">花</span></div>
       </header>
-      {view === 'experiments' ? <div className="studio-scroll"><ExperimentPanel project={project} projects={projects} notify={notify} onOpen={openProject} onUpdate={setProjectAndRefresh} /></div> : view === 'overview' || !project ? <div className="studio-scroll"><Dashboard projects={projects.filter(p => !p.experimentLink)} meta={meta} lastId={project?.id} busy={busy} onOpen={openProject} onCreate={prepareCreate} onGuide={() => setShowGuide(true)} /></div> :
+      {view === 'overview' || !project ? <div className="studio-scroll"><Dashboard projects={projects.filter(p => !p.experimentLink)} meta={meta} lastId={project?.id} busy={busy} onOpen={openProject} onCreate={prepareCreate} onGuide={() => setShowGuide(true)} /></div> :
         <div className="project-workspace">
           <div className="workspace-heading">
             <button className="text-link mb-3" onClick={showOverview}>← 返回项目总览</button>
@@ -258,13 +258,14 @@ export default function App() {
           <div className="phase-scroll" key={project.id + '-' + activePhase}>
             <div className="phase-content animate-in">
               {(activePhase !== 6 || videoDetailId === project.id || project.experimentLink) && <div className="phase-intro"><div><div className="eyebrow">STEP {'0' + (phaseIndex+1)}</div><h1>{currentPhase.name}</h1><p>{currentPhase.desc}</p></div></div>}
-              {project.experimentLink && <div className="business-context">实验 {project.experimentLink.label} 版 · {project.experimentLink.label === 'A' ? '基准脚本已锁定，可继续制作视频。' : '只修改指定镜头，固定镜头沿用基准版。'}<button className="btn-ghost" onClick={() => void openProject(project.experimentLink!.parentId, 7)}>返回素材测试 →</button></div>}
+              {project.experimentLink && <div className="business-context">实验 {project.experimentLink.label} 版 · {project.experimentLink.label === 'A' ? '基准脚本已锁定，可继续制作视频。' : '只修改指定镜头，固定镜头沿用基准版。'}<button className="btn-ghost" onClick={() => void openProject(project.experimentLink!.parentId, 7)}>返回投放迭代 →</button></div>}
               {phaseProps && activePhase === 1 && <Phase1 {...phaseProps} />}
               {phaseProps && activePhase === 2 && <Phase2 {...phaseProps} />}
               {phaseProps && activePhase === 3 && <Phase3 {...phaseProps} />}
               {phaseProps && activePhase === 4 && <Phase4 {...phaseProps} />}
               {phaseProps && activePhase === 5 && <Phase5 {...phaseProps} />}
               {phaseProps && activePhase === 6 && <Phase6 {...phaseProps} />}
+              {activePhase === 7 && <ExperimentPanel project={project} notify={notify} onOpen={openProject} onUpdate={setProjectAndRefresh} />}
               <div className="phase-footer-nav"><button className="btn-ghost" disabled={!!project.experimentLink && activePhase === 4} onClick={() => activePhase === 1 ? showOverview() : void navigate(previousPhase.id)}>{activePhase === 1 ? '返回总览' : '← 上一阶段'}</button>{nextPhase && (activePhase !== 3 || project.storyboard || (project.batch?.items.length || 0) > 1) && <button className="btn-primary" onClick={() => void navigate(nextPhase.id)}>{activePhase === 3 ? '继续已有素材的分镜' : '下一阶段：' + nextPhase.name}<Icon name="arrow" width="16" /></button>}</div>
             </div>
           </div>
@@ -274,7 +275,7 @@ export default function App() {
       <form onSubmit={e => { e.preventDefault(); void createProject() }} className="space-y-5">
         <p className="text-sm text-slate-400 leading-relaxed">一个项目对应一条核心创意。确认基础脚本与允许变化的范围后，批量制作多个视频版本。</p>
         <div><label className="label" htmlFor="new-project-name">项目名称</label><input id="new-project-name" className="input" value={newName} onChange={e => setNewName(e.target.value)} placeholder="例如：晚高峰通勤 · 抖音 15 秒广告" required maxLength={100} /></div>
-        <div className="creation-steps">{['明确任务', '创意方案', '制作质检', '素材测试'].map((label, i) => <span key={label}><small>{i + 1}</small>{label}</span>)}</div>
+        <div className="creation-steps">{['明确任务', '创意方案', '制作审核', '投放迭代'].map((label, i) => <span key={label}><small>{i + 1}</small>{label}</span>)}</div>
         <div className="flex justify-end gap-2 pt-2"><button type="button" className="btn-ghost" onClick={() => setShowCreate(false)} disabled={busy}>取消</button><button type="submit" className="btn-primary" disabled={busy || !newName.trim()}>{busy ? <Spinner /> : <Icon name="plus" width="16" />}创建项目</button></div>
       </form>
     </Modal>
