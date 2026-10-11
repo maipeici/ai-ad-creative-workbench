@@ -31,7 +31,7 @@ function checklistMessages(ctx, requirements, validation, allowRepair) {
         brief: project.brief,
         concept: project.concepts?.find(c => c.id === project.selectedConceptId),
         storyboard: project.storyboard,
-        brandGuide, compliance, facts, selectedAssets: picked, channel, ruleValidation: validation,
+        brandGuide, compliance, facts, selectedAssets: picked, channel, ruleValidation: validation, policy: ctx.reviewPolicy,
       }),
     },
   ]
@@ -103,8 +103,9 @@ export async function runAutomaticReview(ctx, options = {}, dependencies = {}) {
     throw error
   }
   const originalShots = new Map(project.storyboard.shots.map(shot => [shot.id, JSON.stringify({ ...shot, preview: null, approved: false })]))
-  const requirements = normalizeRequirements(options.requirements || project.review?.requirements)
-  project.review = { ...project.review, approved: false, approvedAt: null, requirements }
+  const extras = options.requirements || project.review?.requirements || []
+  const requirements = ctx.reviewPolicy ? ctx.reviewPolicy.rules.map(r => `[${r.source}] ${r.label}`) : normalizeRequirements(extras.length ? extras : undefined)
+  project.review = { ...project.review, approved: false, approvedAt: null, requirements: ctx.reviewPolicy ? extras : requirements }
   const report = { applied: [], skipped: [], needsManual: [], rewriteSource: null }
   const history = []
   function resolve() {
@@ -149,12 +150,17 @@ export async function runAutomaticReview(ctx, options = {}, dependencies = {}) {
   // A second rule pass is authoritative even when a model reports all items passed.
   resolve()
   validation = validate(ctx)
+  if (ctx.reviewPolicy) checks = checks.map((check, i) => {
+    const rule = ctx.reviewPolicy.rules[i]
+    return { ...check, group: rule.group, ruleId: rule.id, source: rule.source, sourceUrl: rule.sourceUrl,
+      ...(rule.requiredInput ? { status: 'needs-input', evidence: rule.label, suggestion: '在品牌素材的合规边界说明中补充平台规则及官方来源。' } : {}) }
+  })
   const approved = validation.summary.blockers === 0 && checks.every(check => check.status === 'pass')
   const status = approved ? 'passed' : validation.summary.blockers || checks.some(check => check.status === 'block') ? 'blocked' : 'needs-input'
   const checkedAt = new Date().toISOString()
   project.review = {
     ...project.review, mode: 'automatic', status, approved, approvedAt: approved ? checkedAt : null,
-    checkedAt, requirements, results: checks, history, source: evaluation.source,
+    checkedAt, results: checks, history, source: evaluation.source, policy: ctx.reviewPolicy,
     checklist: Object.fromEntries(checks.map(check => [check.id, check.status === 'pass'])),
     ruleSummary: validation.summary, report,
   }

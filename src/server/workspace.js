@@ -11,7 +11,8 @@ export async function getWorkspace() {
 export function saveWorkspace(changes) {
   const next = queue.then(async () => {
     const previous = await getWorkspace()
-    const workspace = { ...previous, ...changes, brandIdentity: { ...previous.brandIdentity, ...changes.brandIdentity }, updatedAt: new Date().toISOString() }
+    const update = typeof changes === 'function' ? await changes(previous) : changes
+    const workspace = { ...previous, ...update, brandIdentity: { ...previous.brandIdentity, ...update.brandIdentity }, updatedAt: new Date().toISOString() }
     await fs.mkdir(DATA_DIR, { recursive: true })
     await fs.writeFile(file + '.tmp', JSON.stringify(workspace, null, 2))
     await fs.rename(file + '.tmp', file)
@@ -26,6 +27,7 @@ export function usableFact(fact, today = new Date().toISOString().slice(0, 10)) 
 }
 export function inheritResources(project, workspace, assets, facts) {
   const defaults = workspace.defaults || {}
+  project.brandGuideId = defaults.brandGuideId || project.brandGuideId
   const allowed = new Map(assets.items.map(asset => [asset.id, asset]))
   for (const category of assets.categories) {
     project.assets[category.id] = (defaults.assets?.[category.id] || []).filter(id => allowed.get(id)?.category === category.id)
@@ -39,7 +41,7 @@ export function validateWorkspace(input, assets, facts) {
   if (input.defaults) {
     const defaults = input.defaults
     if (!defaults.assets || !Array.isArray(defaults.facts)) throw new Error('默认资料格式不完整')
-    changes.defaults = { assets: {}, facts: [] }
+    changes.defaults = { assets: {}, facts: [], ...(defaults.brandGuideId ? { brandGuideId: String(defaults.brandGuideId) } : {}) }
     for (const category of assets.categories) {
       const ids = defaults.assets[category.id] || []
       if (!Array.isArray(ids) || ids.some(id => !assets.items.some(a => a.id === id && a.category === category.id))) throw new Error('默认素材不存在或分类不匹配')

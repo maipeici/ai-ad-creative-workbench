@@ -298,7 +298,7 @@ export default function Phase5Review({ project, meta, patch, setProject, notify,
         )}
       </Section></details>
 
-      <div className="business-context">需要调整画面或文案？在分镜页统一修改，保留问题定位和预检记录。<button className="btn-ghost" onClick={() => goto(4)}>修改分镜 →</button></div>
+      <div className="business-context">需要调整画面或文案？在分镜页统一修改，保留问题定位和审核记录。<button className="btn-ghost" onClick={() => goto(4)}>修改分镜 →</button></div>
     </>
   )
 }

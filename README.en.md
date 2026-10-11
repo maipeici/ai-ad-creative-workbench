@@ -4,7 +4,7 @@
 
 **An AI workspace for turning advertising briefs into creative concepts, storyboards, reviewed shots, and finished vertical videos.**
 
-**New:** reusable resources, task briefs, locked A/B creative versions, CSV performance imports, and separate script/video checks. See the [workflow and limitations](docs/experiments.md).
+**One project, a batch of videos:** select or create brand inputs, share one brief, and create multiple directions and versions with independent storyboards, reviews, and videos. Optional material tests reuse those outputs. See the [workflow and limitations (Chinese)](docs/experiments.md).
 
 ### Full workflow recording: create a 15-second ad from scratch
 
@@ -16,7 +16,7 @@ https://github.com/user-attachments/assets/ea7da458-9990-423d-b896-ad58b3098b28
 
 > Recorded from a new project with actual model calls for concepts, storyboards, first frames, and video shots. It includes corrections and rechecks after review findings. Model and download waits are shortened. The interface recording uses text explanations; the ending includes the generated ad with its original audio. This demonstrates the workflow; generated visuals and asset versions still need review before an actual campaign.
 
-> The recording predates the resource center and experiment workspace. Current screenshots and instructions below describe those additions.
+> The recording shows the earlier single-video workflow. Current screenshots cover batch production, combined rules, and material testing.
 
 The home-screen **“90 秒了解流程”** button and the top-bar **“操作指南”** also provide a replayable 12-step bubble tour. That separate tour uses an isolated example without editing saved projects or calling models. [Tour guide](docs/guide.md).
 
@@ -30,7 +30,7 @@ This project uses a Huaxiaozhu ride-hailing campaign as its example workflow, fo
 
 Keep the brief, creative decisions, prompts, assets, reviews, and rendering results together in one project.
 
-- Track projects, resume creation, and preview recent outputs.
+- Create batches such as 3 directions × 4 versions, process a queue, retry individual items, and download multiple outputs.
 - Turn audience, scenario, selling points, and calls to action into editable concepts and storyboards.
 - Reference product facts and brand assets throughout the workflow.
 - Generate or import shots, add subtitles and audio, and assemble videos and covers.
@@ -43,26 +43,26 @@ Channel presets include Douyin, Tencent Ads, Kuaishou, and WeChat Channels. The 
 
 | Stage | Purpose | Output |
 | --- | --- | --- |
-| 01 Resource selection | Inherit reusable defaults and adjust selections for this task | Five distinct input areas |
+| 01 Brand and assets | Select or create brand data, assets, and shared rules | Five distinct input areas |
 | 02 Advertising brief | Define audience, scenario, channel, duration, and CTA | Structured brief |
-| 03 Creative concepts | Compare directions and opening hooks | Selected concept |
-| 04 Storyboard | Plan visuals, narration, subtitles, and timing | Editable shot cards |
-| 05 Script precheck | Check a project checklist, repair eligible issues, and recheck | Evidence, changes, and missing inputs |
+| 03 Creative concepts | Select multiple directions and versions | A batch of creative records |
+| 04 Storyboard | Plan each video's visuals, narration, and timing | Independent shot cards and progress |
+| 05 Automatic review | Combine brand and platform rules, repair and recheck | Rule sources, evidence, and missing inputs |
 | 06 Video delivery | Produce shots, inspect actual video/audio, and export | Video, cover, copy, and ZIP bundle |
 
 <a id="features"></a>
 
 ## Features and real screens
 
-### Reusable resources and creative experiments
+### Batch production and optional material testing
 
-Maintain shared brand data once; new tasks inherit selected assets and valid facts. Record one primary conversion event, a campaign reference, destination URL, and delivery plan. Advanced shot controls are collapsed by default.
+Maintain shared data within Brand and assets. Select directions and versions: each item keeps independent storyboards, reviews, clips, and videos. A serial queue retains completed work and continues past individual failures. Pausing retains remote jobs; resuming polls them without resubmitting. The screenshot shows 12 pending items, not 12 newly rendered videos.
 
-![Shared resource center](assets/screenshots/resource-center.png)
+![Twelve pending creative items in one project](assets/screenshots/batch-production.png)
 
-Save a baseline A snapshot, complete its video, then create B by changing the first or last shot. Other shot videos, timing, references, and settings stay locked. The screenshot reuses an existing A video; B still needs production, and no performance values have been invented.
+Material testing has four steps: select outputs, define the comparison, import data, and record findings. Compare complete concepts descriptively, or control the first/last shot while keeping other content and fixed clips identical. One baseline can start a controlled test before creating a variant. Screenshots contain no invented performance figures.
 
-![Independent A/B versions and production progress](assets/screenshots/creative-experiments.png)
+![Material testing with existing videos and a primary metric](assets/screenshots/material-testing.png)
 
 CSV imports calculate CTR, click-attributed CVR, and CPA. Matching intervals replace previous imports; overlapping intervals are rejected. Comparisons are descriptive, without automatic winners or significance claims. A saved next-step recommendation can create the next task. [CSV template](assets/examples/experiment-results.csv).
 
@@ -82,7 +82,7 @@ Specify the audience, scenario, objective, tone, duration, and CTA. Channel guid
 
 ### Compare creative directions before production
 
-Generate multiple concepts, inspect their hooks and supporting facts, refine a direction, and select it for storyboarding.
+Generate concepts and inspect hooks and facts, then select directions with 1–12 versions each, up to 60 items per project. Each version can have its own expression instructions. Variants do not automatically qualify as a controlled single-variable test.
 
 ![Creative concepts Agent with generation preferences and concept details](assets/screenshots/creative-directions.png)
 
@@ -118,17 +118,19 @@ Reference images and shared descriptions help guide consistency; outputs still n
 
 ### Checklist-based automatic review and repair
 
-Save 1–30 requirements per project. A rule engine checks facts, wording, assets, rendering choices, and narration length. The agent evaluates each requirement and may apply one bounded round of text repairs followed by a fresh review. Approval requires zero rule blockers and a complete passing checklist. Missing credentials, model failures, and incomplete evidence never produce automatic approval. Changes to referenced inputs invalidate previous results; campaign expiry is rechecked without invalidating reviews for unrelated library additions. This stage reviews pre-generation storyboards and references, not rendered video pixels.
+Maintain brand requirements once under Compliance boundaries. Review combines brand rules, selected platform rules, production checks, and optional project additions; results record sources and evidence. Approval requires zero blockers and complete passing results. Missing platform rules, credentials, or evidence leave items pending. Eligible text repairs receive a fresh review, and referenced input changes invalidate earlier results. This stage checks planned scripts and references.
 
-![Automatic review Agent with a project checklist and repair workflow](assets/screenshots/review.png)
+Bundled platform rules are limited public-source baselines. WeChat Channels currently requires supplied rules. The editor stores rule text, an HTTPS source URL, and a version; maintain applicability to your industry and placement. Passing does not guarantee approval by the advertising platform.
+
+![Automatic review Agent combining brand and platform rules](assets/screenshots/review.png)
 
 ### Video assembly, export, and creative variants
 
-Generate, import, or retry individual shots. With FFmpeg configured, combine footage, subtitles, brand assets, and voiceover into a 1080 × 1920 video and extract a cover image. After assembly, a separate video quality check inspects actual video and audio with Vertex Gemini (up to 14 MB). Failures retain the video and report actionable findings; they do not automatically regenerate paid shots.
+Queue multiple videos or generate, import, and retry individual shots. FFmpeg combines footage, subtitles, assets, and narration and extracts a cover. Final quality checks inspect actual video/audio and the same brand/platform rules with Vertex Gemini (up to 14 MB). Failures retain the video without automatically regenerating paid shots.
 
 ![Video production with shot previews, finished video, and cover download](assets/screenshots/render-export.png)
 
-The **ZIP delivery bundle** includes video, available cover, copy text, and metadata with the current quality-check status. Experiments can export all completed versions together. JSON creative-data export remains available. Downloading does not imply media-platform approval, and stale videos must be rebuilt before delivery.
+The **ZIP delivery bundle** includes video, available cover, copy, and metadata with quality status. Batches and tests can export multiple completed videos together, up to 250 MB per ZIP. JSON export remains available; stale videos must be rebuilt before delivery.
 
 <a id="quick-start"></a>
 

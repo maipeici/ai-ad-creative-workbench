@@ -4,9 +4,9 @@ import { assertStoryboardCurrent } from './inspiration-guidance.js'
 import { failure } from './experiments.js'
 import { reviewInputFingerprint } from './review-state.js'
 
-export function registerDeliveryRoutes(app, { wrap, loadContext }) {
+export function registerDeliveryRoutes(app, { wrap, loadContext, workflowAction }) {
   const running = new Set()
-  app.post('/api/projects/:id/quality-review', wrap(async (req, res) => {
+  app.post('/api/projects/:id/quality-review', workflowAction('quality', async (req, res) => {
     if (running.has(req.params.id)) throw failure('该成片正在质检，请稍后查看', 409)
     running.add(req.params.id)
     try {

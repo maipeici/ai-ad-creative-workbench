@@ -3,15 +3,16 @@ import type { Meta, ProjectSummary } from '../types'
 import Icon from './Icon'
 
 export const PHASES = [
-  { id: 1, name: '资料选用', desc: '继承共享资料，按本次推广需要调整选用', icon: 'book' },
+  { id: 1, name: '品牌素材', desc: '选择或新增品牌、活动与素材，准备共用资料', icon: 'book' },
   { id: 2, name: '投放需求', desc: '明确受众、场景、目标与渠道', icon: 'settings' },
-  { id: 3, name: '广告创意', desc: '选择有共鸣的创意与开场钩子', icon: 'spark' },
+  { id: 3, name: '广告创意', desc: '选择多个方向，创建一批独立视频素材', icon: 'spark' },
   { id: 4, name: '分镜规划', desc: '编排画面、口播和字幕', icon: 'layers' },
-  { id: 5, name: '脚本预检', desc: '自动审核 Agent 检查生成前的脚本与事实', icon: 'check' },
-  { id: 6, name: '成片交付', desc: '制作视频、检查实际画面与声音、下载投放包', icon: 'movie' },
+  { id: 5, name: '自动审核', desc: '同时检查品牌要求与投放平台规则', icon: 'check' },
+  { id: 6, name: '成片交付', desc: '批量制作、逐条质检、打包交付', icon: 'movie' },
 ]
 
 export function projectStatus(p: ProjectSummary) {
+  if (p.completedCount) return { label: `${p.completedCount}/${p.creativeCount || 1} 条已有成片`, tone: 'green' }
   if (p.finalVideo) return { label: '已有成片', tone: 'green' }
   if (p.approved) return { label: '待生成', tone: 'blue' }
   if (p.phase >= 5) return { label: '待审核', tone: 'amber' }
@@ -38,12 +39,12 @@ export default function Dashboard({ projects, meta, lastId, busy, onOpen, onCrea
   ), [projects, meta, filter, search])
   const latestFilm = projects.find(p => p.finalVideo)
   const resume = projects.find(p => p.id === lastId) || projects[0]
-  const finished = projects.filter(p => p.finalVideo).length
+  const finished = projects.reduce((n,p) => n + (p.completedCount || 0), 0)
   const metrics = [
     { label: '素材项目', value: projects.length, detail: '全部创作项目', icon: 'grid', color: 'pink' },
     { label: '已有成片', value: finished, detail: '可预览与下载', icon: 'movie', color: 'green' },
     { label: '待审核项目', value: projects.filter(p => p.phase >= 5 && !p.approved && !p.finalVideo).length, detail: '生成前自动检查', icon: 'check', color: 'amber' },
-    { label: '规划镜头', value: projects.reduce((n, p) => n + p.shotCount, 0), detail: '已保存的分镜', icon: 'layers', color: 'blue' },
+    { label: '视频素材', value: projects.reduce((n, p) => n + (p.creativeCount || 1), 0), detail: '每条素材独立制作', icon: 'layers', color: 'blue' },
   ]
 
   return (
@@ -52,7 +53,7 @@ export default function Dashboard({ projects, meta, lastId, busy, onOpen, onCrea
         <div className="hero-copy">
           <div className="eyebrow"><span className="live-dot" /> AI CREATIVE STUDIO</div>
           <h1>让好创意，<br className="sm:hidden" />更快成为好广告<span>。</span></h1>
-          <p>从投放需求到成片，让品牌、创意和制作在一个工作台里有序协作。</p>
+          <p>一份投放需求，多个创意方向，一批视频素材。从品牌准备、自动审核到成片交付。</p>
           <div className="flex flex-wrap items-center gap-3 mt-6">
             <button className="btn-primary" onClick={onCreate} disabled={busy}><Icon name="plus" /> 新建素材项目</button>
             {onGuide && <button className="guide-entry hero-guide" onClick={onGuide}><Icon name="play" width="15" />90 秒了解流程</button>}
@@ -98,7 +99,7 @@ export default function Dashboard({ projects, meta, lastId, busy, onOpen, onCrea
                 <h3>{p.name}</h3>
                 <p className="project-channel">{meta.channels.find(c => c.id === p.channel)?.name || '尚未选择渠道'}{p.durationSec ? ' · ' + p.durationSec + ' 秒' : ''}</p>
                 <div className="mini-progress" aria-label={'当前阶段：' + phase.name}>{PHASES.map(ph => <span key={ph.id} className={p.finalVideo || ph.id <= p.phase ? 'filled' : ''} />)}</div>
-                <div className="project-card-footer"><span>{p.shotCount} 个镜头 <span className="mx-1">·</span> {formatDate(p.updatedAt)} 更新</span><span className="project-open">{p.finalVideo ? '查看成片' : phase.name}<Icon name="arrow" width="15" /></span></div>
+                <div className="project-card-footer"><span>{p.creativeCount || 1} 条素材 <span className="mx-1">·</span> {formatDate(p.updatedAt)} 更新</span><span className="project-open">{p.finalVideo ? '查看成片' : phase.name}<Icon name="arrow" width="15" /></span></div>
               </button>
             })}
             {!search && filter !== 'finished' && <button className="new-project-card" onClick={onCreate} disabled={busy}><span><Icon name="plus" width="26" height="26" /></span><strong>开始新的创意</strong><p>从一个投放需求出发</p></button>}

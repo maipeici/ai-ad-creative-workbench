@@ -368,7 +368,7 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
           </div>
         ) : (
           <EmptyHint>
-            完成脚本预检与镜头制作后即可合成。
+            完成自动审核与镜头制作后即可合成。
             {!meta.ffmpeg && <span className="block mt-2 text-amber-400">当前环境未安装 ffmpeg，叠加与合成不可用。</span>}
             {!meta.subtitleFont && <span className="block mt-2 text-amber-400">未找到中文字体，字幕无法烧录。</span>}
           </EmptyHint>
@@ -391,7 +391,7 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
       </Section>
 
       <FinalQualityPanel project={project} onUpdate={setProject} notify={notify} goto={goto} />
-      <div className="business-context">围绕同一推广任务比较素材版本，在实验复盘中管理基准版、实验版和投放结果。<button className="btn-primary" onClick={openExperiments}>进入实验复盘 →</button></div>
+      <div className="business-context">围绕同一推广任务比较素材版本，在素材测试中管理基准版、实验版和投放结果。<button className="btn-primary" onClick={openExperiments}>进入素材测试 →</button></div>
       {project.variants?.length > 0 && <details className="business-disclosure"><summary>历史变体草稿（{project.variants.length}）</summary>{project.variants.map(v => <p key={v.id} className="business-help">{v.variantName}：{v.hypothesis} · {v.changeSummary}</p>)}</details>}
 
       <Section title="发现问题？回到对应阶段" desc="工作流支持局部迭代，修改全局设定时系统会标记受影响的镜头。">

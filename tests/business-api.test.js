@@ -4,7 +4,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import net from 'node:net'
 import { spawn } from 'node:child_process'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { once } from 'node:events'
 
 test('isolated business workflow: inherited brief → locked A/B → result import → next task and ZIP', { timeout: 30000 }, async () => {
@@ -25,11 +25,11 @@ test('isolated business workflow: inherited brief → locked A/B → result impo
       const data = await response.json(); assert.equal(response.status, status, JSON.stringify(data)); return data
     }
     const meta = await request('/api/meta')
-    assert.equal(meta.phases[4].name, '脚本预检')
+    assert.equal(meta.phases[4].name, '自动审核')
     const defaultFact = meta.facts.facts.find(f => f.status === 'confirmed' && !f.validTo && !f.validFrom)
     await request('/api/workspace', 'PATCH', { defaults: { assets: {}, facts: defaultFact ? [defaultFact.id] : [] } })
     const source = await request('/api/projects', 'POST', { name: 'Isolated A/B test, not real performance' })
-    assert.equal(source.phase, 2); assert.equal(source.brief.conversionEvent, 'download')
+    assert.equal(source.phase, 1); assert.equal(source.brief.conversionEvent, 'download')
     assert.deepEqual(source.facts, defaultFact ? [defaultFact.id] : [])
     const route = '/api/projects/' + source.id
     const shots = ['hook', 'cta'].map((role, i) => ({ id: 's' + i, index: i + 1, role, durationSec: 3, prompt: 'A commuter', vo: '出发了', subtitle: '', personRefs: [], uiRefs: [], factRefs: [], sceneRefs: [], vehicleRefs: [] }))
@@ -70,6 +70,73 @@ test('isolated business workflow: inherited brief → locked A/B → result impo
     await request(variantRoute + '/quality-review', 'POST', {}, 409)
     await request(route, 'DELETE')
     await request(variantRoute, 'GET', undefined, 404)
+
+    // New batch model: multiple video records live inside one visible project.
+    const batchProject = await request('/api/projects', 'POST', { name: '12-video isolated batch' })
+    const batchRoute = '/api/projects/' + batchProject.id
+    const concepts = ['first', 'second', 'third'].map(id => ({ id, title: id, coreIdea: '出行', beats: [] }))
+    await request(batchRoute, 'PATCH', { concepts, selectedConceptId: 'first' })
+    const added = await request(batchRoute + '/batch/creatives', 'POST', { conceptIds: concepts.map(c => c.id), versionsPerConcept: 4 })
+    assert.equal(added.batch.items.length, 12)
+    assert.equal((await request('/api/projects')).filter(p => p.name === batchProject.name).length, 1)
+    const [first, second] = added.batch.items.slice(1, 3)
+    await Promise.all([request('/api/projects/' + first.id, 'PATCH', { creativeInstruction: '开头版本甲' }), request('/api/projects/' + second.id, 'PATCH', { creativeInstruction: '开头版本乙' })])
+    assert.equal((await request('/api/projects/' + first.id)).creativeInstruction, '开头版本甲')
+    assert.equal((await request('/api/projects/' + second.id)).creativeInstruction, '开头版本乙')
+    await request('/api/projects/' + first.id, 'PATCH', { brief: { channel: 'wechat-channels' } }, 409)
+    await request(batchRoute, 'PATCH', { brief: { channel: 'wechat-channels' } })
+    assert.equal((await request('/api/projects/' + first.id)).brief.channel, 'wechat-channels')
+    assert.ok((await request('/api/projects/' + first.id)).reviewPolicy.rules.some(r => r.requiredInput))
+    await request('/api/platform-policies/wechat-channels', 'PATCH', { rules: ['测试规则：不作无依据承诺'], sourceUrl: 'https://e.qq.com/', version: 'isolated-fixture' })
+    assert.ok(!(await request('/api/projects/' + first.id)).reviewPolicy.rules.some(r => r.requiredInput))
+    const brand = await request('/api/brands', 'POST', { brandIdentity: { productName: '测试品牌', positioning: '测试定位', primaryColor: '#123456' } })
+    await request(batchRoute, 'PATCH', { brandGuideId: brand.id })
+    assert.equal((await request('/api/meta?brandId=' + brand.id)).brandGuide.brandIdentity.productName, '测试品牌')
+    await request('/api/brands/' + brand.id, 'PATCH', { reviewRules: ['不出现竞品标志'] })
+    assert.ok((await request('/api/projects/' + first.id)).reviewPolicy.rules.some(r => r.label === '不出现竞品标志'))
+    const job = await request(batchRoute + '/batch/run', 'POST', { ids: [first.id, second.id], stage: 'storyboard' })
+    assert.equal(job.status, 'running')
+    let batch
+    for (let i = 0; i < 60; i++) { batch = await request(batchRoute + '/batch'); if (batch.job.status !== 'running') break; await new Promise(resolve => setTimeout(resolve, 100)) }
+    assert.equal(batch.job.status, 'attention', 'mock storyboard must not be reported as real batch generation')
+    assert.equal(batch.job.items.filter(i => i.status === 'attention').length, 2, 'one item failure must not abort siblings')
+    const untouched = await request(batchRoute)
+    assert.equal(untouched.storyboard, null, 'child storyboard writes must not replace the original creative')
+    assert.equal(untouched.creatives.length, 11)
+    // Material tests reuse existing batch items and export several independent films.
+    for (const item of [first, second]) {
+      const itemShots = structuredClone(shots)
+      if (item.id === second.id) itemShots[0].vo = '另一个开头'
+      await request('/api/projects/' + item.id, 'PATCH', { storyboard: { globalContext: {}, shots: itemShots }, render: { shots: { s0: { url: '/media/fixture.mp4', backend: 'manual' }, s1: { url: '/media/fixture.mp4', backend: 'manual' } }, finalVideo: { url: '/media/fixture.mp4' } } })
+    }
+    const compared = await request(batchRoute + '/experiments', 'POST', { mode: 'comparison', creativeIds: [first.id, second.id], primaryMetric: 'ctr', hypothesis: '比较已有素材' })
+    assert.deepEqual(compared.experiment.versions.map(v => v.projectId), [first.id, second.id])
+    assert.equal((await request(batchRoute)).creatives.length, 11, 'selecting existing films must not duplicate records')
+    const imported = await request(batchRoute + '/experiments/' + compared.experiment.id + '/results', 'POST', { content: csv })
+    assert.equal(imported.comparable, true)
+    const controlled = await request(batchRoute + '/experiments', 'POST', { mode: 'single-variable', creativeIds: [first.id], variable: 'hook', primaryMetric: 'ctr', hypothesis: '只改开头' })
+    const controlledB = await request(batchRoute + '/experiments/' + controlled.experiment.id + '/versions', 'POST', { changes: { vo: '新的实验开头' } })
+    assert.equal(controlledB.version.batchId, batchProject.id)
+    assert.equal(controlledB.version.render.shots.s1.url, '/media/fixture.mp4')
+    assert.equal(controlledB.version.render.shots.s0, undefined)
+    const batchZip = await fetch(base + batchRoute + '/batch/delivery.zip?ids=' + first.id + ',' + second.id)
+    assert.equal(batchZip.status, 200)
+    const zipBytes = Buffer.from(await batchZip.arrayBuffer())
+    assert.equal(zipBytes.readUInt32LE(0), 0x04034b50)
+    assert.ok(zipBytes.includes(Buffer.from('batch-manifest.json')))
+    await request(batchRoute, 'DELETE')
+    await request('/api/projects/' + first.id, 'GET', undefined, 404)
+    child.kill(); await once(child, 'exit'); child = null
+    const store = await import(pathToFileURL(path.join(directory, 'src/server/store.js')).href)
+    const localParent = structuredClone(added); localParent.id = 'interleaved-parent'
+    await store.upsertProject(localParent)
+    const loadedBeforeChildSave = await store.getProject(localParent.id)
+    const changedChild = await store.getProject(first.id)
+    changedChild.creativeInstruction = 'new child content saved after parent was loaded'
+    await store.upsertProject(changedChild)
+    loadedBeforeChildSave.name = 'Renamed without losing child content'
+    await store.upsertProject(loadedBeforeChildSave)
+    assert.equal((await store.getProject(first.id)).creativeInstruction, changedChild.creativeInstruction)
   } finally {
     if (child && child.exitCode === null) { child.kill(); await once(child, 'exit') }
     const resolved = path.resolve(directory)

@@ -1,4 +1,5 @@
-import { getAllProjects, getProject, upsertProjects } from './store.js'
+import { createMaterialTest, assertSingleVariable } from './material-tests.js'
+import { getAllCreativeProjects as getAllProjects, getProject, upsertProjects } from './store.js'
 import { createExperiment, createExperimentVersion, parseCsv, normalizeObservations, mergeObservations, experimentReport, failure, fingerprint } from './experiments.js'
 import { assertStoryboardCurrent } from './inspiration-guidance.js'
 import { llmJson } from './providers/llm.js'
@@ -24,9 +25,24 @@ export function registerExperimentRoutes(app, wrap) {
   app.post('/api/projects/:id/experiments', withLock(async (req, res) => {
     const project = await getProject(req.params.id)
     if (!project) throw failure('任务不存在', 404)
+    if (req.body.mode) {
+      const ids = [...new Set(req.body.creativeIds || [])]
+      const permitted = new Set([project.id, ...(project.creatives || []).map(c => c.id)])
+      if (ids.some(id => !permitted.has(id))) throw failure('请选择当前项目的素材')
+      const candidates = await Promise.all(ids.map(getProject))
+      candidates.forEach(assertStoryboardCurrent)
+      const experiment = createMaterialTest(project, candidates, req.body)
+      project.experiments = [...(project.experiments || []), experiment]
+      await upsertProjects([project])
+      return res.json({ project, experiment: experimentReport(experiment, await getAllProjects()) })
+    }
     assertStoryboardCurrent(project)
     const { experiment, baseline } = createExperiment(project, req.body)
     project.experiments = [...(project.experiments || []), experiment]
+    baseline.batchId = project.id
+    baseline.creativeName = 'A 基准版'
+    baseline.sharedSnapshot = Object.fromEntries(['assets', 'facts', 'brief', 'brandGuideId'].map(k => [k, structuredClone(project[k])]))
+    delete baseline.creatives; delete baseline.batchJob; delete baseline.batch
     await upsertProjects([project, baseline])
     res.json({ project, experiment: experimentReport(experiment, await getAllProjects()) })
   }))
@@ -50,7 +66,16 @@ export function registerExperimentRoutes(app, wrap) {
     }
     if (!changes || typeof changes !== 'object' || Array.isArray(changes)) throw failure('请填写指定镜头的改写内容')
     if (fingerprint(await getProject(baseline.id)) !== before) throw failure('基准版在生成期间已更新，请重试', 409)
+    const originalLink = baseline.experimentLink
+    baseline.experimentLink ||= { parentId: parent.id }
     const created = createExperimentVersion(baseline, experiment, changes, source)
+    baseline.experimentLink = originalLink
+    if (experiment.mode || baseline.batchId) {
+      created.project.batchId = parent.id
+      created.project.creativeName = created.version.label + ' · ' + (changes.variantName || '单变量版本')
+      created.project.sharedSnapshot = Object.fromEntries(['assets', 'facts', 'brief', 'brandGuideId'].map(k => [k, structuredClone(baseline[k])]))
+      delete created.project.creatives; delete created.project.batch; delete created.project.batchJob; delete created.project.experiments
+    }
     const latest = await getProject(parent.id)
     const current = latest.experiments.find(e => e.id === experiment.id)
     current.versions.push(created.version)
@@ -63,6 +88,7 @@ export function registerExperimentRoutes(app, wrap) {
   }))
   app.post('/api/projects/:id/experiments/:experimentId/results', withLock(async (req, res) => {
     const { parent, experiment } = await find(req)
+    if (experiment.mode === 'single-variable') assertSingleVariable(await Promise.all(experiment.versions.map(v => getProject(v.projectId))), experiment.variable)
     const incoming = normalizeObservations(parseCsv(req.body.content), experiment, await getAllProjects())
     experiment.observations = mergeObservations(experiment.observations, incoming)
     await upsertProjects([parent])
@@ -86,7 +112,7 @@ export function registerExperimentRoutes(app, wrap) {
     project.concepts = []; project.selectedConceptId = null; project.storyboard = null; project.variants = []
     project.render = { ...project.render, shots: {}, finalVideo: null, cover: null }; delete project.render.qualityReview
     project.review = { requirements: project.review?.requirements, mode: 'automatic', status: 'idle', approved: false, checklist: {}, notes: '' }
-    delete project.experiments; delete project.experimentLink
+    delete project.experiments; delete project.experimentLink; delete project.creatives; delete project.batch; delete project.batchId; delete project.batchJob; delete project.sharedSnapshot; delete project.creativeName
     project.previousExperiment = { parentId: parent.id, experimentId: experiment.id }
     await upsertProjects([project]); res.json(project)
   }))

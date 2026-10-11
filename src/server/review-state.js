@@ -61,6 +61,7 @@ export function reviewInputFingerprint(ctx) {
     brandGuide: ctx.brandGuide, compliance: ctx.compliance,
     facts: ctx.factLib.facts.filter(f => facts.has(f.id)).map(f => ({ ...f, currentlyUsable: usableFact(f) })),
     assets: ctx.assetLib.items.filter(a => assets.has(a.id)), channel: ctx.channel,
+    policy: ctx.reviewPolicy,
   })
 }
 

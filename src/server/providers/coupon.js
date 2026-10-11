@@ -26,7 +26,7 @@ const PLACEHOLDER = /待补充|待确认|\[.*?\]/
 export function assertRenderable(fact, fields = []) {
   if (!fact) throw new Error('未提供事实条目')
   if (!usableFact(fact)) {
-    throw new Error(`事实「${fact.title}」未确认、不在有效期内或日期不完整，不可用于生成优惠卡。请先在资料中心补齐并确认。`)
+    throw new Error(`事实「${fact.title}」未确认、不在有效期内或日期不完整，不可用于生成优惠卡。请先在品牌素材补齐并确认。`)
   }
   for (const f of fields) {
     const v = fact[f]

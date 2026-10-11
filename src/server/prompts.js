@@ -117,6 +117,7 @@ export function brandBlock(brandGuide, channel) {
     ``,
     `## COPY RULES`,
     ...(brandGuide.copyRules || []).map((r) => `- ${r}`),
+    ...(brandGuide.reviewRules || []).map((r) => `- Brand requirement: ${r}`),
   ]
     .filter(Boolean)
     .join('\n')
@@ -134,6 +135,8 @@ export function complianceBlock(compliance) {
     ...warning.map((r) => `- [${r.name}] ${r.terms.slice(0, 10).join(' / ')}`),
     '',
     'MUST NOT invent: coupon amounts, discount rates, user counts, ratings, sales figures, city coverage, service guarantees.',
+    'Selected platform requirements (only the configured scope; do not claim final platform approval):',
+    ...(compliance.platformRequirements || []).map(r => `- [${r.source}] ${r.label}`),
   ].join('\n')
 }
 

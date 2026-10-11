@@ -32,14 +32,14 @@ export default function Phase2Brief({ project, meta, patch, goto, openReferences
     .filter(Boolean)
   const today = new Date().toISOString().slice(0, 10)
   const usable = (f: typeof meta.facts.facts[number]) => f.status === 'confirmed' && (!f.validFrom || /^\d{4}-\d{2}-\d{2}$/.test(f.validFrom) && f.validFrom <= today) && (!f.validTo || /^\d{4}-\d{2}-\d{2}$/.test(f.validTo) && f.validTo >= today)
-  const confirmedCampaigns = meta.facts.facts.filter(f => usable(f) && f.type === 'campaign')
+  const confirmedCampaigns = meta.facts.facts.filter(f => usable(f) && f.type === 'campaign' && (f.brandId || 'hxz-ad-v1') === (project.brandGuideId || 'hxz-ad-v1'))
 
   return (
     <>
       <div className="brand-resource-summary"><strong>{brandGuide.brandIdentity.productName}</strong><span className="text-sm text-slate-400">已选 {project.facts.length} 条事实 · {Object.values(project.assets).flat().length} 项素材</span><button className="btn-ghost ml-auto" onClick={() => goto(1)}>调整本次选用</button></div>
       <Section
         title="本次推广任务"
-        desc="明确这条素材「对谁说、在什么场景说、解决什么问题、用哪个有依据的卖点回应、希望用户做什么」。"
+        desc="明确这批素材「对谁说、在什么场景说、解决什么问题、用哪个有依据的卖点回应、希望用户做什么」。"
         right={dirty ? <Badge tone="amber">未保存</Badge> : <Badge tone="green">已保存</Badge>}
       >
         <div className="brief-fields">
@@ -216,7 +216,7 @@ export default function Phase2Brief({ project, meta, patch, goto, openReferences
           </div>
         </div>
       </Section>
-      <div className="business-context">需要验证不同素材的效果？先确定创意与基准分镜，再锁定一个变量建立实验。<button className="btn-ghost" onClick={openExperiments}>查看实验复盘 →</button></div>
+      <div className="business-context">需要验证不同素材的效果？先确定创意与基准分镜，再锁定一个变量建立实验。<button className="btn-ghost" onClick={openExperiments}>查看素材测试 →</button></div>
     </>
   )
 }

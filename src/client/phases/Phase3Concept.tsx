@@ -14,6 +14,10 @@ export default function Phase3Concept(props: PhaseProps) {
   const [loading, setLoading] = useState(false)
   const [pref, setPref] = useState('')
   const [count, setCount] = useState(3)
+  const [chosen, setChosen] = useState<string[]>(project.selectedConceptId ? [project.selectedConceptId] : [])
+  const [versions, setVersions] = useState(4)
+  const [instructions, setInstructions] = useState('')
+  useEffect(() => { setChosen(ids => ids.filter(id => project.concepts.some(c => c.id === id))) }, [project.concepts])
   const [editing, setEditing] = useState<string | null>(null)
   const [appliedId,setAppliedId] = useState('')
   const appliedCard = useRef<HTMLDivElement>(null)
@@ -56,7 +60,7 @@ export default function Phase3Concept(props: PhaseProps) {
   return (
     <>
       {tabs}
-      <div className="business-context">选定创意后，可围绕开头内容或结尾行动引导制作 A/B 版本。<button className="btn-ghost" onClick={props.openExperiments}>设计素材实验 →</button></div>
+      <div className="business-context">勾选多个创意方向，按每个方向的版本数创建一批视频素材。不同方向属于创意探索；单变量测试可在成片后单独建立。</div>
       <div className="concept-entry"><div><strong>用一条参考视频，开启完整创作</strong><p>上传视频 → 自动拆解爆款点 → 导入当前方案 → 生成参考分镜与视频。</p></div><button className="btn-ghost" onClick={()=>setCreativeTab('references')}>导入爆款视频 →</button></div>
       <Section
         title="广告创意 Agent"
@@ -104,7 +108,7 @@ export default function Phase3Concept(props: PhaseProps) {
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
           {concepts.map((c) => {
-            const on = c.id === project.selectedConceptId
+            const on = chosen.includes(c.id)
             const isEditing = editing === c.id
             const blockers = (c.complianceHits || []).filter((h) => h.severity === 'block')
             return (
@@ -118,8 +122,9 @@ export default function Phase3Concept(props: PhaseProps) {
                 <div className="flex items-start gap-3">
                   <button
                     aria-label={'选择创意：' + c.title}
-                    onClick={() => patch({ selectedConceptId: c.id })}
-                    className={`mt-0.5 w-4 h-4 rounded-full border-2 shrink-0 grid place-items-center ${
+                    aria-pressed={on}
+                    onClick={() => setChosen(on ? chosen.filter(id => id !== c.id) : [...chosen, c.id])}
+                    className={`mt-0.5 w-4 h-4 rounded border-2 shrink-0 grid place-items-center ${
                       on ? 'border-brand bg-brand' : 'border-ink-500'
                     }`}
                   >
@@ -277,13 +282,11 @@ export default function Phase3Concept(props: PhaseProps) {
         </div>
       )}
 
-      {selected && (
-        <div className="flex justify-end">
-          <button className="btn-primary" onClick={() => goto(4)}>
-            下一步：生成分镜 →
-          </button>
-        </div>
-      )}
+      {concepts.length > 0 && <Section title="建立这批视频素材" desc="例如：3 个创意方向 × 每个方向 4 个版本 = 12 条视频。每条素材都可独立编辑分镜与制作。">
+        <div className="batch-toolbar"><strong>已选 {chosen.length} 个方向</strong><Field label="每个方向的版本数"><select aria-label="每个方向的版本数" className="input" value={versions} onChange={e => setVersions(Number(e.target.value))}>{[1,2,3,4,5,6,8,10,12].map(n => <option key={n} value={n}>{n} 个版本</option>)}</select></Field><Badge tone="brand">本次创建 {chosen.length * versions} 条</Badge></div>
+        <details className="mt-4"><summary>补充各版本的创作偏好（可选）</summary><textarea className="input mt-3" value={instructions} onChange={e => setInstructions(e.target.value)} placeholder="每行对应一个版本，例如：第一人称困境开场；对话开场；先展示出行场景。留空则由 Agent 探索不同表达。" /></details>
+        <button className="btn-primary mt-4" disabled={loading || !chosen.length} onClick={async () => { setLoading(true); try { const p = await api.addCreatives(project.id, { conceptIds: chosen, versionsPerConcept: versions, instructions: instructions.split('\n') }); setProject(p); notify('这批素材已创建，可逐条编辑或批量生成分镜'); goto(4) } catch (e: any) { notify(e.message, 'error') } finally { setLoading(false) } }}>创建 {chosen.length * versions} 条素材并进入分镜 →</button>
+      </Section>}
     </>
   )
 }

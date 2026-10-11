@@ -1,3 +1,4 @@
+import { BrandSelector, ComplianceSettings } from '../components/BrandSettings'
 import { useRef, useState } from 'react'
 import type { PhaseProps } from '../App'
 import { api } from '../api'
@@ -11,8 +12,12 @@ const FOUNDATION_TABS = [
   { id: 'visual', label: '视觉设计', desc: '画面风格 · 镜头 · 光照' },
   { id: 'compliance', label: '合规边界说明', desc: '表达边界 · 使用规则' },
 ]
-export default function Phase1Foundation({ project, meta, patch, reloadMeta, notify, goto, foundationTab, resourceMode, openReferences }: PhaseProps) {
-  const { brandGuide, assets, facts: factLib, compliance } = meta
+export default function Phase1Foundation(props: PhaseProps) {
+  const { project, meta, patch, reloadMeta, notify, goto, foundationTab, resourceMode, openReferences } = props
+  const { brandGuide, compliance } = meta
+  const brandId = project.brandGuideId || 'hxz-ad-v1'
+  const assets = { ...meta.assets, items: meta.assets.items.filter(a => (a.brandId || 'hxz-ad-v1') === brandId || !['brand', 'productUI', 'overlay'].includes(a.category) && !a.brandId) }
+  const factLib = { ...meta.facts, facts: meta.facts.facts.filter(f => (f.brandId || 'hxz-ad-v1') === brandId) }
   const [tab, setTab] = useState(foundationTab || 'brand')
   const visual = meta.visualDesign
   const logoAsset = assets.items.find(item => item.id === 'brand-logo-main') || assets.items.find(item => item.category === 'brand' && item.refImage)
@@ -43,7 +48,7 @@ export default function Phase1Foundation({ project, meta, patch, reloadMeta, not
     if (!ctaText.trim()) return notify('请输入 CTA 文案', 'error')
     setCardBusy('cta')
     try {
-      const { asset, warnings } = await api.buildCtaCard(ctaText.trim())
+      const { asset, warnings } = await api.buildCtaCard(ctaText.trim(), brandId)
       await reloadMeta()
       setCtaText('')
       notify(warnings?.length ? `CTA 卡已生成，但有 ${warnings.length} 项提醒` : `CTA 卡已生成：${asset.nameCn}`)
@@ -94,7 +99,7 @@ export default function Phase1Foundation({ project, meta, patch, reloadMeta, not
   const createAsset = async () => {
     if (!newAssetCat || !draft.name) return notify('请填写素材名称', 'error')
     try {
-      await api.createAsset({ ...draft, category: newAssetCat })
+      await api.createAsset({ ...draft, category: newAssetCat, brandId })
       await reloadMeta()
       setNewAssetCat(null)
       setDraft({})
@@ -117,7 +122,7 @@ export default function Phase1Foundation({ project, meta, patch, reloadMeta, not
           notify('事实已更新')
         }
       } else {
-        await api.createFact(factDraft)
+        await api.createFact({ ...factDraft, brandId })
         await reloadMeta()
         notify('事实条目已新增')
       }
@@ -151,10 +156,12 @@ export default function Phase1Foundation({ project, meta, patch, reloadMeta, not
       </nav>
       <div className="foundation-scope">
         <Badge tone="brand">共享资料 · 项目独立选用</Badge>
-        <span>{resourceMode ? '这里的勾选会作为新任务的默认资料；已有任务保持原来的选用。' : '资料来自共享资料中心；这里仅调整本任务的选用范围。'}</span>
-        {!resourceMode && <button className="btn-ghost ml-auto" onClick={async () => { try { await api.saveWorkspace({ defaults: { assets: project.assets, facts: project.facts } }); notify('已设为新任务默认资料') } catch (e: any) { notify(e.message, 'error') } }}>将本次选用设为默认</button>}
+        <span>{resourceMode ? '这里的勾选会作为新任务的默认资料；已有任务保持原来的选用。' : '在本环节新增或选择品牌、活动与素材；所选内容用于整批视频。'}</span>
+        {!resourceMode && <button className="btn-ghost ml-auto" onClick={async () => { try { await api.saveWorkspace({ defaults: { assets: project.assets, facts: project.facts, brandGuideId: project.brandGuideId } }); notify('已设为新任务默认资料') } catch (e: any) { notify(e.message, 'error') } }}>将本次选用设为默认</button>}
       </div>
 
+      {tab === 'brand' && <BrandSelector {...props} />}
+      {tab === 'compliance' && <ComplianceSettings {...props} />}
       {tab === 'brand' && <Section title="品牌基础信息" desc="品牌是谁、提供什么价值，以及识别品牌所需的 Logo 和品牌色。">
         <div className="brand-identity-grid">
           <div className="brand-logo-card">
@@ -208,12 +215,7 @@ export default function Phase1Foundation({ project, meta, patch, reloadMeta, not
         </details>
       </Section>}
 
-      {tab === 'compliance' && <Section title="合规边界说明" desc="集中维护广告表达与素材使用边界，自动审核会结合这些规则检查分镜、文案和素材引用。">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          {[['产品展示边界', brandGuide.productDisplayRules], ['文案表达规则', brandGuide.copyRules], ['禁止事项', brandGuide.restrictions]].map(([name, rules]) => (
-            <div className="foundation-detail" key={name as string}><div className="label">{name}</div><ul className="foundation-rules">{(rules as string[]).map(rule => <li key={rule}>{rule}</li>)}</ul></div>
-          ))}
-        </div>
+      {tab === 'compliance' && <Section title="通用表达扫描" desc="词库提供快速风险提示，Agent 再结合上下文、品牌要求与平台规则判断。">
         <div className="label mt-6">自动扫描规则 · {compliance.rules.length} 类</div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           {compliance.rules.map(rule => <div className="foundation-detail" key={rule.id}>

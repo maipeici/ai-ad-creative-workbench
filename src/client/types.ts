@@ -1,6 +1,7 @@
 import type { InspirationAttribution, InspirationAnalysis, ShotReferenceUse } from './inspiration-types'
 
 export interface AssetItem {
+  brandId?: string
   id: string
   category: string
   name: string
@@ -27,6 +28,7 @@ export interface AssetLib {
 }
 
 export interface Fact {
+  brandId?: string
   id: string
   type: 'feature' | 'campaign' | 'conversion-path' | 'compliance-note'
   status: 'confirmed' | 'pending' | 'expired'
@@ -83,6 +85,7 @@ export interface Compliance {
 }
 
 export interface BrandGuide {
+  reviewRules?: string[]
   id: string
   name: string
   notice?: string
@@ -116,7 +119,7 @@ export interface BrandGuide {
 }
 
 export type VisualDesign = Pick<BrandGuide, 'format' | 'visualStyle' | 'cameraStyle' | 'lighting' | 'negativePromptLibrary'>
-export interface ReviewCheck { id: string; label: string; status: 'pass' | 'block' | 'needs-input'; evidence: string; suggestion: string }
+export interface ReviewCheck { id: string; label: string; status: 'pass' | 'block' | 'needs-input'; evidence: string; suggestion: string; group?: string; source?: string; sourceUrl?: string }
 export interface AutomaticReview {
   approved: boolean; approvedAt: string | null; checklist: Record<string, boolean>; notes: string
   mode?: 'automatic'; status?: 'idle' | 'passed' | 'blocked' | 'needs-input' | 'stale'
@@ -297,6 +300,12 @@ export interface Variant {
 }
 
 export interface Project {
+  brandGuideId?: string
+  batchId?: string
+  batch?: CreativeBatch
+  creativeName?: string
+  creativeInstruction?: string
+  reviewPolicy?: ReviewPolicy
   experimentLink?: { experimentId: string; parentId: string; label: string; editableShotIds: string[]; fixedFingerprint: string }
   _experimentRenderLocked?: boolean
   experiments?: { id: string; title: string }[]
@@ -337,6 +346,8 @@ export interface Project {
 }
 
 export interface ProjectSummary {
+  creativeCount?: number
+  completedCount?: number
   experimentLink?: Project['experimentLink'] | null
   experimentCount?: number
   id: string
@@ -362,11 +373,12 @@ export interface QualityReview {
   results: { id: string; label: string; status: string; evidence: string; timing: string; suggestion: string }[]
 }
 export interface WorkspaceResources {
-  defaults: { assets: Record<string, string[]>; facts: string[] }
+  defaults: { assets: Record<string, string[]>; facts: string[]; brandGuideId?: string }
   brandIdentity: Partial<BrandGuide['brandIdentity']>
   updatedAt?: string
 }
 export interface ExperimentReport {
+  mode?: 'comparison' | 'single-variable'
   id: string; parentId: string; parentName: string; title: string; variable: string; primaryMetric: string; hypothesis: string
   editableShotId: string; editableShotIndex: number; evidence: string; comparable: boolean
   plan: { audience: string; budget: string; period: string; attribution: string; trafficMethod: string }
@@ -441,6 +453,8 @@ export interface ImpactResult {
 }
 
 export interface Meta {
+  brands?: { id: string; name: string }[]
+  platformPolicies?: { version: string; scope: string; profiles: PlatformPolicy[] }
   phases: { id: number; key: string; name: string }[]
   brandGuide: BrandGuide
   visualDesign: VisualDesign
@@ -457,3 +471,24 @@ export interface Meta {
   voices: { id: string; name: string; desc: string }[]
   vertex?: { enabled: boolean; project?: string; location?: string; veoModel?: string }
 }
+
+export interface PlatformPolicy {
+  id: string; name: string; coverage: string; version?: string; missing?: string
+  sources: { title: string; url: string; checkedAt: string }[]
+  rules: { id: string; label: string; sourceIndex: number }[]
+}
+export interface ReviewPolicy {
+  version: string; scope: string; platform: PlatformPolicy | null
+  rules: { id: string; group: string; label: string; source: string; sourceUrl?: string; requiredInput?: boolean }[]
+}
+export interface CreativeSummary {
+  id: string; name: string; conceptId: string | null; instruction: string; phase: number
+  shotCount: number; readyShots: number; approved: boolean; reviewStatus: string
+  videoUrl: string | null; stale: boolean; cover: string | null; qualityStatus: string
+  experimentLink?: Project['experimentLink']
+}
+export interface BatchJob {
+  id: string; stage: string; status: string; message?: string
+  items: { id: string; status: string; step: string; message: string }[]
+}
+export interface CreativeBatch { id: string; name: string; target: number; items: CreativeSummary[]; job: BatchJob | null }

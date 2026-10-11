@@ -257,6 +257,7 @@ export async function autoFix({ project, brandGuide, compliance, factLib, facts,
   if (!sb) throw new Error('尚无分镜')
 
   const report = { applied: [], skipped: [], needsManual: [] }
+  const sharedFacts = Boolean(project.batchId || project.creatives?.length || project.batch?.items?.length > 1)
   const byIndex = new Map(sb.shots.map((s) => [s.index, s]))
   const shotById = new Map(sb.shots.map((s) => [s.id, s]))
 
@@ -320,6 +321,10 @@ export async function autoFix({ project, brandGuide, compliance, factLib, facts,
       }
       case 'deselect-fact': {
         const ids = g.fix.payload.factIds || []
+        if (sharedFacts) {
+          report.needsManual.push({ scope: '品牌素材', reason: '这批素材共用事实选用，请先在品牌素材中移除未确认事实，再重新审核。', action: 'deselect-fact', factIds: ids })
+          break
+        }
         project.facts = (project.facts || []).filter((id) => !ids.includes(id))
         for (const s of sb.shots) s.factRefs = (s.factRefs || []).filter((id) => !ids.includes(id))
         report.applied.push({ scope: '全局', action: 'deselect-fact', detail: `移除未确认事实 ${ids.length} 条` })
@@ -385,6 +390,10 @@ export async function autoFix({ project, brandGuide, compliance, factLib, facts,
 
         case 'select-fact': {
           const ids = iss.fix.payload.factIds || []
+          if (sharedFacts) {
+            report.needsManual.push({ scope: '品牌素材', reason: '请先在品牌素材中选用所需事实，再重新审核；单条修复不修改整批资料。', action: 'select-fact', factIds: ids })
+            break
+          }
           project.facts = [...new Set([...(project.facts || []), ...ids])]
           report.applied.push({ scope: '全局', action: 'select-fact', detail: `将 ${ids.join(', ')} 加入项目` })
           break

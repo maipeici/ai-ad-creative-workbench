@@ -6,7 +6,7 @@ import { Badge, EmptyHint, Field, IssueRow, Section, Spinner } from '../ui'
 import ShotCard from '../components/ShotCard'
 import ReferenceGuidance from '../components/ReferenceGuidance'
 
-export default function Phase4Storyboard({ project, meta, patch, setProject, notify, goto, preview, openExperiments }: PhaseProps) {
+export default function Phase4Storyboard({ project, meta, patch, setProject, notify, goto, preview }: PhaseProps) {
   const [loading, setLoading] = useState(false)
   const [shotCount, setShotCount] = useState<number | ''>('')
   const [shotDuration, setShotDuration] = useState<number | ''>('')
@@ -164,7 +164,6 @@ export default function Phase4Storyboard({ project, meta, patch, setProject, not
           </p>
         )}
       </Section>}
-      {!project.experimentLink && sb && <div className="business-context">基准分镜已就绪。可以先锁定测试变量，再分别制作 A/B 版本。<button className="btn-ghost" onClick={openExperiments}>建立素材实验 →</button></div>}
 
       {!sb ? (
         <EmptyHint>还没有分镜。选定创意后点击「生成分镜」。</EmptyHint>

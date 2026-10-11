@@ -30,6 +30,13 @@ async function req<T>(url: string, init?: RequestInit): Promise<T> {
 const body = (v: unknown) => JSON.stringify(v ?? {})
 
 export const api = {
+  batch: (id: string) => req<import('./types').CreativeBatch>(`/api/projects/${id}/batch`),
+  addCreatives: (id: string, input: Record<string, unknown>) => req<Project>(`/api/projects/${id}/batch/creatives`, { method: 'POST', body: body(input) }),
+  runBatch: (id: string, ids: string[], stage: string) => req<import('./types').BatchJob>(`/api/projects/${id}/batch/run`, { method: 'POST', body: body({ ids, stage }) }),
+  pauseBatch: (id: string) => req<{ ok: boolean }>(`/api/projects/${id}/batch/pause`, { method: 'POST' }),
+  createBrand: (brandIdentity: Record<string, string>) => req<import('./types').BrandGuide>('/api/brands', { method: 'POST', body: body({ brandIdentity }) }),
+  updateBrand: (id: string, changes: Record<string, unknown>) => req<import('./types').BrandGuide>('/api/brands/' + id, { method: 'PATCH', body: body(changes) }),
+  updatePlatformPolicy: (id: string, changes: Record<string, unknown>) => req<import('./types').PlatformPolicy>('/api/platform-policies/' + id, { method: 'PATCH', body: body(changes) }),
   workspace: () => req<WorkspaceResources>('/api/workspace'),
   saveWorkspace: (changes: Partial<WorkspaceResources>) => req<WorkspaceResources>('/api/workspace', { method: 'PATCH', body: body(changes) }),
   experiments: () => req<ExperimentReport[]>('/api/experiments'),
@@ -46,7 +53,7 @@ export const api = {
   analyzeInspiration: (id:string,referenceId:string) => req<{project:Project;analysis:InspirationAnalysis}>(`/api/projects/${id}/inspirations/${referenceId}/analyze`,{method:'POST'}),
   uploadInspirationVideo: (referenceId:string,file:File) => {const fd=new FormData();fd.append('file',file);return req<InspirationReference>(`/api/inspirations/${referenceId}/video`,{method:'POST',body:fd})},
   applyInspiration: (id:string,referenceId:string,suggestionIds:string[],targetConceptId?:string) => req<{project:Project;concept:import('./types').Concept}>(`/api/projects/${id}/inspirations/${referenceId}/apply`,{method:'POST',body:body({suggestionIds,targetConceptId,selectAfterApply:true})}),
-  meta: () => req<Meta>('/api/meta'),
+  meta: (brandId?: string) => req<Meta>('/api/meta' + (brandId ? '?brandId=' + encodeURIComponent(brandId) : '')),
 
   listProjects: () => req<ProjectSummary[]>('/api/projects'),
   createProject: (name: string) => req<Project>('/api/projects', { method: 'POST', body: body({ name }) }),
@@ -66,10 +73,10 @@ export const api = {
       body: body({ factId, headline }),
     }),
 
-  buildCtaCard: (text: string) =>
+  buildCtaCard: (text: string, brandId?: string) =>
     req<{ card: { png: string; bytes: number }; asset: AssetItem; warnings: any[] }>('/api/cards/cta', {
       method: 'POST',
-      body: body({ text }),
+      body: body({ text, brandId }),
     }),
 
   createFact: (f: Partial<Fact>) => req<Fact>('/api/facts', { method: 'POST', body: body(f) }),

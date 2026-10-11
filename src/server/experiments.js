@@ -151,7 +151,7 @@ export function experimentReport(experiment, projects) {
       metrics: { ctr: totals.impressions ? totals.clicks / totals.impressions : null, cvr: totals.clicks ? totals.conversions / totals.clicks : null, cpa: totals.conversions ? totals.spend / totals.conversions : null } }
   })
   const periods = experiment.versions.map(v => experiment.observations.filter(r => r.projectId === v.projectId).map(r => `${r.startDate}/${r.endDate}`).sort().join(','))
-  const comparable = versions.length > 1 && versions.every(v => v.hasData && !v.staleData) && periods.every(p => p === periods[0])
+  const comparable = versions.length > 1 && versions.every(v => v.hasData && !v.staleData && v.metrics[experiment.primaryMetric] !== null && v.totals.impressions > 0) && periods.every(p => p === periods[0])
   return { ...experiment, versions, comparable,
     evidence: comparable ? '同统计区间的描述性比较；未验证分流执行与统计显著性，不自动判定胜出。' : '请为各版本导入相同统计区间且对应当前成片的数据，再比较效果。' }
 }

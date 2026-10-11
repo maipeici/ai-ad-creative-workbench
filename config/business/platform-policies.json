@@ -1,0 +1,51 @@
+{
+  "version": "2026-10-11.1",
+  "scope": "公开规则中的通用素材要求；不覆盖广告账户资质、完整落地页或所有行业和版位细则。",
+  "profiles": [
+    {
+      "id": "oceanengine-douyin",
+      "name": "巨量引擎 · 抖音",
+      "coverage": "baseline",
+      "sources": [
+        { "title": "巨量引擎官方：开户与素材证明要求", "url": "https://www.oceanengine.com/help/kaihu-liucheng", "checkedAt": "2026-10-11" },
+        { "title": "巨量学：广告素材涉及超出常识范围的虚假实验", "url": "https://school.oceanengine.com/course/7436028846495361386", "checkedAt": "2026-10-11" }
+      ],
+      "rules": [
+        { "id": "oe-evidence", "label": "涉及肖像、品牌授权或引用数据时，核对选用资料中的授权或出处；缺少必要证明标记待补充。", "sourceIndex": 0 },
+        { "id": "oe-claim", "label": "不得以超出常识的虚假实验表达产品效果；对照镜头计划与已确认事实核对演示依据。", "sourceIndex": 1 }
+      ]
+    },
+    {
+      "id": "tencent-gdt",
+      "name": "腾讯广告",
+      "coverage": "baseline",
+      "sources": [
+        { "title": "腾讯广告官方培训：创意审核要求（历史公开资料，非全量实时规则）", "url": "https://training.tencentads.com/uploads/202205/069PNfWw_uo1m3t.pdf", "checkedAt": "2026-10-11" }
+      ],
+      "rules": [
+        { "id": "tx-truth", "label": "价格与功能描述应有可核实的依据，不使用虚假或夸大的功效、优惠承诺。", "sourceIndex": 0 },
+        { "id": "tx-citation", "label": "引证内容应有出处，不能利用引用形式包装无依据的最高级或绝对化表述。", "sourceIndex": 0 }
+      ]
+    },
+    {
+      "id": "kuaishou-magnetic",
+      "name": "快手 · 磁力引擎",
+      "coverage": "baseline",
+      "sources": [
+        { "title": "磁力智投官方推广服务协议", "url": "https://ad.e.kuaishou.com/user-agreement", "checkedAt": "2026-10-11" }
+      ],
+      "rules": [
+        { "id": "ks-rights", "label": "广告表达及所用素材不得侵害他人权利；涉及第三方品牌、肖像、音乐时，核对现有授权依据。", "sourceIndex": 0 },
+        { "id": "ks-content", "label": "核对推广内容的真实性及是否违反社会公序良俗；不以未经证实的承诺误导用户。", "sourceIndex": 0 }
+      ]
+    },
+    {
+      "id": "wechat-channels",
+      "name": "微信视频号",
+      "coverage": "missing",
+      "sources": [],
+      "rules": [],
+      "missing": "尚未录入适用于当前视频号广告版位的官方审核规则，请补充来源和规则后再审核。"
+    }
+  ]
+}

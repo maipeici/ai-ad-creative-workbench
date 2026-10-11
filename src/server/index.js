@@ -1,4 +1,7 @@
 import express from 'express'
+import { registerBrandRoutes, listBrands } from './brand-routes.js'
+import { getPlatformPolicies, buildReviewPolicy, additionalRequirements } from './review-policy.js'
+import { registerBatchRoutes } from './batch-routes.js'
 import { registerInspirationRoutes } from './inspiration-routes.js'
 import { registerExperimentRoutes } from './experiment-routes.js'
 import { registerDeliveryRoutes } from './delivery-routes.js'
@@ -83,12 +86,26 @@ const wrap = (fn) => (req, res) =>
     res.status(err.status || 500).json({ error: err.message })
   })
 
+const workflowActions = new Map()
+const workflowAction = (key, handler) => { workflowActions.set(key, handler); return wrap(handler) }
+const invokeWorkflow = async (id, key, body = {}) => {
+  const handler = workflowActions.get(key)
+  if (!handler) throw new Error('制作步骤尚未注册：' + key)
+  let result, status = 200
+  await handler({ params: { id, shotId: body.shotId }, body, query: {} }, {
+    status(code) { status = code; return this },
+    json(data) { result = data; return this },
+  })
+  if (status >= 400) throw Object.assign(new Error(result?.error || '制作步骤失败'), { status })
+  return result
+}
+
 const PHASES = [
-  { id: 1, key: 'foundation', name: '资料选用' },
+  { id: 1, key: 'foundation', name: '品牌素材' },
   { id: 2, key: 'brief', name: '投放需求' },
   { id: 3, key: 'concept', name: '广告创意' },
   { id: 4, key: 'storyboard', name: '分镜规划' },
-  { id: 5, key: 'review', name: '脚本预检' },
+  { id: 5, key: 'review', name: '自动审核' },
   { id: 6, key: 'render', name: '成片交付' },
 ]
 
@@ -99,7 +116,7 @@ function newProject(name) {
     name: name || `花小猪广告素材 ${new Date().toLocaleDateString('zh-CN')}`,
     createdAt: now,
     updatedAt: now,
-    phase: 2,
+    phase: 1,
     brandGuideId: 'hxz-ad-v1',
     assets: {
       person: [],
@@ -145,7 +162,7 @@ async function loadContext(projectId) {
     throw e
   }
   const [brandGuide, assetLib, factLib, channelLib, compliance] = await Promise.all([
-    getBrandGuide(),
+    getBrandGuide(project.brandGuideId),
     getAssets(),
     getFacts(),
     getChannels(),
@@ -155,6 +172,9 @@ async function loadContext(projectId) {
   const facts = resolveFacts(project, factLib)
   const channel = (channelLib.channels || []).find((c) => c.id === project.brief?.channel) || channelLib.channels?.[0]
   const ctx = { project, brandGuide, assetLib, factLib, channelLib, compliance, picked, facts, channel }
+  ctx.reviewPolicy = buildReviewPolicy(ctx, await getPlatformPolicies())
+  compliance.platformRequirements = ctx.reviewPolicy.rules.filter(r => r.group === 'platform')
+  project.reviewPolicy = ctx.reviewPolicy
   refreshReview(ctx)
   return ctx
 }
@@ -176,14 +196,16 @@ app.use('/api/projects/:id', async (req, res, next) => {
   } catch (error) { next(error) }
 })
 
+registerBatchRoutes(app, { wrap, invoke: invokeWorkflow, loadContext })
+registerBrandRoutes(app, wrap)
 registerInspirationRoutes(app, { wrap, loadContext })
 registerExperimentRoutes(app, wrap)
-registerDeliveryRoutes(app, { wrap, loadContext })
+registerDeliveryRoutes(app, { wrap, loadContext, workflowAction })
 
 app.get('/api/workspace', wrap(async (_req, res) => res.json(await getWorkspace())))
 app.patch('/api/workspace', wrap(async (req, res) => {
   const [assets, facts] = await Promise.all([getAssets(), getFacts()])
-  try { res.json(await saveWorkspace(validateWorkspace(req.body, assets, facts))) }
+  try { if (req.body.defaults?.brandGuideId) await getBrandGuide(req.body.defaults.brandGuideId); res.json(await saveWorkspace(validateWorkspace(req.body, assets, facts))) }
   catch (error) { error.status = 400; throw error }
 }))
 
@@ -191,9 +213,9 @@ app.patch('/api/workspace', wrap(async (req, res) => {
 
 app.get(
   '/api/meta',
-  wrap(async (_req, res) => {
+  wrap(async (req, res) => {
     const [brandGuide, assets, facts, channels, compliance] = await Promise.all([
-      getBrandGuide(),
+      getBrandGuide(String(req.query.brandId || 'hxz-ad-v1')),
       getAssets(),
       getFacts(),
       getChannels(),
@@ -201,6 +223,8 @@ app.get(
     ])
     res.json({
       phases: PHASES,
+      brands: await listBrands(),
+      platformPolicies: await getPlatformPolicies(),
       visualDesign: await getVisualDesign(),
       reviewChecklist: DEFAULT_REVIEW_REQUIREMENTS,
       brandGuide,
@@ -238,6 +262,7 @@ app.post(
       tags: req.body.tags || ['custom'],
       note: req.body.note || '',
       custom: true,
+      brandId: req.body.brandId || 'hxz-ad-v1',
     }
     lib.items.push(item)
     await saveAssets(lib)
@@ -282,10 +307,11 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
 app.post(
   '/api/cards/coupon',
   wrap(async (req, res) => {
-    const [factLib, brandGuide, assetLib] = await Promise.all([getFacts(), getBrandGuide(), getAssets()])
+    const [factLib, assetLib] = await Promise.all([getFacts(), getAssets()])
     const fact = (factLib.facts || []).find((f) => f.id === req.body?.factId)
     if (!fact) return res.status(404).json({ error: '未找到指定的事实条目' })
 
+    const brandGuide = await getBrandGuide(fact.brandId || 'hxz-ad-v1')
     const built = await buildCouponFromFact({
       fact,
       brandGuide,
@@ -305,6 +331,7 @@ app.post(
       tags: ['official-required', 'generated'],
       note: `由事实 ${fact.id} 生成 · 依据来源：${fact.source || '未标注'} · 金额 ${fact.couponAmount}`,
       factId: fact.id,
+      brandId: fact.brandId || 'hxz-ad-v1',
       custom: true,
     }
     assetLib.items.push(item)
@@ -351,7 +378,7 @@ app.post(
     const text = String(req.body?.text || '').trim()
     if (!text) return res.status(400).json({ error: '请提供 CTA 文案' })
 
-    const [brandGuide, assetLib, compliance] = await Promise.all([getBrandGuide(), getAssets(), getCompliance()])
+    const [brandGuide, assetLib, compliance] = await Promise.all([getBrandGuide(req.body?.brandId || 'hxz-ad-v1'), getAssets(), getCompliance()])
 
     // CTA 文案同样要过合规扫描
     const hits = scanCompliance(compliance, [{ label: 'CTA', text }])
@@ -368,6 +395,7 @@ app.post(
       id: `overlay-${nanoid(6)}`,
       category: 'overlay',
       name: 'CTA Card',
+      brandId: req.body?.brandId || 'hxz-ad-v1',
       nameCn: `CTA · ${text}`,
       prompt: '',
       negative: '',
@@ -399,6 +427,7 @@ app.post(
       claimPath: req.body.claimPath || '',
       source: req.body.source || '',
       owner: req.body.owner || '',
+      brandId: req.body.brandId || 'hxz-ad-v1',
       validFrom: req.body.validFrom || null,
       validTo: req.body.validTo || null,
       cities: req.body.cities || '',
@@ -483,19 +512,22 @@ app.patch(
     const gcChanged = req.body?.storyboard?.globalContext !== undefined && fingerprint(req.body.storyboard.globalContext) !== fingerprint(project.storyboard?.globalContext)
     const changes = { ...req.body }
     delete changes._experimentRenderLocked
+    if (project.batchId && ['brief', 'assets', 'facts', 'brandGuideId', 'name'].some(key => Object.hasOwn(changes, key))) return res.status(409).json({ error: '品牌与投放需求由整批素材共享，请返回前两个阶段修改' })
+    if (changes.brandGuideId !== undefined) await getBrandGuide(changes.brandGuideId)
     if (changes.render) delete changes.render.qualityReview
-    for (const key of ['experimentLink', 'experiments']) if (Object.hasOwn(changes, key)) return res.status(400).json({ error: '请使用实验工作区修改实验记录' })
+    delete changes.reviewPolicy
+    for (const key of ['experimentLink', 'experiments', 'creatives', 'batch', 'batchId', 'batchJob', 'sharedSnapshot']) if (Object.hasOwn(changes, key)) return res.status(400).json({ error: '请使用实验工作区修改实验记录' })
     // Approval is computed by the review endpoint; clients only edit requirements and notes.
     if (Object.hasOwn(changes, 'review')) {
       changes.review = {}
-      if (req.body.review?.requirements !== undefined) changes.review.requirements = normalizeRequirements(req.body.review.requirements)
+      if (req.body.review?.requirements !== undefined) changes.review.requirements = req.body.review.requirements?.length === 0 ? [] : normalizeRequirements(req.body.review.requirements)
       if (typeof req.body.review?.notes === 'string') changes.review.notes = req.body.review.notes
     }
     const merged = deepMerge(project, changes)
     merged.id = project.id
     await upsertProject(merged)
     const impact = gcChanged ? analyzeImpact({ project: merged, globalContextChanged: true }) : null
-    res.json({ ...merged, _impact: impact })
+    res.json({ ...(await loadContext(merged.id)).project, _impact: impact })
   }),
 )
 
@@ -556,7 +588,7 @@ app.post(
 
 app.post(
   '/api/projects/:id/storyboard',
-  wrap(async (req, res) => {
+  workflowAction('storyboard', async (req, res) => {
     const { project, brandGuide, compliance, picked, assetLib, facts, channel } = await loadContext(req.params.id)
     const concept = selectedConcept(project)
     if (!concept) return res.status(400).json({ error: '请先在 Phase 3 选择一个创意方案' })
@@ -564,7 +596,7 @@ app.post(
     const options = {
       shotCount: req.body?.shotCount ? Number(req.body.shotCount) : undefined,
       shotDurationSec: req.body?.shotDurationSec ? Number(req.body.shotDurationSec) : undefined,
-      userPreference: req.body?.userPreference || '',
+      userPreference: req.body?.userPreference || project.creativeInstruction || '',
     }
 
     const messages = storyboardMessages({
@@ -747,7 +779,7 @@ app.delete(
 
 /* --------------------- Phase 5：自动审核 --------------------- */
 const reviewRuns = new Set()
-app.post('/api/projects/:id/review', wrap(async (req, res) => {
+app.post('/api/projects/:id/review', workflowAction('review', async (req, res) => {
   if (reviewRuns.has(req.params.id)) return res.status(409).json({ error: '该项目正在自动审核，请等待完成。' })
   reviewRuns.add(req.params.id)
   try {
@@ -755,7 +787,10 @@ app.post('/api/projects/:id/review', wrap(async (req, res) => {
     assertStoryboardCurrent(ctx.project)
     const originalFingerprint = reviewInputFingerprint(ctx)
     if (req.body?.autoRepair !== undefined && typeof req.body.autoRepair !== 'boolean') return res.status(400).json({ error: 'autoRepair 必须是布尔值' })
-    const result = await runAutomaticReview(ctx, { requirements: normalizeRequirements(req.body?.requirements || ctx.project.review?.requirements), autoRepair: !ctx.project.experimentLink && req.body?.autoRepair !== false })
+    const extras = req.body?.requirements ?? ctx.project.review?.requirements ?? []
+    ctx.project.review.requirements = additionalRequirements(extras.length ? normalizeRequirements(extras) : [])
+    ctx.reviewPolicy = buildReviewPolicy(ctx, await getPlatformPolicies())
+    const result = await runAutomaticReview(ctx, { requirements: ctx.project.review.requirements, autoRepair: !ctx.project.experimentLink && req.body?.autoRepair !== false })
     const latest = await loadContext(req.params.id)
     if (reviewInputFingerprint(latest) !== originalFingerprint) return res.status(409).json({ error: '审核期间资料已更新，本次结果未保存，请重新运行审核。' })
     result.project = { ...latest.project, storyboard: result.project.storyboard, assets: result.project.assets, facts: result.project.facts, review: result.project.review, phase: Math.max(latest.project.phase, 5) }
@@ -881,7 +916,7 @@ app.get(
 
 app.post(
   '/api/projects/:id/render/shots/:shotId',
-  wrap(async (req, res) => {
+  workflowAction('render', async (req, res) => {
     const { project, brandGuide, compliance, factLib, picked, channel } = await loadContext(req.params.id)
     const sb = project.storyboard
     const shot = sb?.shots.find((s) => s.id === req.params.shotId)
@@ -889,7 +924,7 @@ app.post(
 
     {
       if (!project.review?.approved) {
-        return res.status(400).json({ error: '分镜尚未通过脚本预检或内容已变更，请先完成预检' })
+        return res.status(400).json({ error: '分镜尚未通过自动审核或内容已变更，请先完成自动审核' })
       }
       const v = validateStoryboard({ project, brandGuide, compliance, factLib, picked, channel })
       const shotIssues = v.shots.find((s) => s.shotId === shot.id)?.issues || []
@@ -952,7 +987,7 @@ app.post(
 
 app.post(
   '/api/projects/:id/render/shots/:shotId/poll',
-  wrap(async (req, res) => {
+  workflowAction('poll', async (req, res) => {
     const project = await getProject(req.params.id)
     const entry = project?.render?.shots?.[req.params.shotId]
     if (!entry?.taskId) return res.status(400).json({ error: '该镜头没有进行中的远程任务' })
@@ -1227,13 +1262,13 @@ app.post(
  */
 app.post(
   '/api/projects/:id/render/assemble',
-  wrap(async (req, res) => {
+  workflowAction('assemble', async (req, res) => {
     const { project, picked, channel, brandGuide } = await loadContext(req.params.id)
     assertStoryboardCurrent(project)
     const sb = project.storyboard
     if (!sb) return res.status(400).json({ error: '尚未生成分镜' })
 
-    if (!project.review?.approved) return res.status(400).json({ error: '请先完成当前版本的脚本预检，再合成成片。' })
+    if (!project.review?.approved) return res.status(400).json({ error: '请先完成当前版本的自动审核，再合成成片。' })
     if (sb.shots.some(shot => project.render.shots[shot.id]?.stale)) return res.status(400).json({ error: '存在自动修复前的旧镜头，请重新生成或回传后再合成。' })
     const missing = sb.shots.filter((s) => !project.render.shots[s.id]?.url)
     if (missing.length) {

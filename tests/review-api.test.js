@@ -45,7 +45,7 @@ test('review API persists requirements and fails closed without a model, using i
       return { status: response.status, data: await response.json() }
     }
     const meta = await request('/api/meta')
-    assert.equal(meta.data.phases.find(phase => phase.id === 5).name, '脚本预检')
+    assert.equal(meta.data.phases.find(phase => phase.id === 5).name, '自动审核')
     assert.ok(meta.data.visualDesign.lighting.presets.length)
     assert.deepEqual(meta.data.brandGuide.visualStyle, meta.data.visualDesign.visualStyle)
     const created = await request('/api/projects', 'POST', { name: 'Isolated automatic review test' })
@@ -53,7 +53,8 @@ test('review API persists requirements and fails closed without a model, using i
     assert.equal(created.status, 200)
     const empty = await request(route + '/review', 'POST', {})
     assert.equal(empty.status, 400)
-    const invalid = await request(route, 'PATCH', { review: { requirements: [] } })
+    assert.equal((await request(route, 'PATCH', { review: { requirements: [] } })).status, 200, 'optional extra requirements can be empty')
+    const invalid = await request(route, 'PATCH', { review: { requirements: [''] } })
     assert.equal(invalid.status, 400)
     await request(route, 'PATCH', { review: { requirements: ['CTA 清晰且具体'], approved: true, status: 'passed' } })
     const saved = await request(route)
@@ -75,7 +76,7 @@ test('review API persists requirements and fails closed without a model, using i
     assert.equal(persisted.data.review.checkedAt, run.data.project.review.checkedAt)
     const render = await request(route + '/render/shots/test-0', 'POST', {})
     assert.equal(render.status, 400)
-    assert.match(render.data.error, /脚本预检/)
+    assert.match(render.data.error, /自动审核/)
     await request(route, 'PATCH', { brief: { goal: '变更后的目标' } })
     assert.equal((await request(route)).data.review.status, 'stale')
     await request(route, 'PATCH', {
