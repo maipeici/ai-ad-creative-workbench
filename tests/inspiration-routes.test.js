@@ -21,6 +21,7 @@ function fixture() {
     render: { finalVideo: '/media/existing.mp4' } }
   const handlers = new Map(), items = []
   let modelHook = () => {}
+  let modelCalls = 0
   const app = Object.fromEntries(['get', 'post', 'patch'].map(method => [method, (url, handler) => handlers.set(method + ' ' + url, handler)]))
   registerInspirationRoutes(app, {
     wrap: fn => fn,
@@ -30,6 +31,7 @@ function fixture() {
       compliance: { rules: [] }, picked: {}, assetLib: { categories: [] }, channel: { name: '抖音' } }),
     saveProject: async value => { project = value },
     evaluate: async messages => {
+      modelCalls++
       modelHook()
       return { source: 'gemini', data: messages[0].content.includes('脚本拆解 Agent') ? analysisData : { concepts: [conceptData] } }
     },
@@ -42,6 +44,9 @@ function fixture() {
     },
     read: () => structuredClone(project),
     changeDuringModel: () => { modelHook = () => { project.brief.durationSec = 20 } },
+    patch: value => { Object.assign(project,value) },
+    lockDuringModel: () => { modelHook = () => { project.versionPlan = { concept: project.concepts[0] } } },
+    modelCalls: () => modelCalls,
   }
 }
 
@@ -90,4 +95,45 @@ test('one-click import selects the reference version and retains original concep
   assert.deepEqual(result.project.storyboard,before.storyboard)
   assert.deepEqual(result.project.render,before.render)
   await assert.rejects(f.call('post','/api/projects/:id/inspirations/:referenceId/apply',{suggestionIds:['hook'],targetConceptId:'missing'}),e=>e.status===409)
+})
+
+test('saved demo analyses remain discoverable even when the imported library is empty', async () => {
+  const f=fixture()
+  await f.call('post','/api/projects/:id/inspirations/:referenceId/analyze')
+  const imported=await f.call('get','/api/inspirations',{}, {projectId:'test-project'})
+  assert.equal(imported.items.length,0)
+  assert.equal(imported.analyzedCount,1)
+  const analyzed=await f.call('get','/api/inspirations',{}, {projectId:'test-project',mode:'analyzed'})
+  assert.deepEqual(analyzed.items.map(r=>r.id),[referenceId])
+  assert.equal(analyzed.mode,'analyzed')
+  assert.equal(analyzed.items[0].isDemo,true)
+  assert.ok(f.read().inspirationAnalyses[referenceId].segments.length)
+  const other=await fixture().call('get','/api/inspirations',{}, {projectId:'other-project',mode:'analyzed'})
+  assert.equal(other.items.length,0)
+  const filtered=await f.call('get','/api/inspirations',{}, {projectId:'test-project',mode:'analyzed',platform:'xiaohongshu'})
+  assert.equal(filtered.items.length,0)
+  assert.equal(filtered.analyzedCount,1)
+})
+
+test('locked video projects can analyze references but reject importing a new creative before a model call',async()=>{
+  for(const lock of [{versionPlan:{concept:{id:'original'}}},{creatives:[{id:'version-2'}]},{batch:{items:[{id:'base'},{id:'version-2'}]}}]){
+    const f=fixture()
+    f.patch(lock)
+    await f.call('post','/api/projects/:id/inspirations/:referenceId/analyze')
+    const before=f.read(),calls=f.modelCalls()
+    await assert.rejects(f.call('post','/api/projects/:id/inspirations/:referenceId/apply',{suggestionIds:['hook'],selectAfterApply:true}),e=>e.status===409&&/核心创意已锁定/.test(e.message))
+    assert.equal(f.modelCalls(),calls)
+    assert.deepEqual(f.read(),before)
+  }
+})
+
+test('creating a video plan during reference import cannot change the newly locked creative',async()=>{
+  const f=fixture()
+  await f.call('post','/api/projects/:id/inspirations/:referenceId/analyze')
+  const before=f.read()
+  f.lockDuringModel()
+  await assert.rejects(f.call('post','/api/projects/:id/inspirations/:referenceId/apply',{suggestionIds:['hook'],selectAfterApply:true}),e=>e.status===409)
+  assert.deepEqual(f.read().concepts,before.concepts)
+  assert.equal(f.read().selectedConceptId,before.selectedConceptId)
+  assert.deepEqual(f.read().render,before.render)
 })

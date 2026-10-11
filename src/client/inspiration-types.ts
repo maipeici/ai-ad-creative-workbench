@@ -24,7 +24,7 @@ export interface InspirationAttribution {
 export interface InspirationLibrary {
   videoAnalysisAvailable?: boolean
   items: InspirationReference[]; platforms: {id: string; name: string}[]; industries: {id: string; name: string}[]
-  importedCount: number; mode: 'demo' | 'imported'; defaults: {platform: string; industry: string}
+  importedCount: number; analyzedCount: number; mode: 'demo' | 'imported' | 'analyzed'; defaults: {platform: string; industry: string}
 }
 export interface ReferenceVideo {url:string;name:string;mimeType:string;size:number;sha256:string;uploadedAt:string}
 export interface ReferenceHighlight {point:string;evidence:string;mechanism:string}

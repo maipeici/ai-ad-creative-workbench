@@ -11,6 +11,7 @@ export default function Phase3Concept(props: PhaseProps) {
   const { project, meta, patch, setProject, notify, goto } = props
   const [creativeTab, setCreativeTab] = useState<'concepts'|'references'>(props.creativeTab || 'concepts')
   useEffect(() => { if (props.creativeTab) setCreativeTab(props.creativeTab) }, [props.creativeTab])
+  const selectTab=(tab:'concepts'|'references')=>{setCreativeTab(tab);props.onCreativeTabChange?.(tab)}
   const [loading, setLoading] = useState(false)
   const [pref, setPref] = useState('')
   const [count, setCount] = useState(3)
@@ -51,8 +52,9 @@ export default function Phase3Concept(props: PhaseProps) {
   const audience = meta.brandGuide.audienceOptions.find((a) => a.id === project.brief.audience)
   const scene = meta.brandGuide.sceneOptions.find((s) => s.id === project.brief.scene)
 
-  const tabs = <div className="inspiration-mode" aria-label="广告创意工作区"><button className={creativeTab==='concepts'?'active':''} onClick={()=>setCreativeTab('concepts')}>创意方案</button><button className={creativeTab==='references'?'active':''} onClick={()=>setCreativeTab('references')}>爆款参考</button></div>
-  if (creativeTab === 'references') return <>{tabs}<InspirationPanel {...props} onApplied={id=>{setAppliedId(id);setCreativeTab('concepts')}} /></>
+  const analysisCount=Object.keys(project.inspirationAnalyses||{}).length
+  const tabs = <div className="creative-workspaces" aria-label="广告创意工作区"><button className={creativeTab==='concepts'?'active':''} aria-label="创意方案" aria-pressed={creativeTab==='concepts'} onClick={()=>selectTab('concepts')}><strong>创意方案</strong><span>确定核心创意，进入分镜与批量制作</span></button><button className={creativeTab==='references'?'active':''} aria-label="爆款参考" aria-pressed={creativeTab==='references'} onClick={()=>selectTab('references')}><strong>爆款参考{analysisCount>0&&<small>已拆解 {analysisCount} 条</small>}</strong><span>上传视频 → 拆解脚本 → 一键导入创意</span></button></div>
+  if (creativeTab === 'references') return <>{tabs}<InspirationPanel {...props} onApplied={id=>{setAppliedId(id);selectTab('concepts')}} /></>
   return (
     <>
       {tabs}

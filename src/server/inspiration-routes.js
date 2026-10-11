@@ -18,10 +18,11 @@ export function registerInspirationRoutes(app,{wrap,loadContext,referenceStore=c
   }
   app.get('/api/inspirations',wrap(async(req,res)=>{
     const ctx=req.query.projectId?await loadContext(String(req.query.projectId)):{}
-    const all=await store.read(),demo=req.query.mode==='demo'
-    const items=demo?[...DEMO_REFERENCES,...all.filter(r=>r.isDemo)]:all.filter(r=>!r.isDemo)
+    const all=await store.read(),mode=['demo','analyzed'].includes(req.query.mode)?req.query.mode:'imported'
+    const analyzed=[...all,...DEMO_REFERENCES].filter(r=>!r.archived&&ctx.project?.inspirationAnalyses?.[r.id])
+    const items=mode==='analyzed'?analyzed:mode==='demo'?[...DEMO_REFERENCES,...all.filter(r=>r.isDemo)]:all.filter(r=>!r.isDemo)
     res.json({items:recommendReferences(items,req.query,ctx),platforms:PLATFORMS,industries:INDUSTRIES,
-      importedCount:all.filter(r=>!r.archived&&!r.isDemo).length,mode:demo?'demo':'imported',
+      importedCount:all.filter(r=>!r.archived&&!r.isDemo).length,analyzedCount:analyzed.length,mode,
       videoAnalysisAvailable:Boolean(config.vertex.enabled),
       defaults:{platform:platformForChannel(ctx.project?.brief?.channel),industry:defaultIndustry(ctx.brandGuide)}})
   }))
@@ -49,12 +50,19 @@ export function registerInspirationRoutes(app,{wrap,loadContext,referenceStore=c
   }))
   app.post('/api/projects/:id/inspirations/:referenceId/apply',wrap(async(req,res)=>{
     const ctx=await loadContext(req.params.id),ref=await find(req.params.referenceId)
+    const assertEditable=project=>{
+      if(project.versionPlan||project.creatives?.length||(project.batch?.items?.length||0)>1)
+        throw Object.assign(new Error('本项目已建立视频版本，核心创意已锁定。仍可查看和拆解参考；如需采用新创意，请新建项目后导入。'),{status:409})
+    }
+    // Check before spending model credits, and again if versions were created during the request.
+    assertEditable(ctx.project)
     const analysis=ctx.project.inspirationAnalyses?.[ref.id]
     const targetId=req.body?.targetConceptId
     const target=targetId?ctx.project.concepts?.find(c=>c.id===targetId):null
     if(targetId&&!target)throw Object.assign(new Error('要参考改写的创意已不存在，请刷新。'),{status:409})
     const concept=await reuseReference(ctx,ref,analysis,req.body?.suggestionIds,evaluate,target)
     const project=await current(req.params.id,ref,analysis.fingerprint)
+    assertEditable(project)
     if(target&&JSON.stringify(project.concepts?.find(c=>c.id===target.id))!==JSON.stringify(target))throw Object.assign(new Error('生成期间原创意发生变化，请重新应用。'),{status:409})
     project.concepts=[...(project.concepts||[]),concept]
     if(!project.selectedConceptId)project.selectedConceptId=concept.id

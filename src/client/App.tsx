@@ -24,6 +24,7 @@ export interface PhaseProps {
   openExperiments?: () => void
   registerBeforeLeave?: (save: (() => Promise<void>) | null) => void
   creativeTab?: 'concepts' | 'references'
+  onCreativeTabChange?: (tab:'concepts'|'references') => void
   preview?: boolean
   foundationTab?: string
   gotoFoundation?: (tab: string) => void
@@ -201,7 +202,7 @@ export default function App() {
   const changeView = async (next: typeof view) => { try { await beforeLeave.current?.(); setView(next); setMenuOpen(false) } catch {} }
   const openReferences = () => { if (!project) { notify('先选择或新建一个推广任务，参考库会结合任务生成建议'); return }; setCreativeTab('references'); void navigate(3) }
   const openExperiments = () => { const root = project?.batchId || project?.experimentLink?.parentId; if (root) void openProject(root, 7); else void changeView('experiments') }
-  const phaseProps: PhaseProps | null = project ? { project, meta, patch, setProject: setProjectAndRefresh, reloadMeta, notify, goto: phase => { void navigate(phase) }, gotoFoundation: tab => { setFoundationTab(tab); void navigate(1) }, foundationTab, openReferences, openExperiments, creativeTab, registerBeforeLeave, openMaterial: openProject, videoDetail: videoDetailId === project.id, closeVideoDetail: () => setVideoDetailId(null), inspectVideo: async id => { const opened = await openProject(id, 6); if (opened !== false) setVideoDetailId(id); return opened } } : null
+  const phaseProps: PhaseProps | null = project ? { project, meta, patch, setProject: setProjectAndRefresh, reloadMeta, notify, goto: phase => { void navigate(phase) }, gotoFoundation: tab => { setFoundationTab(tab); void navigate(1) }, foundationTab, openReferences, openExperiments, creativeTab, onCreativeTabChange: setCreativeTab, registerBeforeLeave, openMaterial: openProject, videoDetail: videoDetailId === project.id, closeVideoDetail: () => setVideoDetailId(null), inspectVideo: async id => { const opened = await openProject(id, 6); if (opened !== false) setVideoDetailId(id); return opened } } : null
   const currentPhase = PHASES.find(ph => ph.id === activePhase) || PHASES[0]
   const visibleProjects = projects.filter(p => !p.experimentLink && p.name.toLowerCase().includes(sidebarSearch.trim().toLowerCase()))
   const configured = !meta.providers.video.startsWith('mock') && !meta.providers.video.startsWith('manual')
