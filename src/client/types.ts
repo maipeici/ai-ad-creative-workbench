@@ -125,6 +125,11 @@ export interface AutomaticReview {
 }
 
 export interface Brief {
+  campaignFactId?: string
+  conversionEvent?: string
+  landingUrl?: string
+  deliveryCount?: number
+  dueDate?: string
   channel: string
   audience: string
   scene: string
@@ -292,6 +297,9 @@ export interface Variant {
 }
 
 export interface Project {
+  experimentLink?: { experimentId: string; parentId: string; label: string; editableShotIds: string[]; fixedFingerprint: string }
+  _experimentRenderLocked?: boolean
+  experiments?: { id: string; title: string }[]
   inspirationAnalyses?: Record<string, InspirationAnalysis>
   id: string
   name: string
@@ -306,11 +314,13 @@ export interface Project {
   storyboard: Storyboard | null
   review: AutomaticReview
   render: {
+    qualityReview?: QualityReview
     model: string
     params: Record<string, unknown>
     shots: Record<string, ShotRender>
     voicePreset?: string
     finalVideo: {
+      stale?: boolean
       url: string
       shotCount: number
       durationSec: number
@@ -327,6 +337,8 @@ export interface Project {
 }
 
 export interface ProjectSummary {
+  experimentLink?: Project['experimentLink'] | null
+  experimentCount?: number
   id: string
   name: string
   phase: number
@@ -340,6 +352,26 @@ export interface ProjectSummary {
   approved: boolean
   finalVideo: string | null
   cover?: string | null
+}
+
+export interface QualityReview {
+  status: 'passed' | 'blocked' | 'needs-input' | 'stale'
+  source: string
+  checkedAt: string
+  scope: string
+  results: { id: string; label: string; status: string; evidence: string; timing: string; suggestion: string }[]
+}
+export interface WorkspaceResources {
+  defaults: { assets: Record<string, string[]>; facts: string[] }
+  brandIdentity: Partial<BrandGuide['brandIdentity']>
+  updatedAt?: string
+}
+export interface ExperimentReport {
+  id: string; parentId: string; parentName: string; title: string; variable: string; primaryMetric: string; hypothesis: string
+  editableShotId: string; editableShotIndex: number; evidence: string; comparable: boolean
+  plan: { audience: string; budget: string; period: string; attribution: string; trafficMethod: string }
+  versions: { label: string; projectId: string; name: string; source: string; available: boolean; videoUrl?: string; cover?: string; readyShots: number; shotCount: number; staleVideo: boolean; staleData: boolean; hasData: boolean; totals: { impressions: number; clicks: number; conversions: number; spend: number }; metrics: { ctr: number | null; cvr: number | null; cpa: number | null } }[]
+  conclusion: string; nextAction: string
 }
 
 export interface IssueFix {

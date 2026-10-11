@@ -4,6 +4,8 @@
 
 **An AI workspace for turning advertising briefs into creative concepts, storyboards, reviewed shots, and finished vertical videos.**
 
+**New:** reusable resources, task briefs, locked A/B creative versions, CSV performance imports, and separate script/video checks. See the [workflow and limitations](docs/experiments.md).
+
 ### Full workflow recording: create a 15-second ad from scratch
 
 Follow one project in about 3 minutes: **facts and assets → brief → concepts → storyboard → automatic review and repairs → video generation → narration and assembly → playback and download**. Chinese step explanations and click indicators accompany the actual interactions.
@@ -13,6 +15,8 @@ https://github.com/user-attachments/assets/ea7da458-9990-423d-b896-ad58b3098b28
 [Download the recording (MP4, about 7.3 MB)](assets/demos/workbench-workflow.mp4) · [Steps and chapters](docs/walkthrough.md) · [Watch the resulting 15-second ad](assets/demos/workflow-result.mp4)
 
 > Recorded from a new project with actual model calls for concepts, storyboards, first frames, and video shots. It includes corrections and rechecks after review findings. Model and download waits are shortened. The interface recording uses text explanations; the ending includes the generated ad with its original audio. This demonstrates the workflow; generated visuals and asset versions still need review before an actual campaign.
+
+> The recording predates the resource center and experiment workspace. Current screenshots and instructions below describe those additions.
 
 The home-screen **“90 秒了解流程”** button and the top-bar **“操作指南”** also provide a replayable 12-step bubble tour. That separate tour uses an isolated example without editing saved projects or calling models. [Tour guide](docs/guide.md).
 
@@ -31,24 +35,36 @@ Keep the brief, creative decisions, prompts, assets, reviews, and rendering resu
 - Reference product facts and brand assets throughout the workflow.
 - Generate or import shots, add subtitles and audio, and assemble videos and covers.
 - Upload video references, analyze visuals and audio, and carry selected methods through concepts, storyboards, and video prompts.
-- Prepare variants that change one creative dimension while documenting the hypothesis and affected shots.
+- Produce independent A/B versions, reuse fixed shot videos, import CSV results, and carry retrospective notes into a new task.
 
-Channel presets include Douyin, Tencent Ads, Kuaishou, and WeChat Channels. The application supports **creative production**; it does not currently publish to advertising accounts, manage budgets, or import campaign performance.
+Channel presets include Douyin, Tencent Ads, Kuaishou, and WeChat Channels. The application supports **creative production**; it supports manual CSV performance imports, but does not publish to ad accounts, execute budgets, or automatically retrieve campaign results.
 
 ## The six-stage workflow
 
 | Stage | Purpose | Output |
 | --- | --- | --- |
-| 01 Creative foundation | Organize brand identity, campaigns, assets, visual design, and compliance | Five distinct input areas |
+| 01 Resource selection | Inherit reusable defaults and adjust selections for this task | Five distinct input areas |
 | 02 Advertising brief | Define audience, scenario, channel, duration, and CTA | Structured brief |
 | 03 Creative concepts | Compare directions and opening hooks | Selected concept |
 | 04 Storyboard | Plan visuals, narration, subtitles, and timing | Editable shot cards |
-| 05 Automatic review | Check a project checklist, repair eligible issues, and recheck | Evidence, changes, and missing inputs |
-| 06 Video production | Produce shots, assemble the video, and prepare variants | Video, cover, and creative package |
+| 05 Script precheck | Check a project checklist, repair eligible issues, and recheck | Evidence, changes, and missing inputs |
+| 06 Video delivery | Produce shots, inspect actual video/audio, and export | Video, cover, copy, and ZIP bundle |
 
 <a id="features"></a>
 
 ## Features and real screens
+
+### Reusable resources and creative experiments
+
+Maintain shared brand data once; new tasks inherit selected assets and valid facts. Record one primary conversion event, a campaign reference, destination URL, and delivery plan. Advanced shot controls are collapsed by default.
+
+![Shared resource center](assets/screenshots/resource-center.png)
+
+Save a baseline A snapshot, complete its video, then create B by changing the first or last shot. Other shot videos, timing, references, and settings stay locked. The screenshot reuses an existing A video; B still needs production, and no performance values have been invented.
+
+![Independent A/B versions and production progress](assets/screenshots/creative-experiments.png)
+
+CSV imports calculate CTR, click-attributed CVR, and CPA. Matching intervals replace previous imports; overlapping intervals are rejected. Comparisons are descriptive, without automatic winners or significance claims. A saved next-step recommendation can create the next task. [CSV template](assets/examples/experiment-results.csv).
 
 ### Five clear areas for creative inputs
 
@@ -102,17 +118,17 @@ Reference images and shared descriptions help guide consistency; outputs still n
 
 ### Checklist-based automatic review and repair
 
-Save 1–30 requirements per project. A rule engine checks facts, wording, assets, rendering choices, and narration length. The agent evaluates each requirement and may apply one bounded round of text repairs followed by a fresh review. Approval requires zero rule blockers and a complete passing checklist. Missing credentials, model failures, and incomplete evidence never produce automatic approval. Changes to inputs invalidate previous results; campaign information is rechecked on a new day. This stage reviews pre-generation storyboards and references, not rendered video pixels.
+Save 1–30 requirements per project. A rule engine checks facts, wording, assets, rendering choices, and narration length. The agent evaluates each requirement and may apply one bounded round of text repairs followed by a fresh review. Approval requires zero rule blockers and a complete passing checklist. Missing credentials, model failures, and incomplete evidence never produce automatic approval. Changes to referenced inputs invalidate previous results; campaign expiry is rechecked without invalidating reviews for unrelated library additions. This stage reviews pre-generation storyboards and references, not rendered video pixels.
 
 ![Automatic review Agent with a project checklist and repair workflow](assets/screenshots/review.png)
 
 ### Video assembly, export, and creative variants
 
-Generate, import, or retry individual shots. With FFmpeg configured, combine footage, subtitles, brand assets, and voiceover into a 1080 × 1920 video and extract a cover image. Prepare variants around one creative dimension and record the changed and reused shots.
+Generate, import, or retry individual shots. With FFmpeg configured, combine footage, subtitles, brand assets, and voiceover into a 1080 × 1920 video and extract a cover image. After assembly, a separate video quality check inspects actual video and audio with Vertex Gemini (up to 14 MB). Failures retain the video and report actionable findings; they do not automatically regenerate paid shots.
 
 ![Video production with shot previews, finished video, and cover download](assets/screenshots/render-export.png)
 
-The creative package download is a **JSON file**, containing the brief, concept, fact references, shared context, shot prompts, and variant information. Download video and cover files through their separate controls.
+The **ZIP delivery bundle** includes video, available cover, copy text, and metadata with the current quality-check status. Experiments can export all completed versions together. JSON creative-data export remains available. Downloading does not imply media-platform approval, and stale videos must be rebuilt before delivery.
 
 <a id="quick-start"></a>
 

@@ -2,6 +2,7 @@ import fsp from 'node:fs/promises'
 import path from 'node:path'
 import sharp from 'sharp'
 import { MEDIA_DIR } from '../config.js'
+import { usableFact } from '../workspace.js'
 
 /**
  * 优惠卡片 / CTA 卡片生成器
@@ -24,8 +25,8 @@ const PLACEHOLDER = /待补充|待确认|\[.*?\]/
 /** 校验事实是否可用于渲染 */
 export function assertRenderable(fact, fields = []) {
   if (!fact) throw new Error('未提供事实条目')
-  if (fact.status !== 'confirmed') {
-    throw new Error(`事实「${fact.title}」状态为 ${fact.status}，不可用于生成优惠卡。请先在 Phase 1 补齐并确认。`)
+  if (!usableFact(fact)) {
+    throw new Error(`事实「${fact.title}」未确认、不在有效期内或日期不完整，不可用于生成优惠卡。请先在资料中心补齐并确认。`)
   }
   for (const f of fields) {
     const v = fact[f]

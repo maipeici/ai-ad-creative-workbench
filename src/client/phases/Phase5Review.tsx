@@ -92,7 +92,7 @@ export default function Phase5Review({ project, meta, patch, setProject, notify,
             <Badge tone={blockers ? 'red' : 'green'}>阻断 {blockers}</Badge>
             <Badge tone={validation?.summary.warnings ? 'amber' : 'slate'}>提醒 {validation?.summary.warnings || 0}</Badge>
             {!!validation?.summary.autoFixable && (
-              <button className="btn-primary !py-1 !text-xs" onClick={() => runFix({})} disabled={fixing !== null}>
+              <button className="btn-primary !py-1 !text-xs" onClick={() => runFix({})} disabled={fixing !== null || !!project.experimentLink}>
                 {fixing === 'all' && <Spinner />} 一键修复全部（{validation.summary.autoFixable}）
               </button>
             )}
@@ -120,7 +120,7 @@ export default function Phase5Review({ project, meta, patch, setProject, notify,
                 <button
                   className="btn-ghost !py-1 !text-[11px] mt-2"
                   onClick={() => runFix({ removeMissingAssets: true })}
-                  disabled={fixing !== null}
+                  disabled={fixing !== null || !!project.experimentLink}
                 >
                   {fixing === 'all-remove' && <Spinner />} 移除未上传素材引用并修复全部
                 </button>
@@ -138,7 +138,7 @@ export default function Phase5Review({ project, meta, patch, setProject, notify,
                       reason={g.reason}
                       fix={g.fix}
                       fixing={fixing === 'all'}
-                      onFix={g.fix?.auto ? () => runFix({}) : undefined}
+                      onFix={g.fix?.auto && !project.experimentLink ? () => runFix({}) : undefined}
                     />
                   ))}
                 </div>
@@ -155,7 +155,7 @@ export default function Phase5Review({ project, meta, patch, setProject, notify,
                       <button
                         className="text-[10px] text-emerald-400 hover:text-emerald-300"
                         onClick={() => runFix({ shotId: s.shotId })}
-                        disabled={fixing !== null}
+                        disabled={fixing !== null || !!project.experimentLink}
                       >
                         {fixing === s.shotId ? '修复中…' : '修复本镜'}
                       </button>
@@ -239,7 +239,7 @@ export default function Phase5Review({ project, meta, patch, setProject, notify,
         )}
       </Section>
 
-      <Section
+      <details className="business-disclosure"><summary>高级详情 · 模型指令与素材引用</summary><Section
         title="编译后的最终生成指令"
         desc="实际送给视频模型的内容。注意 overlay 类镜头的文字与界面不在 Prompt 里，而是在 Phase 6 精确叠加。"
         right={
@@ -296,27 +296,9 @@ export default function Phase5Review({ project, meta, patch, setProject, notify,
             </div>
           </>
         )}
-      </Section>
+      </Section></details>
 
-      <Section title="分镜复核（可直接修改）" desc="审核中发现问题可在此直接修改，无需回到 Phase 4。">
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3">
-          {sb.shots.map((shot) => (
-            <ShotCard
-              key={shot.id}
-              shot={shot}
-              meta={meta}
-              selectedAssetIds={selectedAssetIds}
-              selectedFactIds={selectedFactIds}
-              issues={issuesOf(shot.id)}
-              onChange={(p) => updateShot(shot.id, p)}
-              onPreview={async () => {
-                const { project: p } = await api.previewShot(project.id, shot.id)
-                setProject(p)
-              }}
-            />
-          ))}
-        </div>
-      </Section>
+      <div className="business-context">需要调整画面或文案？在分镜页统一修改，保留问题定位和预检记录。<button className="btn-ghost" onClick={() => goto(4)}>修改分镜 →</button></div>
     </>
   )
 }

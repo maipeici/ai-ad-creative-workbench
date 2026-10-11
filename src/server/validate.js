@@ -12,6 +12,8 @@
  *   fix.auto    true=可一键修复，false=需人工介入（如上传素材）
  */
 
+import { usableFact } from './workspace.js'
+
 export const CN_CHARS_PER_SEC = 5
 export const VO_SAFETY_RATIO = 0.85
 export const SUBTITLE_MAX_LEN = 14
@@ -83,12 +85,12 @@ export function checkFactBinding(compliance, factLib, project, shot) {
   const byId = new Map((factLib.facts || []).map((f) => [f.id, f]))
   const refs = shot.factRefs || []
   const resolved = refs.map((id) => byId.get(id)).filter(Boolean)
-  const confirmed = resolved.filter((f) => f.status === 'confirmed')
+  const confirmed = resolved.filter(f => usableFact(f))
   const notSelected = refs.filter((id) => !(project.facts || []).includes(id))
 
   const available = (project.facts || [])
     .map((id) => byId.get(id))
-    .filter((f) => f && f.status === 'confirmed')
+    .filter((f) => f && usableFact(f))
   const availableCampaign = available.filter((f) => f.type === 'campaign')
 
   const stripFix = {
@@ -127,10 +129,10 @@ export function checkFactBinding(compliance, factLib, project, shot) {
   if (!confirmed.length) {
     return {
       severity: 'block',
-      reason: `绑定的事实均非已确认状态：${resolved.map((f) => `${f.id}(${f.status})`).join(', ') || refs.join(', ')}`,
+      reason: `绑定的事实未确认、不在有效期内或日期待补充：${resolved.map((f) => `${f.id}(${f.status})`).join(', ') || refs.join(', ')}`,
       text,
       fix:
-        needsCampaign && !availableCampaign.length
+        !(needsCampaign ? availableCampaign.length : available.length)
           ? stripFix
           : {
               action: 'bind-fact',
@@ -331,12 +333,12 @@ export function validateStoryboard({ project, brandGuide, compliance, factLib, p
   }
 
   const facts = (project.facts || []).map((id) => (factLib.facts || []).find((f) => f.id === id)).filter(Boolean)
-  const unusable = facts.filter((f) => f.status !== 'confirmed')
+  const unusable = facts.filter(f => !usableFact(f))
   if (unusable.length) {
     global.push({
       type: 'global',
       severity: 'warn',
-      reason: `已选事实中有 ${unusable.length} 条非「已确认」状态，不可在素材中表达：${unusable.map((f) => f.title).join('、')}`,
+      reason: `已选事实中有 ${unusable.length} 条未确认、不在有效期内或日期待补充，不可在素材中表达：${unusable.map((f) => f.title).join('、')}`,
       fix: {
         action: 'deselect-fact',
         label: '从本项目移除这些未确认事实（或去 Phase 1 补齐后标为已确认）',

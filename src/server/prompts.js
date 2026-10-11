@@ -11,6 +11,7 @@
  */
 
 import { inspirationBlock, normalizeReferenceUse } from './inspiration-guidance.js'
+import { usableFact } from './workspace.js'
 const j = (v) => JSON.stringify(v, null, 2)
 
 function dedupe(arr) {
@@ -61,8 +62,8 @@ export function resolveFacts(project, factLib) {
   const selected = ids.map((id) => byId.get(id)).filter(Boolean)
   return {
     all: selected,
-    confirmed: selected.filter((f) => f.status === 'confirmed'),
-    unusable: selected.filter((f) => f.status !== 'confirmed'),
+    confirmed: selected.filter(f => usableFact(f)),
+    unusable: selected.filter((f) => !usableFact(f)),
   }
 }
 
@@ -576,6 +577,7 @@ export function compileShotRenderPrompt({ brandGuide, picked, globalContext, sho
 
   const segments = [
     shot.prompt,
+    shot.actionCn ? `Current shot action (Chinese direction, takes precedence over an older action description): ${shot.actionCn}` : '',
     referenceUse ? `Adapted reference direction for this shot: ${referenceUse.visualPrompt}. Use the target brand's locked subjects only; never reproduce the source brand, logo, copied dialogue or soundtrack` : '',
     gc.person ? `Person lock: ${gc.person}` : '',
     gc.vehicle && !/no vehicle/i.test(gc.vehicle) ? `Vehicle lock: ${gc.vehicle}` : '',

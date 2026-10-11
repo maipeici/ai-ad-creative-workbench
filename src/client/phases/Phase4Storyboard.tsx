@@ -6,7 +6,7 @@ import { Badge, EmptyHint, Field, IssueRow, Section, Spinner } from '../ui'
 import ShotCard from '../components/ShotCard'
 import ReferenceGuidance from '../components/ReferenceGuidance'
 
-export default function Phase4Storyboard({ project, meta, patch, setProject, notify, goto, preview }: PhaseProps) {
+export default function Phase4Storyboard({ project, meta, patch, setProject, notify, goto, preview, openExperiments }: PhaseProps) {
   const [loading, setLoading] = useState(false)
   const [shotCount, setShotCount] = useState<number | ''>('')
   const [shotDuration, setShotDuration] = useState<number | ''>('')
@@ -118,7 +118,7 @@ export default function Phase4Storyboard({ project, meta, patch, setProject, not
     <>
       <ReferenceGuidance reference={concept?.inspiration} stage="storyboard"/>
       {sb?.conceptId&&sb.conceptId!==concept?.id&&<p className="inspiration-notice" role="status">当前已选新的创意方案。下方仍是原方案的分镜与素材，请点击“重新生成全部”后继续制作。</p>}
-      <Section
+      {!project.experimentLink && <Section
         title="分镜规划 Agent"
         desc="AI 先产出全局分镜上下文（人物 / 车辆 / 场景 / 视觉锁定描述），再基于它拆分连续镜头，并自动标注哪些镜头需要后期叠加。"
         right={concept ? <Badge tone="brand">{concept.title}</Badge> : <Badge tone="red">未选创意</Badge>}
@@ -163,13 +163,14 @@ export default function Phase4Storyboard({ project, meta, patch, setProject, not
             ⚠ 重新生成全部分镜会清空人工修改、审核状态、已生成视频与测试变体。只想改某一镜请用卡片上的「重生成」。
           </p>
         )}
-      </Section>
+      </Section>}
+      {!project.experimentLink && sb && <div className="business-context">基准分镜已就绪。可以先锁定测试变量，再分别制作 A/B 版本。<button className="btn-ghost" onClick={openExperiments}>建立素材实验 →</button></div>}
 
       {!sb ? (
         <EmptyHint>还没有分镜。选定创意后点击「生成分镜」。</EmptyHint>
       ) : (
         <>
-          <Section
+          <details className="business-disclosure"><summary>高级设置 · 人物、画面与镜头一致性</summary><Section
             title="全局分镜上下文"
             desc="每个镜头与每次生成都会引用这段锁定描述。修改这里会影响全部镜头的一致性，系统会提示受影响范围。"
             right={<Badge tone={sb.source === 'gemini' || sb.source === 'llm' ? 'green' : 'amber'}>{sb.source}</Badge>}
@@ -194,6 +195,7 @@ export default function Phase4Storyboard({ project, meta, patch, setProject, not
               ).map(([key, label]) => (
                 <Field key={key} label={label}>
                   <textarea
+                    disabled={!!project.experimentLink}
                     className="input h-14 resize-none !text-[11px] leading-relaxed"
                     value={sb.globalContext?.[key] || ''}
                     onChange={(e) =>
@@ -207,7 +209,7 @@ export default function Phase4Storyboard({ project, meta, patch, setProject, not
                 </Field>
               ))}
             </div>
-          </Section>
+          </Section></details>
 
           {validation && (validation.global.length > 0 || validation.missingAssets.length > 0) && (
             <Section
@@ -215,7 +217,7 @@ export default function Phase4Storyboard({ project, meta, patch, setProject, not
               desc="这些问题会阻断进入视频生成阶段。每条都给出了具体改法，也可在 Phase 5 一键修复。"
               right={
                 !!validation.summary.autoFixable && (
-                  <button className="btn-primary !py-1 !text-xs" onClick={runAutofix} disabled={fixing}>
+                  <button className="btn-primary !py-1 !text-xs" onClick={runAutofix} disabled={fixing || !!project.experimentLink}>
                     {fixing && <Spinner />} 一键修复（{validation.summary.autoFixable}）
                   </button>
                 )
@@ -229,7 +231,7 @@ export default function Phase4Storyboard({ project, meta, patch, setProject, not
                     reason={g.reason}
                     fix={g.fix}
                     fixing={fixing}
-                    onFix={g.fix?.auto ? runAutofix : undefined}
+                    onFix={g.fix?.auto && !project.experimentLink ? runAutofix : undefined}
                   />
                 ))}
                 {validation.missingAssets.map((a) => (
@@ -258,10 +260,10 @@ export default function Phase4Storyboard({ project, meta, patch, setProject, not
                     <Badge tone={validation.summary.warnings ? 'amber' : 'slate'}>提醒 {validation.summary.warnings}</Badge>
                   </>
                 )}
-                <button className="btn-ghost !py-1 !text-xs" onClick={generateAllPreviews} disabled={previewAll}>
+                <button className="btn-ghost !py-1 !text-xs" onClick={generateAllPreviews} disabled={previewAll || !!project.experimentLink}>
                   {previewAll && <Spinner />} 生成全部预览图
                 </button>
-                <button className="btn-ghost !py-1 !text-xs" onClick={async () => setProject(await api.addShot(project.id, sb.shots.length))}>
+                <button className="btn-ghost !py-1 !text-xs" disabled={!!project.experimentLink} onClick={async () => setProject(await api.addShot(project.id, sb.shots.length))}>
                   + 补镜头
                 </button>
               </div>
@@ -274,6 +276,8 @@ export default function Phase4Storyboard({ project, meta, patch, setProject, not
               {sb.shots.map((shot) => (
                 <ShotCard
                   key={shot.id}
+                  readOnly={!!project.experimentLink && !project.experimentLink.editableShotIds.includes(shot.id)}
+                  contentOnly={!!project.experimentLink}
                   shot={shot}
                   meta={meta}
                   selectedAssetIds={selectedAssetIds}

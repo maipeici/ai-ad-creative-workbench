@@ -154,6 +154,12 @@
   ],
   "ctaOptions": [
     {
+      "id": "download-app",
+      "name": "下载体验",
+      "text": "下载花小猪打车，体验出行",
+      "action": "download"
+    },
+    {
       "id": "download-claim",
       "name": "下载领券",
       "text": "点击下载，领取新人券",

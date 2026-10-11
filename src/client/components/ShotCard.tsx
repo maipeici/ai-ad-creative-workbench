@@ -14,6 +14,7 @@ interface Props {
   onPreview?: () => Promise<void>
   onDelete?: () => void
   readOnly?: boolean
+  contentOnly?: boolean
 }
 
 export default function ShotCard({
@@ -27,11 +28,13 @@ export default function ShotCard({
   onPreview,
   onDelete,
   readOnly,
+  contentOnly,
 }: Props) {
   const [local, setLocal] = useState<Shot>(shot)
   const [instruction, setInstruction] = useState('')
   const [busy, setBusy] = useState<'regen' | 'preview' | null>(null)
   const [showPrompt, setShowPrompt] = useState(false)
+  const [advanced, setAdvanced] = useState(false)
 
   useEffect(() => setLocal(shot), [shot])
 
@@ -44,6 +47,7 @@ export default function ShotCard({
   const uiPool = pool.filter((a) => ['productUI', 'brand', 'overlay'].includes(a.category))
 
   const commit = (patch: Partial<Shot>) => {
+    if (readOnly) return
     setLocal((s) => ({ ...s, ...patch }))
     onChange(patch)
   }
@@ -97,6 +101,14 @@ export default function ShotCard({
           </div>
         )}
 
+        {!advanced && <div className="shot-simple space-y-3">
+          <Mini label="画面内容"><textarea className="input" value={local.actionCn || ''} placeholder="用中文描述这一镜发生什么" disabled={readOnly} onChange={e => setLocal({ ...local, actionCn: e.target.value })} onBlur={e => commit({ actionCn: e.target.value })} /></Mini>
+          <Mini label="口播"><textarea className="input" value={local.vo} disabled={readOnly} onChange={e => setLocal({ ...local, vo: e.target.value })} onBlur={e => commit({ vo: e.target.value })} /></Mini>
+          <Mini label="字幕"><input className="input" value={local.subtitle} disabled={readOnly} onChange={e => setLocal({ ...local, subtitle: e.target.value })} onBlur={e => commit({ subtitle: e.target.value })} /></Mini>
+          <p>时长 {local.durationSec} 秒 · {local.factRefs?.length || 0} 条事实依据</p>
+        </div>}
+        <button className="text-link !text-xs" onClick={() => setAdvanced(!advanced)}>{advanced ? '收起高级制作设置' : '展开高级制作设置'}</button>
+        <fieldset hidden={!advanced} disabled={contentOnly} className="space-y-2.5">
         <div className="grid grid-cols-2 gap-2">
           <Mini label="镜头作用">
             <select
@@ -304,9 +316,10 @@ export default function ShotCard({
             </Mini>
           </div>
         )}
+        </fieldset>
       </div>
 
-      {!readOnly && (
+      {!readOnly && !contentOnly && (
         <div className="p-3 pt-0 space-y-2">
           <input
             className="input !py-1 !text-[11px]"

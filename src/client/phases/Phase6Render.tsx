@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import ReferenceGuidance from '../components/ReferenceGuidance'
+import FinalQualityPanel from '../components/FinalQualityPanel'
 import type { PhaseProps } from '../App'
 import { api } from '../api'
 import type { ShotRender } from '../types'
@@ -21,7 +22,7 @@ const STATUS_TEXT: Record<string, string> = {
   simulated: '已模拟',
 }
 
-export default function Phase6Render({ project, meta, patch, setProject, notify, goto, preview }: PhaseProps) {
+export default function Phase6Render({ project, meta, patch, setProject, notify, goto, preview, openExperiments }: PhaseProps) {
   const sb = project.storyboard
   const [busyShot, setBusyShot] = useState<string | null>(null)
   const [batchRunning, setBatchRunning] = useState(false)
@@ -30,9 +31,6 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
   const [manualFor, setManualFor] = useState<string | null>(null)
   const [manualUrl, setManualUrl] = useState('')
   const [manualCmd, setManualCmd] = useState<{ listFileContent: string; command: string } | null>(null)
-  const [variantVar, setVariantVar] = useState('hook')
-  const [variantIns, setVariantIns] = useState('')
-  const [variantBusy, setVariantBusy] = useState(false)
 
   const runningKey = Object.entries(project.render?.shots || {})
     .filter(([, r]) => r.status === 'running' && r.taskId)
@@ -72,10 +70,10 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
   const renders = project.render?.shots || {}
   const staleConcept = Boolean(sb.conceptId && sb.conceptId !== project.selectedConceptId)
   const approved = project.review?.approved && !staleConcept
-  const pendingShots = sb.shots.filter(s => s.renderMode !== 'asset' && (!renders[s.id]?.url || renders[s.id]?.stale) && !['running', 'manual'].includes(renders[s.id]?.status || ''))
+  const lockedShot = (id: string) => Boolean(project._experimentRenderLocked || project.experimentLink && project.experimentLink.label !== 'A' && !project.experimentLink.editableShotIds.includes(id))
+  const pendingShots = sb.shots.filter(s => !lockedShot(s.id) && s.renderMode !== 'asset' && (!renders[s.id]?.url || renders[s.id]?.stale) && !['running', 'manual'].includes(renders[s.id]?.status || ''))
   const doneCount = sb.shots.filter((s) => renders[s.id]?.url && !renders[s.id]?.stale).length
-  const approvedCount = sb.shots.filter((s) => renders[s.id]?.approved).length
-  const needOverlay = sb.shots.filter((s) => s.renderMode === 'overlay' && !renders[s.id]?.stale && renders[s.id]?.url && !renders[s.id]?.overlayApplied)
+  const needOverlay = sb.shots.filter((s) => !lockedShot(s.id) && s.renderMode === 'overlay' && !renders[s.id]?.stale && renders[s.id]?.url && !renders[s.id]?.overlayApplied)
 
   const renderShot = async (shotId: string) => {
     if (!approved || busyShot || batchRunning) return
@@ -151,26 +149,13 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
         setManualCmd(res.manual)
         notify('未检测到 ffmpeg，已生成手动合成命令', 'error')
       } else {
-        notify('成片与封面已生成')
+        notify('成片已生成，正在自动检查画面与声音…')
+        try { setProject(await api.reviewFinalVideo(project.id)); notify('成片质检完成，请查看逐项结果') } catch (error: any) { notify('成片已保存；质检未完成：' + error.message, 'error') }
       }
     } catch (e: any) {
       notify(e.message, 'error')
     } finally {
       setAssembling(false)
-    }
-  }
-
-  const createVariant = async () => {
-    setVariantBusy(true)
-    try {
-      const { project: p, variant } = await api.createVariant(project.id, variantVar, variantIns)
-      setProject(p)
-      setVariantIns('')
-      notify(`已创建变体：${variant.variantName}`)
-    } catch (e: any) {
-      notify(e.message, 'error')
-    } finally {
-      setVariantBusy(false)
     }
   }
 
@@ -183,6 +168,7 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
   return (
     <>
       <ReferenceGuidance reference={sb.inspiration} stage="video"/>
+      {project._experimentRenderLocked && <p className="business-context">A 版已被其他实验版本引用，视频保持锁定。仍可查看、质检和导出；需要更换基准时，请回源任务建立新实验。</p>}
       {staleConcept&&<div className="inspiration-notice">当前创意已切换，已有视频保留。请回到分镜阶段生成新方案的分镜。<button className="btn-ghost" onClick={()=>goto(4)}>前往分镜 →</button></div>}
       {!preview && !meta.ffmpeg && <div className="rounded-xl border border-amber-900/60 bg-amber-950/20 px-4 py-3 text-xs text-amber-200 leading-relaxed" role="status"><strong>视频合成待配置</strong><p className="mt-1 text-amber-200/70">本机尚未安装视频合成工具。已有成片可以播放和下载，新的字幕叠加与成片合成暂不可用。</p></div>}
       {Object.values(renders).some(render => render.stale) && <p className="foundation-notice">自动审核修复了部分分镜。对应旧镜头与成片保留供回看，请重新生成或回传标记为待更新的镜头，再合成新版。</p>}
@@ -193,7 +179,7 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Field label="口播音色" hint={meta.ttsEnabled ? '合成时自动为每个镜头配音' : '配音暂不可用，请检查模型配置'}>
-            <select className="input" value={project.render?.voicePreset || 'relatable-female'} onChange={e => patch({ render: { ...project.render, voicePreset: e.target.value } })} disabled={!meta.ttsEnabled}>
+            <select className="input" value={project.render?.voicePreset || 'relatable-female'} onChange={e => patch({ render: { ...project.render, voicePreset: e.target.value } })} disabled={!meta.ttsEnabled || !!project.experimentLink}>
               {(meta.voices || []).map(v => <option key={v.id} value={v.id} title={v.desc}>{v.name}</option>)}
             </select>
           </Field>
@@ -202,14 +188,14 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
               <button className="btn-primary flex-1" onClick={renderAll} disabled={batchRunning || !!busyShot || !approved || !pendingShots.length}>
                 {batchRunning && <Spinner />}{batchRunning ? '提交中 ' + batchProgress.done + '/' + batchProgress.total : pendingShots.length ? '生成待完成镜头（' + pendingShots.length + '）' : '全部镜头已提交'}
               </button>
-              <a className="btn-ghost" href={'/api/projects/' + project.id + '/package?download=1'} download>导出包</a>
+              <a className="btn-ghost" href={'/api/projects/' + project.id + '/package?download=1'} download>导出创作数据 JSON</a>
             </div>
           </Field>
         </div>
         {!approved && <p className="mt-3 text-xs text-amber-400">分镜尚未审核，请先完成审核再开始生成。<button className="underline ml-2" onClick={() => goto(5)}>去审核 →</button></p>}
         <details className="mt-4 rounded-lg border border-ink-600 bg-ink-900/40 p-3">
           <summary className="cursor-pointer text-xs text-slate-400">高级生成设置</summary>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <fieldset disabled={!!project.experimentLink} className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             <Field label="视频生成模型" hint="留空使用当前配置">
               <input className="input" placeholder={meta.vertex?.veoModel || meta.providers.video} defaultValue={project.render?.model || ''} onBlur={e => patch({ render: { ...project.render, model: e.target.value } })} />
             </Field>
@@ -219,14 +205,14 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
                 catch { notify('参数 JSON 格式错误', 'error') }
               }} />
             </Field>
-          </div>
+          </fieldset>
         </details>
         <p className="mt-3 text-[11px] text-slate-500">批量生成会保留已有镜头，只提交尚未完成的部分。需要调整时，可在下方单独重新生成对应镜头。</p>
         <p className="mt-2 text-[11px] text-slate-600">建议素材命名：<code className="text-brand-soft">{materialName}.mp4</code></p>
       </Section>
       <Section
-        title={`镜头生成与审核（${doneCount}/${sb.shots.length} 已生成 · ${approvedCount} 已通过）`}
-        desc="每个镜头独立生成、独立叠加、独立审核。只有问题镜头需要重跑。"
+        title={`镜头制作（${doneCount}/${sb.shots.length} 已就绪）`}
+        desc="保留已完成镜头，只重做需要修改的部分；合成后统一检查成片。"
         right={
           needOverlay.length > 0 ? (
             <button className="btn-primary !py-1 !text-xs" onClick={overlayAll}>
@@ -264,7 +250,7 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
                       {r?.status === 'running' && <Spinner className="text-sky-400" />}
                       {r?.usedFirstFrame && <Badge tone="blue">图生视频</Badge>}
                       {r?.overlayApplied && <Badge tone="green">✓ 已叠加</Badge>}
-                      {r?.approved && <Badge tone="green">✓ 已通过</Badge>}
+                      {lockedShot(shot.id) && <Badge tone="blue">固定镜头</Badge>}
                     </div>
 
                     {r?.overlayInfo && (
@@ -301,12 +287,12 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
 
                     <div className="flex flex-wrap items-center gap-1.5 mt-2">
                       {shot.renderMode !== 'asset' && (
-                        <button className="btn-ghost !py-1 !text-[11px]" onClick={() => renderShot(shot.id)} disabled={!!busyShot || batchRunning || !approved || (r?.status === 'running' && !r?.stale)}>
+                        <button className="btn-ghost !py-1 !text-[11px]" onClick={() => renderShot(shot.id)} disabled={lockedShot(shot.id) || !!busyShot || batchRunning || !approved || (r?.status === 'running' && !r?.stale)}>
                           {busyShot === shot.id ? <Spinner /> : r?.url ? '↻' : '▶'} {r?.url ? '重新生成' : '生成本镜'}
                         </button>
                       )}
                       {r?.url && shot.renderMode === 'overlay' && (
-                        <button className="btn-primary !py-1 !text-[11px]" onClick={() => doOverlay(shot.id)} disabled={!!busyShot || batchRunning}>
+                        <button className="btn-primary !py-1 !text-[11px]" onClick={() => doOverlay(shot.id)} disabled={lockedShot(shot.id) || !!busyShot || batchRunning}>
                           {busyShot === shot.id ? <Spinner /> : '⧉'} {r.overlayApplied ? '重新叠加' : '叠加字幕素材'}
                         </button>
                       )}
@@ -317,6 +303,7 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
                       )}
                       <button
                         className="btn-ghost !py-1 !text-[11px]"
+                        disabled={lockedShot(shot.id)}
                         onClick={() => {
                           setManualFor(shot.id)
                           setManualUrl(r?.url || '')
@@ -327,12 +314,6 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
                       {r?.compiled && <CopyButton text={r.compiled.prompt} label="复制 Prompt" />}
                       {r?.url && (
                         <>
-                          <button
-                            className={`btn ${r.approved ? 'btn-ghost' : 'btn-primary'} !py-1 !text-[11px]`}
-                            disabled={r.stale} onClick={async () => setProject(await api.approveShotRender(project.id, shot.id, !r.approved))}
-                          >
-                            {r.approved ? '撤销通过' : '✓ 审核通过'}
-                          </button>
                           <a className="btn-ghost !py-1 !text-[11px]" href={r.url} download target="_blank" rel="noreferrer">
                             下载
                           </a>
@@ -350,14 +331,11 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
       <Section
         title="成片合成"
         dataGuide="assembly"
-        desc="按分镜顺序拼接通过审核的镜头，输出 1080x1920 成片并自动抽取封面。"
+        desc="按分镜顺序合成视频、字幕与配音，提取封面后自动发起成片质检。"
         right={
           <div className="flex gap-2">
-            <button className="btn-primary" onClick={() => assemble(false)} disabled={assembling}>
-              {assembling && <Spinner />} 合成成片
-            </button>
-            <button className="btn-ghost" onClick={() => assemble(true)} disabled={assembling}>
-              强制合成
+            <button className="btn-primary" onClick={() => assemble(false)} disabled={assembling || project._experimentRenderLocked || !approved || !meta.ffmpeg}>
+              {assembling && <Spinner />} 合成并自动质检
             </button>
           </div>
         }
@@ -390,7 +368,7 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
           </div>
         ) : (
           <EmptyHint>
-            所有镜头生成、叠加并通过审核后即可合成。
+            完成脚本预检与镜头制作后即可合成。
             {!meta.ffmpeg && <span className="block mt-2 text-amber-400">当前环境未安装 ffmpeg，叠加与合成不可用。</span>}
             {!meta.subtitleFont && <span className="block mt-2 text-amber-400">未找到中文字体，字幕无法烧录。</span>}
           </EmptyHint>
@@ -412,66 +390,9 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
         )}
       </Section>
 
-      <Section
-        title="单变量创意测试"
-        desc="只替换一个维度，其余镜头完全复用，保证投放数据可归因。"
-        right={<Badge tone={project.variants?.length ? 'blue' : 'slate'}>{project.variants?.length || 0} 个变体</Badge>}
-      >
-        <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr_auto] gap-3 items-end">
-          <Field label="测试变量">
-            <select className="input w-40" value={variantVar} onChange={(e) => setVariantVar(e.target.value)}>
-              {meta.brandGuide.testVariableOptions.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="变体要求（可选）">
-            <input
-              className="input"
-              placeholder="例如：钩子改成利益前置、CTA 改成更直接的说法"
-              value={variantIns}
-              onChange={(e) => setVariantIns(e.target.value)}
-            />
-          </Field>
-          <button className="btn-primary" onClick={createVariant} disabled={variantBusy}>
-            {variantBusy && <Spinner />} 生成变体
-          </button>
-        </div>
-        <p className="mt-2 text-[11px] text-slate-600">
-          {meta.brandGuide.testVariableOptions.find((v) => v.id === variantVar)?.desc}
-        </p>
-
-        {(project.variants || []).length > 0 && (
-          <div className="mt-4 space-y-2">
-            {project.variants.map((v) => (
-              <div key={v.id} className="bg-ink-900 border border-ink-600 rounded-lg p-3">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Badge tone="blue">{meta.brandGuide.testVariableOptions.find((o) => o.id === v.variable)?.name || v.variable}</Badge>
-                  <span className="text-xs font-medium text-slate-200">{v.variantName}</span>
-                  <button
-                    className="ml-auto text-[11px] text-slate-600 hover:text-red-400"
-                    onClick={async () => setProject(await api.deleteVariant(project.id, v.id))}
-                  >
-                    删除
-                  </button>
-                </div>
-                <p className="text-[11px] text-sky-300/80 mt-1.5">🧪 {v.hypothesis}</p>
-                <p className="text-[11px] text-slate-400 mt-1">{v.changeSummary}</p>
-                <div className="flex gap-3 mt-2 text-[10px] text-slate-500">
-                  <span>
-                    变化镜头：{v.changedShotIndexes?.length ? v.changedShotIndexes.map((i) => `#${i}`).join(' ') : '—'}
-                  </span>
-                  <span>
-                    固定镜头：{v.fixedShotIndexes?.length ? v.fixedShotIndexes.map((i) => `#${i}`).join(' ') : '—'}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Section>
+      <FinalQualityPanel project={project} onUpdate={setProject} notify={notify} goto={goto} />
+      <div className="business-context">围绕同一推广任务比较素材版本，在实验复盘中管理基准版、实验版和投放结果。<button className="btn-primary" onClick={openExperiments}>进入实验复盘 →</button></div>
+      {project.variants?.length > 0 && <details className="business-disclosure"><summary>历史变体草稿（{project.variants.length}）</summary>{project.variants.map(v => <p key={v.id} className="business-help">{v.variantName}：{v.hypothesis} · {v.changeSummary}</p>)}</details>}
 
       <Section title="发现问题？回到对应阶段" desc="工作流支持局部迭代，修改全局设定时系统会标记受影响的镜头。">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-2">

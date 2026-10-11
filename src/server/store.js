@@ -3,6 +3,9 @@ import path from 'node:path'
 import { DATA_DIR, SEED_DIR, BUSINESS_DIR } from './config.js'
 import { invalidateReview, reviewProjectFingerprint } from './review-state.js'
 import { initializeRuntimeData } from './runtime-data.js'
+import { getWorkspace } from './workspace.js'
+import { assertExperimentLock, assertFrozenMedia, baselineFrozen, fingerprint } from './experiments.js'
+import { qualityFingerprint, compositionFingerprint } from './delivery.js'
 
 const PROJECTS_FILE = path.join(DATA_DIR, 'projects.json')
 const ASSETS_FILE = path.join(DATA_DIR, 'assets.json')
@@ -35,8 +38,8 @@ function writeJsonQueued(file, data) {
 }
 
 export async function getBrandGuide() {
-  const [brand, visual] = await Promise.all([readJson(BRAND_FILE, {}), getVisualDesign()])
-  return { ...brand, ...visual, negativePromptLibrary: { ...brand.negativePromptLibrary, ...visual.negativePromptLibrary } }
+  const [brand, visual, workspace] = await Promise.all([readJson(BRAND_FILE, {}), getVisualDesign(), getWorkspace()])
+  return { ...brand, ...visual, brandIdentity: { ...brand.brandIdentity, ...workspace.brandIdentity }, negativePromptLibrary: { ...brand.negativePromptLibrary, ...visual.negativePromptLibrary } }
 }
 
 export async function getVisualDesign() {
@@ -87,32 +90,65 @@ export async function listProjects() {
       approved: Boolean(p.review?.approved),
       finalVideo: p.render?.finalVideo?.url || null,
       cover: p.render?.cover || null,
+      experimentLink: p.experimentLink || null,
+      experimentCount: p.experiments?.length || 0,
     }))
     .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1))
 }
 
 export async function getProject(id) {
   const all = await readJson(PROJECTS_FILE, [])
-  return all.find((p) => p.id === id) || null
+  const project = all.find((p) => p.id === id)
+  return project ? { ...project, _experimentRenderLocked: baselineFrozen(project, all) } : null
 }
 
 export async function upsertProject(project) {
-  const all = await readJson(PROJECTS_FILE, [])
-  if (project.review?.checkedAt && project.review.projectFingerprint !== reviewProjectFingerprint(project)) invalidateReview(project)
-  project.updatedAt = new Date().toISOString()
-  const idx = all.findIndex((p) => p.id === project.id)
-  if (idx >= 0) all[idx] = project
-  else all.push(project)
-  await writeJsonQueued(PROJECTS_FILE, all)
+  await upsertProjects([project])
   return project
 }
 
+export const getAllProjects = () => readJson(PROJECTS_FILE, [])
+export function upsertProjects(projects) {
+  const operation = writeQueue.then(async () => {
+    const all = await getAllProjects()
+    for (const project of projects) {
+      const idx = all.findIndex(p => p.id === project.id)
+      if (idx >= 0) {
+        assertFrozenMedia(project, all[idx], all)
+        const previous = all[idx]
+        if (project.render?.finalVideo && project.render.finalVideo.url === previous.render?.finalVideo?.url && compositionFingerprint(previous) !== compositionFingerprint(project)) project.render.finalVideo.stale = true
+        for (const shot of project.storyboard?.shots || []) {
+          const old = previous.storyboard?.shots?.find(s => s.id === shot.id)
+          const content = s => { const { preview, approved, ...rest } = s; return rest }
+          const changed = old && (fingerprint(content(old)) !== fingerprint(content(shot)) || fingerprint(previous.storyboard.globalContext) !== fingerprint(project.storyboard.globalContext))
+          if (changed && project.render?.shots?.[shot.id]?.url === previous.render?.shots?.[shot.id]?.url && project.render?.shots?.[shot.id]) project.render.shots[shot.id].stale = true
+        }
+      }
+      assertExperimentLock(project, idx >= 0 ? all[idx] : project)
+      delete project._experimentRenderLocked
+      if (project.render?.finalVideo?.inputFingerprint && project.render.finalVideo.inputFingerprint !== compositionFingerprint(project)) project.render.finalVideo.stale = true
+      if (project.render?.qualityReview && project.render.qualityReview.inputFingerprint !== qualityFingerprint(project)) project.render.qualityReview.status = 'stale'
+      if (project.review?.checkedAt && project.review.projectFingerprint !== reviewProjectFingerprint(project)) invalidateReview(project)
+      project.updatedAt = new Date().toISOString()
+      if (idx >= 0) all[idx] = project
+      else all.push(project)
+    }
+    await fsp.writeFile(PROJECTS_FILE + '.tmp', JSON.stringify(all, null, 2))
+    await fsp.rename(PROJECTS_FILE + '.tmp', PROJECTS_FILE)
+  })
+  writeQueue = operation.catch(() => {})
+  return operation
+}
+
 export async function deleteProject(id) {
-  const all = await readJson(PROJECTS_FILE, [])
-  await writeJsonQueued(
-    PROJECTS_FILE,
-    all.filter((p) => p.id !== id),
-  )
+  const operation = writeQueue.then(async () => {
+    const all = await getAllProjects()
+    if (all.find(p => p.id === id)?.experimentLink) throw Object.assign(new Error('实验版本需随源任务一起管理，不能单独删除'), { status: 409 })
+    await fsp.writeFile(PROJECTS_FILE + '.tmp', JSON.stringify(all.filter(p => p.id !== id && p.experimentLink?.parentId !== id), null, 2))
+    await fsp.rename(PROJECTS_FILE + '.tmp', PROJECTS_FILE)
+  })
+  writeQueue = operation.catch(() => {})
+  await operation
 }
 
 /** 深合并 patch（数组整体替换） */

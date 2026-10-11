@@ -9,7 +9,8 @@ import { Badge, EmptyHint, Field, IssueRow, RoleBadge, Section, Spinner } from '
 
 export default function Phase3Concept(props: PhaseProps) {
   const { project, meta, patch, setProject, notify, goto } = props
-  const [creativeTab, setCreativeTab] = useState<'concepts'|'references'>('concepts')
+  const [creativeTab, setCreativeTab] = useState<'concepts'|'references'>(props.creativeTab || 'concepts')
+  useEffect(() => { if (props.creativeTab) setCreativeTab(props.creativeTab) }, [props.creativeTab])
   const [loading, setLoading] = useState(false)
   const [pref, setPref] = useState('')
   const [count, setCount] = useState(3)
@@ -55,6 +56,7 @@ export default function Phase3Concept(props: PhaseProps) {
   return (
     <>
       {tabs}
+      <div className="business-context">选定创意后，可围绕开头内容或结尾行动引导制作 A/B 版本。<button className="btn-ghost" onClick={props.openExperiments}>设计素材实验 →</button></div>
       <div className="concept-entry"><div><strong>用一条参考视频，开启完整创作</strong><p>上传视频 → 自动拆解爆款点 → 导入当前方案 → 生成参考分镜与视频。</p></div><button className="btn-ghost" onClick={()=>setCreativeTab('references')}>导入爆款视频 →</button></div>
       <Section
         title="广告创意 Agent"

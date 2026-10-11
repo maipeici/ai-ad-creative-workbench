@@ -3,7 +3,7 @@ import type { PhaseProps } from '../App'
 import type { Brief } from '../types'
 import { Badge, Field, Section } from '../ui'
 
-export default function Phase2Brief({ project, meta, patch, goto }: PhaseProps) {
+export default function Phase2Brief({ project, meta, patch, goto, openReferences, openExperiments, registerBeforeLeave }: PhaseProps) {
   const { brandGuide, channels } = meta
   const [brief, setBrief] = useState<Brief>(project.brief)
   const [dirty, setDirty] = useState(false)
@@ -16,9 +16,11 @@ export default function Phase2Brief({ project, meta, patch, goto }: PhaseProps) 
   }
 
   const save = async () => {
-    await patch({ brief, phase: Math.max(project.phase, 2) })
+    const facts = project.facts.filter(id => id !== project.brief.campaignFactId)
+    await patch({ brief, facts: brief.campaignFactId ? [...new Set([...facts, brief.campaignFactId])] : facts, phase: Math.max(project.phase, 2) })
     setDirty(false)
   }
+  useEffect(() => { registerBeforeLeave?.(dirty ? save : null); return () => registerBeforeLeave?.(null) }, [brief, dirty, project.id, registerBeforeLeave])
 
   const channel = channels.find((c) => c.id === brief.channel)
   const audience = brandGuide.audienceOptions.find((a) => a.id === brief.audience)
@@ -28,12 +30,15 @@ export default function Phase2Brief({ project, meta, patch, goto }: PhaseProps) 
   const selectedFacts = (project.facts || [])
     .map((id) => meta.facts.facts.find((f) => f.id === id))
     .filter(Boolean)
-  const confirmedCampaigns = selectedFacts.filter((f) => f!.status === 'confirmed' && f!.type === 'campaign')
+  const today = new Date().toISOString().slice(0, 10)
+  const usable = (f: typeof meta.facts.facts[number]) => f.status === 'confirmed' && (!f.validFrom || /^\d{4}-\d{2}-\d{2}$/.test(f.validFrom) && f.validFrom <= today) && (!f.validTo || /^\d{4}-\d{2}-\d{2}$/.test(f.validTo) && f.validTo >= today)
+  const confirmedCampaigns = meta.facts.facts.filter(f => usable(f) && f.type === 'campaign')
 
   return (
     <>
+      <div className="brand-resource-summary"><strong>{brandGuide.brandIdentity.productName}</strong><span className="text-sm text-slate-400">已选 {project.facts.length} 条事实 · {Object.values(project.assets).flat().length} 项素材</span><button className="btn-ghost ml-auto" onClick={() => goto(1)}>调整本次选用</button></div>
       <Section
-        title="投放需求 Content Brief"
+        title="本次推广任务"
         desc="明确这条素材「对谁说、在什么场景说、解决什么问题、用哪个有依据的卖点回应、希望用户做什么」。"
         right={dirty ? <Badge tone="amber">未保存</Badge> : <Badge tone="green">已保存</Badge>}
       >
@@ -83,30 +88,13 @@ export default function Phase2Brief({ project, meta, patch, goto }: PhaseProps) 
               {scene && <p className="brief-help">{scene.prompt}</p>}
             </Field>
 
-            <Field label="营销活动" hint="需与 Phase 1 已确认的活动事实对应">
-              <input
-                className="input"
-                placeholder="例如：新人首单活动（对应 fact-campaign-newuser）"
-                value={brief.campaign}
-                onChange={(e) => set('campaign', e.target.value)}
-              />
+            <Field label="选用营销活动" hint="直接关联活动事实，无需重复填写权益">
+              <select className="input" value={brief.campaignFactId || ''} onChange={e => { const fact = confirmedCampaigns.find(f => f.id === e.target.value); setBrief(b => ({ ...b, campaignFactId: fact?.id || '', campaign: fact?.title || '' })); setDirty(true) }}><option value="">不使用营销活动，只表达产品功能</option>{confirmedCampaigns.map(f => <option key={f.id} value={f.id}>{f.title}</option>)}</select>
+              {!brief.campaignFactId && brief.campaign && <p className="brief-help">旧任务活动描述：{brief.campaign}。可从上方关联真实活动资料。</p>}
               {confirmedCampaigns.length === 0 && (
                 <p className="brief-help brief-warning">
-                  当前没有已确认的活动事实，创意将只表达产品通用功能，不会出现任何优惠金额。
+                  当前没有有效且已确认的活动。新方案应只表达产品功能；旧方案如有权益表述，请先补充有效依据再制作。
                 </p>
-              )}
-              {confirmedCampaigns.length > 0 && (
-                <div className="mt-1.5 flex flex-wrap gap-1">
-                  {confirmedCampaigns.map((f) => (
-                    <button
-                      key={f!.id}
-                      className="chip-off !text-[10px]"
-                      onClick={() => set('campaign', f!.title)}
-                    >
-                      使用「{f!.title}」
-                    </button>
-                  ))}
-                </div>
               )}
             </Field>
           </div>
@@ -119,10 +107,10 @@ export default function Phase2Brief({ project, meta, patch, goto }: PhaseProps) 
                 value={brief.sellingPoint}
                 onChange={(e) => set('sellingPoint', e.target.value)}
               />
-              {selectedFacts.filter((f) => f!.status === 'confirmed').length > 0 && (
+              {selectedFacts.filter(f => usable(f!)).length > 0 && (
                 <div className="mt-1.5 flex flex-wrap gap-1">
                   {selectedFacts
-                    .filter((f) => f!.status === 'confirmed')
+                    .filter(f => usable(f!))
                     .map((f) => (
                       <button key={f!.id} className="chip-off !text-[10px]" onClick={() => set('sellingPoint', f!.title)}>
                         {f!.title}
@@ -132,11 +120,12 @@ export default function Phase2Brief({ project, meta, patch, goto }: PhaseProps) 
               )}
             </Field>
 
-            <Field label="转化目标">
+            <Field label="主要转化事件" hint="每个任务选择一个主要目标，便于后续比较效果">
+              {!brief.conversionEvent && <p className="brief-help">旧任务目标：{brief.goal || '未填写'}。可从下方明确一个主要事件。</p>}
               <div className="flex flex-wrap gap-1.5">
-                {['引导下载与首单', '引导领券', '引导叫车下单', '提升品牌认知', '老客回流'].map((g) => (
-                  <button key={g} className={brief.goal === g ? 'chip-on' : 'chip-off'} onClick={() => set('goal', g)}>
-                    {g}
+                {[['download', '下载'], ['first-order', '首单'], ['order', '下单'], ['claim', '领券'], ['awareness', '品牌认知'], ['return', '老客回流']].map(([id, label]) => (
+                  <button key={id} className={brief.conversionEvent === id ? 'chip-on' : 'chip-off'} onClick={() => { setBrief(b => ({ ...b, conversionEvent: id, goal: '引导' + label })); setDirty(true) }}>
+                    {label}
                   </button>
                 ))}
               </div>
@@ -178,16 +167,16 @@ export default function Phase2Brief({ project, meta, patch, goto }: PhaseProps) 
                   className="w-full accent-brand"
                 />
               </Field>
-              <Field label="参考广告 / 热点">
-                <input
-                  className="input"
-                  placeholder="例如：GRWM 结构、对比反差"
-                  value={brief.reference}
-                  onChange={(e) => set('reference', e.target.value)}
-                />
+              <Field label="参考视频">
+                <button className="btn-ghost" onClick={openReferences}>从统一参考库选用 →</button>
+                {brief.reference && <p className="brief-help">历史参考备注：{brief.reference}</p>}
               </Field>
             </div>
 
+            <Field label="承接页面 / App 页面" hint="记录广告点击后到达的位置，用于核对承诺与转化路径">
+              <input className="input" value={brief.landingUrl || ''} onChange={e => set('landingUrl', e.target.value)} placeholder="落地页地址或 App 内页面名称" />
+            </Field>
+            <div className="grid grid-cols-2 gap-4"><Field label="计划交付数量"><input type="number" min="1" max="100" className="input" value={brief.deliveryCount || 1} onChange={e => set('deliveryCount', Number(e.target.value))} /></Field><Field label="交付截止日期"><input type="date" className="input" value={brief.dueDate || ''} onChange={e => set('dueDate', e.target.value)} /></Field></div>
             <Field label="制作条件限制（可选）">
               <input
                 className="input"
@@ -220,16 +209,14 @@ export default function Phase2Brief({ project, meta, patch, goto }: PhaseProps) 
             </button>
             <button
               className="btn-primary"
-              onClick={async () => {
-                if (dirty) await save()
-                goto(3)
-              }}
+              onClick={() => goto(3)}
             >
               下一步：生成广告创意 →
             </button>
           </div>
         </div>
       </Section>
+      <div className="business-context">需要验证不同素材的效果？先确定创意与基准分镜，再锁定一个变量建立实验。<button className="btn-ghost" onClick={openExperiments}>查看实验复盘 →</button></div>
     </>
   )
 }

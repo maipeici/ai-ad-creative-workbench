@@ -1,4 +1,5 @@
 import type { InspirationReference, InspirationLibrary, InspirationAnalysis } from './inspiration-types'
+import type { WorkspaceResources, ExperimentReport } from './types'
 import type {
   AssetItem,
   AutoFixResult,
@@ -29,6 +30,15 @@ async function req<T>(url: string, init?: RequestInit): Promise<T> {
 const body = (v: unknown) => JSON.stringify(v ?? {})
 
 export const api = {
+  workspace: () => req<WorkspaceResources>('/api/workspace'),
+  saveWorkspace: (changes: Partial<WorkspaceResources>) => req<WorkspaceResources>('/api/workspace', { method: 'PATCH', body: body(changes) }),
+  experiments: () => req<ExperimentReport[]>('/api/experiments'),
+  nextExperimentTask: (id: string, experimentId: string) => req<Project>(`/api/projects/${id}/experiments/${experimentId}/next-task`, { method: 'POST', body: '{}' }),
+  createExperiment: (id: string, input: Record<string, unknown>) => req<{ project: Project; experiment: ExperimentReport }>(`/api/projects/${id}/experiments`, { method: 'POST', body: body(input) }),
+  experimentVersion: (id: string, experimentId: string, input: Record<string, unknown>) => req<{ project: Project; version: Project }>(`/api/projects/${id}/experiments/${experimentId}/versions`, { method: 'POST', body: body(input) }),
+  importExperimentResults: (id: string, experimentId: string, content: string) => req<ExperimentReport>(`/api/projects/${id}/experiments/${experimentId}/results`, { method: 'POST', body: body({ content }) }),
+  saveExperimentConclusion: (id: string, experimentId: string, conclusion: string, nextAction: string) => req<ExperimentReport>(`/api/projects/${id}/experiments/${experimentId}`, { method: 'PATCH', body: body({ conclusion, nextAction }) }),
+  reviewFinalVideo: (id: string) => req<Project>(`/api/projects/${id}/quality-review`, { method: 'POST' }),
   inspirations: (query: Record<string,string>) => req<InspirationLibrary>('/api/inspirations?' + new URLSearchParams(query)),
   createInspiration: (data: Record<string,unknown>) => req<InspirationReference>('/api/inspirations', {method:'POST',body:body(data)}),
   updateInspiration: (id:string, data:Record<string,unknown>) => req<InspirationReference>('/api/inspirations/'+id, {method:'PATCH',body:body(data)}),

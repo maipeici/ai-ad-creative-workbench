@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { usableFact } from './workspace.js'
 
 export const DEFAULT_REVIEW_REQUIREMENTS = [
   '创意匹配目标人群与出行场景',
@@ -49,11 +50,17 @@ export function reviewProjectFingerprint(project) {
 }
 
 export function reviewInputFingerprint(ctx) {
+  const facts = new Set(ctx.project.facts || [])
+  const assets = new Set(Object.values(ctx.project.assets || {}).flat())
+  for (const shot of ctx.project.storyboard?.shots || []) {
+    for (const id of shot.factRefs || []) facts.add(id)
+    for (const key of ['personRefs', 'vehicleRefs', 'sceneRefs', 'uiRefs']) for (const id of shot[key] || []) assets.add(id)
+  }
   return hash({
     project: reviewProjectFingerprint(ctx.project),
     brandGuide: ctx.brandGuide, compliance: ctx.compliance,
-    factLib: ctx.factLib, assetLib: ctx.assetLib, channel: ctx.channel,
-    date: new Date().toISOString().slice(0, 10),
+    facts: ctx.factLib.facts.filter(f => facts.has(f.id)).map(f => ({ ...f, currentlyUsable: usableFact(f) })),
+    assets: ctx.assetLib.items.filter(a => assets.has(a.id)), channel: ctx.channel,
   })
 }
 
@@ -74,5 +81,6 @@ export function refreshReview(ctx) {
   } else if (review?.checkedAt && review.fingerprint !== reviewInputFingerprint(ctx)) {
     invalidateReview(ctx.project)
   }
+  if (ctx.project.render?.qualityReview && ctx.project.render.qualityReview.contextFingerprint !== reviewInputFingerprint(ctx)) ctx.project.render.qualityReview.status = 'stale'
   return ctx.project
 }

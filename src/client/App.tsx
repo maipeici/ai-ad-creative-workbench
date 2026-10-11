@@ -5,6 +5,9 @@ import { Badge, Modal, Spinner, Toast } from './ui'
 import Dashboard, { PHASES, formatDate, projectStatus } from './components/Dashboard'
 import Icon from './components/Icon'
 import GuidedTour from './components/GuidedTour'
+import ResourceCenter from './components/ResourceCenter'
+import ExperimentPanel from './components/ExperimentPanel'
+import './styles/business.css'
 import Phase1 from './phases/Phase1Foundation'
 import Phase2 from './phases/Phase2Brief'
 import Phase3 from './phases/Phase3Concept'
@@ -13,6 +16,11 @@ import Phase5 from './phases/Phase5Review'
 import Phase6 from './phases/Phase6Render'
 
 export interface PhaseProps {
+  resourceMode?: boolean
+  openReferences?: () => void
+  openExperiments?: () => void
+  registerBeforeLeave?: (save: (() => Promise<void>) | null) => void
+  creativeTab?: 'concepts' | 'references'
   preview?: boolean
   foundationTab?: string
   project: Project
@@ -36,7 +44,10 @@ export default function App() {
   const [projects, setProjects] = useState<ProjectSummary[]>([])
   const [project, setProject] = useState<Project | null>(null)
   const [activePhase, setActivePhase] = useState(1)
-  const [view, setView] = useState<'overview' | 'project'>('overview')
+  const [view, setView] = useState<'overview' | 'project' | 'resources' | 'experiments'>('overview')
+  const [creativeTab, setCreativeTab] = useState<'concepts' | 'references'>('concepts')
+  const beforeLeave = useRef<(() => Promise<void>) | null>(null)
+  const registerBeforeLeave = useCallback((save: (() => Promise<void>) | null) => { beforeLeave.current = save }, [])
   const [toast, setToast] = useState<{ msg: string; tone?: 'error' | 'ok' } | null>(null)
   const [busy, setBusy] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -85,11 +96,12 @@ export default function App() {
     const sequence = ++openSequence.current
     setBusy(true)
     try {
+      await beforeLeave.current?.()
       const p = await api.getProject(id)
       if (sequence !== openSequence.current) return
       setProject(p)
       setActivePhase(phase || p.phase || 1)
-      setView('project')
+      setView(phase === 7 ? 'experiments' : 'project')
       setMenuOpen(false)
       remember(id)
     } catch (e: any) { notify(e.message, 'error') }
@@ -104,14 +116,15 @@ export default function App() {
     if (busy || !newName.trim()) return
     setBusy(true)
     try {
+      await beforeLeave.current?.()
       const p = await api.createProject(newName.trim())
       setProject(p)
-      setActivePhase(1)
+      setActivePhase(2)
       setView('project')
       remember(p.id)
       setShowCreate(false)
       await reloadProjects()
-      notify('项目已创建，从创作基础开始吧')
+      notify('推广任务已创建，已继承资料中心的默认选用')
     } catch (e: any) { notify(e.message, 'error') }
     finally { setBusy(false) }
   }
@@ -157,7 +170,7 @@ export default function App() {
       3: Boolean(project.selectedConceptId),
       4: Boolean(project.storyboard?.shots?.length),
       5: Boolean(project.review?.approved),
-      6: Boolean(project.render?.finalVideo),
+      6: Boolean(project.render?.finalVideo && !project.render.finalVideo.stale),
     } as Record<number, boolean>
   }, [project])
 
@@ -171,12 +184,16 @@ export default function App() {
       {loading ? <p className="flex items-center gap-2"><Spinner /> 正在准备你的创作空间…</p> : <><p>工作台暂时无法加载，请确认本地服务已启动。</p><p className="text-xs text-red-300 max-w-md break-words">{loadError}</p><button className="btn-primary mt-3" onClick={load}><Icon name="retry" /> 重新加载</button></>}
     </div>
   }
-  const phaseProps: PhaseProps | null = project ? { project, meta, patch, setProject: setProjectAndRefresh, reloadMeta, notify, goto: setActivePhase } : null
+  const navigate = async (phase: number) => { try { if (project?.experimentLink && phase < 4) { notify('实验需求已锁定，请返回源任务调整'); return }; await beforeLeave.current?.(); setActivePhase(phase); setView('project') } catch { /* Keep unsaved edits visible. */ } }
+  const changeView = async (next: typeof view) => { try { await beforeLeave.current?.(); setView(next); setMenuOpen(false) } catch {} }
+  const openReferences = () => { if (!project) { notify('先选择或新建一个推广任务，参考库会结合任务生成建议'); return }; setCreativeTab('references'); void navigate(3) }
+  const openExperiments = () => { if (project?.experimentLink) void openProject(project.experimentLink.parentId, 7); else void changeView('experiments') }
+  const phaseProps: PhaseProps | null = project ? { project, meta, patch, setProject: setProjectAndRefresh, reloadMeta, notify, goto: phase => { void navigate(phase) }, openReferences, openExperiments, creativeTab, registerBeforeLeave } : null
   const currentPhase = PHASES.find(ph => ph.id === activePhase) || PHASES[0]
-  const visibleProjects = projects.filter(p => p.name.toLowerCase().includes(sidebarSearch.trim().toLowerCase()))
+  const visibleProjects = projects.filter(p => !p.experimentLink && p.name.toLowerCase().includes(sidebarSearch.trim().toLowerCase()))
   const configured = !meta.providers.video.startsWith('mock') && !meta.providers.video.startsWith('manual')
   const completed = Object.values(phaseReady).filter(Boolean).length
-  const showOverview = () => { setView('overview'); setMenuOpen(false) }
+  const showOverview = () => { void changeView('overview') }
   const channelName = (id?: string) => meta.channels.find(c => c.id === id)?.name || '未选择渠道'
 
   return <div className="studio-shell">
@@ -186,6 +203,8 @@ export default function App() {
         <img src="/brand/hxz-icon.png" alt="" /><div><strong>花小猪<span>创意工作台</span></strong><small>AI AD CREATIVE STUDIO</small></div>
       </button>
       <button className={'sidebar-home ' + (view === 'overview' ? 'active' : '')} onClick={showOverview}><Icon name="grid" /> 工作台概览<Icon name="chevron" width="14" /></button>
+      <button className={'sidebar-home ' + (view === 'resources' ? 'active' : '')} onClick={() => void changeView('resources')}><Icon name="book" /> 资料中心<Icon name="chevron" width="14" /></button>
+      <button className={'sidebar-home ' + (view === 'experiments' ? 'active' : '')} onClick={openExperiments}><Icon name="layers" /> 实验复盘<Icon name="chevron" width="14" /></button>
       <div className="sidebar-section-title"><span>我的素材项目</span><button aria-label="新建素材项目" title="新建素材项目" onClick={prepareCreate} disabled={busy}><Icon name="plus" width="17" /></button></div>
       <label className="sidebar-search"><Icon name="search" width="14" /><input aria-label="搜索侧栏项目" placeholder="搜索项目…" value={sidebarSearch} onChange={e => setSidebarSearch(e.target.value)} /></label>
       <div className="sidebar-projects">
@@ -207,10 +226,10 @@ export default function App() {
     <div className="studio-main">
       <header className="studio-topbar">
         <button className="mobile-menu icon-button" aria-label="展开导航" onClick={() => setMenuOpen(true)}><Icon name="menu" /></button>
-        <div className="topbar-breadcrumb"><span>创意空间</span><Icon name="chevron" width="13" /><strong>{view === 'overview' ? '工作台概览' : currentPhase.name}</strong>{busy && <Spinner />}</div>
+        <div className="topbar-breadcrumb"><span>创意空间</span><Icon name="chevron" width="13" /><strong>{view === 'overview' ? '工作台概览' : view === 'resources' ? '资料中心' : view === 'experiments' ? '实验复盘' : currentPhase.name}</strong>{busy && <Spinner />}</div>
         <div className="ml-auto flex items-center gap-3"><button className="guide-entry" onClick={() => setShowGuide(true)}><Icon name="book" width="15" />操作指南</button><button className={'environment-button ' + (configured && meta.ffmpeg ? 'configured' : '')} onClick={() => setShowSettings(true)}><span className="status-dot" />{!meta.ffmpeg ? '合成待配置' : configured ? '模型已配置' : meta.videoMode === 'manual' ? '手动制作模式' : '演示模式'}<Icon name="settings" width="14" /></button><span className="topbar-avatar">花</span></div>
       </header>
-      {view === 'overview' || !project ? <div className="studio-scroll"><Dashboard projects={projects} meta={meta} lastId={project?.id} busy={busy} onOpen={openProject} onCreate={prepareCreate} onGuide={() => setShowGuide(true)} /></div> :
+      {view === 'resources' ? <div className="studio-scroll"><ResourceCenter meta={meta} reloadMeta={reloadMeta} notify={notify} onReferences={openReferences} /></div> : view === 'experiments' ? <div className="studio-scroll"><ExperimentPanel project={project} projects={projects} notify={notify} onOpen={openProject} onUpdate={setProjectAndRefresh} /></div> : view === 'overview' || !project ? <div className="studio-scroll"><Dashboard projects={projects.filter(p => !p.experimentLink)} meta={meta} lastId={project?.id} busy={busy} onOpen={openProject} onCreate={prepareCreate} onGuide={() => setShowGuide(true)} /></div> :
         <div className="project-workspace">
           <div className="workspace-heading">
             <button className="text-link mb-3" onClick={showOverview}>← 返回项目总览</button>
@@ -220,32 +239,33 @@ export default function App() {
             </div>
           </div>
           <nav ref={phaseNavigation} className="phase-navigation" aria-label="创作阶段">
-            {PHASES.map(ph => <button key={ph.id} className={(activePhase === ph.id ? 'active ' : '') + (phaseReady[ph.id] ? 'ready' : '')} onClick={() => setActivePhase(ph.id)} aria-current={activePhase === ph.id ? 'step' : undefined}><span className="phase-number">{phaseReady[ph.id] ? <Icon name="check" width="13" height="13" /> : '0' + ph.id}</span><span>{ph.name}</span></button>)}
+            {PHASES.map(ph => <button key={ph.id} className={(activePhase === ph.id ? 'active ' : '') + (phaseReady[ph.id] ? 'ready' : '')} disabled={!!project.experimentLink && ph.id < 4} onClick={() => void navigate(ph.id)} aria-current={activePhase === ph.id ? 'step' : undefined}><span className="phase-number">{phaseReady[ph.id] ? <Icon name="check" width="13" height="13" /> : '0' + ph.id}</span><span>{ph.name}</span></button>)}
           </nav>
           <div className="phase-scroll" key={project.id + '-' + activePhase}>
             <div className="phase-content animate-in">
               <div className="phase-intro"><div><div className="eyebrow">STEP {'0' + activePhase}</div><h1>{currentPhase.name}</h1><p>{currentPhase.desc}</p></div><Badge tone={phaseReady[activePhase] ? 'green' : 'slate'}>{phaseReady[activePhase] ? '本阶段已就绪' : '待完善'}</Badge></div>
+              {project.experimentLink && <div className="business-context">实验 {project.experimentLink.label} 版 · {project.experimentLink.label === 'A' ? '基准脚本已锁定，可继续制作视频。' : '只修改指定镜头，固定镜头沿用基准版。'}<button className="btn-ghost" onClick={() => void openProject(project.experimentLink!.parentId, 7)}>返回实验复盘 →</button></div>}
               {phaseProps && activePhase === 1 && <Phase1 {...phaseProps} />}
               {phaseProps && activePhase === 2 && <Phase2 {...phaseProps} />}
               {phaseProps && activePhase === 3 && <Phase3 {...phaseProps} />}
               {phaseProps && activePhase === 4 && <Phase4 {...phaseProps} />}
               {phaseProps && activePhase === 5 && <Phase5 {...phaseProps} />}
               {phaseProps && activePhase === 6 && <Phase6 {...phaseProps} />}
-              <div className="phase-footer-nav"><button className="btn-ghost" onClick={() => activePhase === 1 ? showOverview() : setActivePhase(activePhase - 1)}>{activePhase === 1 ? '返回总览' : '← 上一阶段'}</button>{activePhase < 6 && <button className="btn-primary" onClick={() => setActivePhase(activePhase + 1)}>下一阶段：{PHASES[activePhase].name}<Icon name="arrow" width="16" /></button>}</div>
+              <div className="phase-footer-nav"><button className="btn-ghost" disabled={!!project.experimentLink && activePhase === 4} onClick={() => activePhase === 1 ? showOverview() : void navigate(activePhase - 1)}>{activePhase === 1 ? '返回总览' : '← 上一阶段'}</button>{activePhase < 6 && <button className="btn-primary" onClick={() => void navigate(activePhase + 1)}>下一阶段：{PHASES[activePhase].name}<Icon name="arrow" width="16" /></button>}</div>
             </div>
           </div>
         </div>}
     </div>
     <Modal open={showCreate} title="开启一个新的广告创意" onClose={() => !busy && setShowCreate(false)}>
       <form onSubmit={e => { e.preventDefault(); void createProject() }} className="space-y-5">
-        <p className="text-sm text-slate-400 leading-relaxed">为素材项目起个名字。接下来，我们会从创作基础开始，逐步完成投放需求、创意、分镜与成片。</p>
+        <p className="text-sm text-slate-400 leading-relaxed">新任务会继承资料中心的常用素材与已确认事实。从本次推广目标开始，再决定创意与测试版本。</p>
         <div><label className="label" htmlFor="new-project-name">项目名称</label><input id="new-project-name" className="input" value={newName} onChange={e => setNewName(e.target.value)} placeholder="例如：晚高峰通勤 · 抖音 15 秒广告" required maxLength={100} /></div>
-        <div className="creation-steps">{['创作基础', '投放需求', '创意分镜', '审核成片'].map((label, i) => <span key={label}><small>{i + 1}</small>{label}</span>)}</div>
+        <div className="creation-steps">{['明确任务', '创意方案', '制作质检', '实验复盘'].map((label, i) => <span key={label}><small>{i + 1}</small>{label}</span>)}</div>
         <div className="flex justify-end gap-2 pt-2"><button type="button" className="btn-ghost" onClick={() => setShowCreate(false)} disabled={busy}>取消</button><button type="submit" className="btn-primary" disabled={busy || !newName.trim()}>{busy ? <Spinner /> : <Icon name="plus" width="16" />}创建项目</button></div>
       </form>
     </Modal>
     <Modal open={!!deleteTarget} title="删除素材项目" onClose={() => !busy && setDeleteTarget(null)}>
-      <p className="text-sm text-slate-300 leading-relaxed">确定删除「{deleteTarget?.name}」吗？该项目的需求、创意和分镜记录将被移除，删除后无法在工作台恢复。</p>
+      <p className="text-sm text-slate-300 leading-relaxed">确定删除「{deleteTarget?.name}」吗？该项目的需求、创意、分镜和所属实验版本记录将被移除，删除后无法在工作台恢复。</p>
       <div className="flex justify-end gap-2 mt-6"><button className="btn-ghost" onClick={() => setDeleteTarget(null)} disabled={busy}>保留项目</button><button className="btn-danger" onClick={removeProject} disabled={busy}>{busy && <Spinner />}确定删除</button></div>
     </Modal>
     <Modal open={showSettings} title="工作台运行状态" onClose={() => setShowSettings(false)}>

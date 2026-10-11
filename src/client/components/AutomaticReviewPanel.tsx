@@ -13,7 +13,7 @@ export default function AutomaticReviewPanel({ project, meta, patch, runReview, 
 }) {
   const saved = project.review?.requirements || meta.reviewChecklist
   const [text, setText] = useState(saved.join('\n'))
-  const [autoRepair, setAutoRepair] = useState(true)
+  const [autoRepair, setAutoRepair] = useState(!project.experimentLink)
   const [saving, setSaving] = useState(false)
   useEffect(() => { setText(saved.join('\n')) }, [project.id, JSON.stringify(saved)])
   const requirements = [...new Set(text.split('\n').map(line => line.trim()).filter(Boolean))]
@@ -30,7 +30,7 @@ export default function AutomaticReviewPanel({ project, meta, patch, runReview, 
     finally { setSaving(false) }
   }
   return (
-    <Section title="自动审核 Agent" desc="按你的清单校验生成前的分镜、文案和素材引用；可修复的问题自动处理，再复检并生成结论。"
+    <Section title="自动审核 Agent · 脚本预检" desc="检查生成前的分镜、文案和素材引用。成片的实际画面与声音在制作完成后单独质检。"
       right={<Badge tone={passed ? 'green' : busy ? 'brand' : 'amber'}>{busy ? '执行中' : dirty ? '清单有未保存修改' : labels[review.status || 'idle']}</Badge>}>
       <div className="review-pipeline">
         <div><strong>01 · 读取审核要求</strong><p>结合品牌资料、营销事实和渠道规格逐项检查。</p></div>
@@ -42,8 +42,8 @@ export default function AutomaticReviewPanel({ project, meta, patch, runReview, 
         onChange={event => setText(event.target.value)} />
       <div className="flex items-center justify-between gap-3 flex-wrap mt-3">
         <label className="flex items-center gap-2 text-xs text-slate-300">
-          <input type="checkbox" checked={autoRepair} disabled={busy} onChange={event => setAutoRepair(event.target.checked)} className="accent-brand" />
-          自动修复可处理的问题并复检
+          <input type="checkbox" checked={autoRepair} disabled={busy || !!project.experimentLink} onChange={event => setAutoRepair(event.target.checked)} className="accent-brand" />
+          {project.experimentLink ? '实验固定项已锁定：仅预检，请在指定镜头手动修改问题' : '自动修复可处理的问题并复检'}
         </label>
         <div className="flex gap-2 flex-wrap">
           <button className="btn-ghost !text-xs" disabled={busy || saving} onClick={() => setText(meta.reviewChecklist.join('\n'))}>恢复默认清单</button>

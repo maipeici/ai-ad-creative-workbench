@@ -3,12 +3,12 @@ import type { Meta, ProjectSummary } from '../types'
 import Icon from './Icon'
 
 export const PHASES = [
-  { id: 1, name: '创作基础', desc: '品牌、活动、素材、视觉与合规各归其位', icon: 'book' },
+  { id: 1, name: '资料选用', desc: '继承共享资料，按本次推广需要调整选用', icon: 'book' },
   { id: 2, name: '投放需求', desc: '明确受众、场景、目标与渠道', icon: 'settings' },
   { id: 3, name: '广告创意', desc: '选择有共鸣的创意与开场钩子', icon: 'spark' },
   { id: 4, name: '分镜规划', desc: '编排画面、口播和字幕', icon: 'layers' },
-  { id: 5, name: '自动审核', desc: '按清单自动校验、修复并复检', icon: 'check' },
-  { id: 6, name: '成片制作', desc: '生成镜头、合成成片与测试变体', icon: 'movie' },
+  { id: 5, name: '脚本预检', desc: '自动审核 Agent 检查生成前的脚本与事实', icon: 'check' },
+  { id: 6, name: '成片交付', desc: '制作视频、检查实际画面与声音、下载投放包', icon: 'movie' },
 ]
 
 export function projectStatus(p: ProjectSummary) {

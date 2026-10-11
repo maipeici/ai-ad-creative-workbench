@@ -1,5 +1,10 @@
 import express from 'express'
 import { registerInspirationRoutes } from './inspiration-routes.js'
+import { registerExperimentRoutes } from './experiment-routes.js'
+import { registerDeliveryRoutes } from './delivery-routes.js'
+import { compositionFingerprint } from './delivery.js'
+import { fingerprint } from './experiments.js'
+import { getWorkspace, saveWorkspace, inheritResources, validateWorkspace } from './workspace.js'
 import { bindStoryboardReference, conceptFingerprint, assertStoryboardCurrent, normalizeReferenceUse } from './inspiration-guidance.js'
 import cors from 'cors'
 import multer from 'multer'
@@ -79,12 +84,12 @@ const wrap = (fn) => (req, res) =>
   })
 
 const PHASES = [
-  { id: 1, key: 'foundation', name: '创作基础' },
-  { id: 2, key: 'brief', name: '投放需求输入' },
-  { id: 3, key: 'concept', name: '广告创意策划' },
+  { id: 1, key: 'foundation', name: '资料选用' },
+  { id: 2, key: 'brief', name: '投放需求' },
+  { id: 3, key: 'concept', name: '广告创意' },
   { id: 4, key: 'storyboard', name: '分镜规划' },
-  { id: 5, key: 'review', name: '自动审核' },
-  { id: 6, key: 'render', name: '成片制作' },
+  { id: 5, key: 'review', name: '脚本预检' },
+  { id: 6, key: 'render', name: '成片交付' },
 ]
 
 function newProject(name) {
@@ -94,7 +99,7 @@ function newProject(name) {
     name: name || `花小猪广告素材 ${new Date().toLocaleDateString('zh-CN')}`,
     createdAt: now,
     updatedAt: now,
-    phase: 1,
+    phase: 2,
     brandGuideId: 'hxz-ad-v1',
     assets: {
       person: [],
@@ -114,9 +119,10 @@ function newProject(name) {
       scene: 'commute-evening',
       campaign: '',
       sellingPoint: '',
-      goal: '引导下载与首单',
+      goal: '引导下载',
+      conversionEvent: 'download', campaignFactId: '', landingUrl: '', deliveryCount: 1, dueDate: '',
       tone: 'relatable',
-      cta: 'download-claim',
+      cta: 'download-app',
       durationSec: 15,
       reference: '',
       constraints: '',
@@ -155,7 +161,31 @@ async function loadContext(projectId) {
 
 const selectedConcept = (p) => p.concepts?.find((c) => c.id === p.selectedConceptId) || null
 
+// Reject locked changes before submitting paid model or media processing jobs.
+app.use('/api/projects/:id', async (req, res, next) => {
+  try {
+    if (req.method !== 'POST' && req.method !== 'DELETE') return next()
+    const project = await getProject(req.params.id)
+    if (!project?.experimentLink) return next()
+    const link = project.experimentLink
+    const shotId = req.path.match(/^\/render\/shots\/([^/]+)/)?.[1]
+    const fixedShot = shotId && link.label !== 'A' && !link.editableShotIds.includes(shotId)
+    const locked = /^\/(concepts|storyboard|shots|autofix|variants|inspirations)(\/|$)/.test(req.path)
+    if (locked || fixedShot || project._experimentRenderLocked && req.path.startsWith('/render/')) return res.status(409).json({ error: '实验固定项已锁定。请在源任务建立新实验；实验版只能修改指定镜头。' })
+    next()
+  } catch (error) { next(error) }
+})
+
 registerInspirationRoutes(app, { wrap, loadContext })
+registerExperimentRoutes(app, wrap)
+registerDeliveryRoutes(app, { wrap, loadContext })
+
+app.get('/api/workspace', wrap(async (_req, res) => res.json(await getWorkspace())))
+app.patch('/api/workspace', wrap(async (req, res) => {
+  const [assets, facts] = await Promise.all([getAssets(), getFacts()])
+  try { res.json(await saveWorkspace(validateWorkspace(req.body, assets, facts))) }
+  catch (error) { error.status = 400; throw error }
+}))
 
 /* ------------------------------ Meta ------------------------------ */
 
@@ -430,6 +460,7 @@ app.post(
   '/api/projects',
   wrap(async (req, res) => {
     const project = newProject(req.body?.name)
+    inheritResources(project, await getWorkspace(), await getAssets(), await getFacts())
     if (req.body?.template) Object.assign(project, req.body.template)
     await upsertProject(project)
     res.json(project)
@@ -449,8 +480,11 @@ app.patch(
   wrap(async (req, res) => {
     const project = await getProject(req.params.id)
     if (!project) return res.status(404).json({ error: '项目不存在' })
-    const gcChanged = Boolean(req.body?.storyboard?.globalContext)
+    const gcChanged = req.body?.storyboard?.globalContext !== undefined && fingerprint(req.body.storyboard.globalContext) !== fingerprint(project.storyboard?.globalContext)
     const changes = { ...req.body }
+    delete changes._experimentRenderLocked
+    if (changes.render) delete changes.render.qualityReview
+    for (const key of ['experimentLink', 'experiments']) if (Object.hasOwn(changes, key)) return res.status(400).json({ error: '请使用实验工作区修改实验记录' })
     // Approval is computed by the review endpoint; clients only edit requirements and notes.
     if (Object.hasOwn(changes, 'review')) {
       changes.review = {}
@@ -721,7 +755,7 @@ app.post('/api/projects/:id/review', wrap(async (req, res) => {
     assertStoryboardCurrent(ctx.project)
     const originalFingerprint = reviewInputFingerprint(ctx)
     if (req.body?.autoRepair !== undefined && typeof req.body.autoRepair !== 'boolean') return res.status(400).json({ error: 'autoRepair 必须是布尔值' })
-    const result = await runAutomaticReview(ctx, { requirements: normalizeRequirements(req.body?.requirements || ctx.project.review?.requirements), autoRepair: req.body?.autoRepair !== false })
+    const result = await runAutomaticReview(ctx, { requirements: normalizeRequirements(req.body?.requirements || ctx.project.review?.requirements), autoRepair: !ctx.project.experimentLink && req.body?.autoRepair !== false })
     const latest = await loadContext(req.params.id)
     if (reviewInputFingerprint(latest) !== originalFingerprint) return res.status(409).json({ error: '审核期间资料已更新，本次结果未保存，请重新运行审核。' })
     result.project = { ...latest.project, storyboard: result.project.storyboard, assets: result.project.assets, facts: result.project.facts, review: result.project.review, phase: Math.max(latest.project.phase, 5) }
@@ -853,9 +887,9 @@ app.post(
     const shot = sb?.shots.find((s) => s.id === req.params.shotId)
     if (!shot) return res.status(404).json({ error: '镜头不存在' })
 
-    if (!req.body?.force) {
+    {
       if (!project.review?.approved) {
-        return res.status(400).json({ error: '分镜尚未通过自动审核或内容已变更，如需强制生成请传 force=true' })
+        return res.status(400).json({ error: '分镜尚未通过脚本预检或内容已变更，请先完成预检' })
       }
       const v = validateStoryboard({ project, brandGuide, compliance, factLib, picked, channel })
       const shotIssues = v.shots.find((s) => s.shotId === shot.id)?.issues || []
@@ -1199,7 +1233,7 @@ app.post(
     const sb = project.storyboard
     if (!sb) return res.status(400).json({ error: '尚未生成分镜' })
 
-    if (!project.review?.approved) return res.status(400).json({ error: '请先完成当前版本的自动审核，再合成成片。' })
+    if (!project.review?.approved) return res.status(400).json({ error: '请先完成当前版本的脚本预检，再合成成片。' })
     if (sb.shots.some(shot => project.render.shots[shot.id]?.stale)) return res.status(400).json({ error: '存在自动修复前的旧镜头，请重新生成或回传后再合成。' })
     const missing = sb.shots.filter((s) => !project.render.shots[s.id]?.url)
     if (missing.length) {
@@ -1215,6 +1249,10 @@ app.post(
     if (ffmpegOk && !req.body?.skipCompose) {
       for (const shot of sb.shots) {
         const entry = project.render.shots[shot.id]
+        if (project.experimentLink?.label !== 'A' && project.experimentLink && !project.experimentLink.editableShotIds.includes(shot.id)) {
+          composeLog.push({ index: shot.index, skipped: '复用 A 基准版的固定镜头' })
+          continue
+        }
         const needs =
           shot.subtitle ||
           shot.vo ||
@@ -1247,6 +1285,7 @@ app.post(
         }
       }
       await upsertProject(project)
+      if (composeLog.some(item => item.error || item.voError)) return res.status(422).json({ error: '部分镜头后期合成或配音失败，请修复后重试；已完成的镜头已保存。', composeLog })
     }
 
     const ordered = sb.shots.map((s) => project.render.shots[s.id])
@@ -1288,6 +1327,7 @@ app.post(
     const withAssets = ordered.filter((e) => (e.overlayInfo?.images || 0) > 0).length
 
     project.render.finalVideo = {
+      inputFingerprint: compositionFingerprint(project),
       url: `/media/${outName}`,
       shotCount: ordered.length,
       durationSec: ordered.reduce((sum, entry, i) => sum + (Number(entry.composedDurationSec) || Number(entry.actualDurationSec) || Number(sb.shots[i].durationSec) || 0), 0),
@@ -1298,6 +1338,7 @@ app.post(
       assembledAt: new Date().toISOString(),
     }
     project.render.cover = cover
+    delete project.render.qualityReview
     await upsertProject(project)
     res.json({ project, ffmpeg: true, composeLog })
   }),

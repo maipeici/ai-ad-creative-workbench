@@ -11,7 +11,7 @@ const FOUNDATION_TABS = [
   { id: 'visual', label: '视觉设计', desc: '画面风格 · 镜头 · 光照' },
   { id: 'compliance', label: '合规边界说明', desc: '表达边界 · 使用规则' },
 ]
-export default function Phase1Foundation({ project, meta, patch, reloadMeta, notify, goto, foundationTab }: PhaseProps) {
+export default function Phase1Foundation({ project, meta, patch, reloadMeta, notify, goto, foundationTab, resourceMode, openReferences }: PhaseProps) {
   const { brandGuide, assets, facts: factLib, compliance } = meta
   const [tab, setTab] = useState(foundationTab || 'brand')
   const visual = meta.visualDesign
@@ -151,7 +151,8 @@ export default function Phase1Foundation({ project, meta, patch, reloadMeta, not
       </nav>
       <div className="foundation-scope">
         <Badge tone="brand">共享资料 · 项目独立选用</Badge>
-        <span>品牌、活动与素材在项目间复用；勾选仅决定本项目的生成依据。</span>
+        <span>{resourceMode ? '这里的勾选会作为新任务的默认资料；已有任务保持原来的选用。' : '资料来自共享资料中心；这里仅调整本任务的选用范围。'}</span>
+        {!resourceMode && <button className="btn-ghost ml-auto" onClick={async () => { try { await api.saveWorkspace({ defaults: { assets: project.assets, facts: project.facts } }); notify('已设为新任务默认资料') } catch (e: any) { notify(e.message, 'error') } }}>将本次选用设为默认</button>}
       </div>
 
       {tab === 'brand' && <Section title="品牌基础信息" desc="品牌是谁、提供什么价值，以及识别品牌所需的 Logo 和品牌色。">
@@ -361,7 +362,7 @@ export default function Phase1Foundation({ project, meta, patch, reloadMeta, not
         )}
 
         <div className="space-y-5">
-          {assets.categories.map((cat) => {
+          {assets.categories.filter(cat => cat.id !== 'reference').map((cat) => {
             const items = assets.items.filter((i) => i.category === cat.id)
             const sel = selected[cat.id] || []
             return (
@@ -453,9 +454,9 @@ export default function Phase1Foundation({ project, meta, patch, reloadMeta, not
           <p className="text-[11px] text-slate-600">
             {selectedFacts.length === 0 && <span className="text-amber-400">建议先勾选至少一条已确认的产品事实</span>}
           </p>
-          <button className="btn-primary" onClick={() => goto(2)} disabled={!totalAssets}>
+          {!resourceMode && <button className="btn-primary" onClick={() => goto(2)}>
             下一步：填写投放需求 →
-          </button>
+          </button>}
         </div>
       </Section>}
 
