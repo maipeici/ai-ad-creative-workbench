@@ -34,7 +34,8 @@ export const api = {
   updateInspiration: (id:string, data:Record<string,unknown>) => req<InspirationReference>('/api/inspirations/'+id, {method:'PATCH',body:body(data)}),
   importInspirations: (content:string,format:string) => req<{count:number;items:InspirationReference[]}>('/api/inspirations/import',{method:'POST',body:body({content,format})}),
   analyzeInspiration: (id:string,referenceId:string) => req<{project:Project;analysis:InspirationAnalysis}>(`/api/projects/${id}/inspirations/${referenceId}/analyze`,{method:'POST'}),
-  applyInspiration: (id:string,referenceId:string,suggestionIds:string[]) => req<{project:Project}>(`/api/projects/${id}/inspirations/${referenceId}/apply`,{method:'POST',body:body({suggestionIds})}),
+  uploadInspirationVideo: (referenceId:string,file:File) => {const fd=new FormData();fd.append('file',file);return req<InspirationReference>(`/api/inspirations/${referenceId}/video`,{method:'POST',body:fd})},
+  applyInspiration: (id:string,referenceId:string,suggestionIds:string[],targetConceptId?:string) => req<{project:Project;concept:import('./types').Concept}>(`/api/projects/${id}/inspirations/${referenceId}/apply`,{method:'POST',body:body({suggestionIds,targetConceptId,selectAfterApply:true})}),
   meta: () => req<Meta>('/api/meta'),
 
   listProjects: () => req<ProjectSummary[]>('/api/projects'),

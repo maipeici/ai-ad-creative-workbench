@@ -1,5 +1,6 @@
 import express from 'express'
 import { registerInspirationRoutes } from './inspiration-routes.js'
+import { bindStoryboardReference, conceptFingerprint, assertStoryboardCurrent, normalizeReferenceUse } from './inspiration-guidance.js'
 import cors from 'cors'
 import multer from 'multer'
 import fs from 'node:fs'
@@ -528,7 +529,7 @@ app.post(
       mockStoryboard({ brandGuide, brief: project.brief, picked, facts, concept, options }),
     )
 
-    const shots = (data.shots || []).map((s, i) => ({
+    const shots = bindStoryboardReference(data.shots || [], concept, source).map((s, i) => ({
       vo: '',
       subtitle: '',
       sfx: '',
@@ -553,6 +554,8 @@ app.post(
       globalContext: data.globalContext || {},
       shots,
       conceptId: concept.id,
+      conceptFingerprint: conceptFingerprint(concept),
+      inspiration: concept.inspiration ? structuredClone(concept.inspiration) : null,
       source,
       generatedAt: new Date().toISOString(),
     }
@@ -571,6 +574,7 @@ app.post(
     const { project, brandGuide, compliance, picked, assetLib, facts } = await loadContext(req.params.id)
     const sb = project.storyboard
     if (!sb) return res.status(400).json({ error: '尚未生成分镜' })
+    assertStoryboardCurrent(project)
     const idx = sb.shots.findIndex((s) => s.id === req.params.shotId)
     if (idx < 0) return res.status(404).json({ error: '镜头不存在' })
 
@@ -594,10 +598,13 @@ app.post(
     const { data, source, error } = await llmJson(messages, () =>
       mockShotRevision({ shot, instruction: req.body?.instruction }),
     )
+    if (sb.inspiration?.guidance?.length && !['gemini','llm'].includes(source)) return res.status(503).json({ error: '镜头改写失败，请重试；原镜头已保留。' })
+    const referenceUse = normalizeReferenceUse(data.referenceUse ?? shot.referenceUse, sb.inspiration)
 
     sb.shots[idx] = {
       ...shot,
       ...data,
+      referenceUse,
       id: shot.id,
       index: shot.index,
       preview: null,
@@ -617,7 +624,8 @@ app.post(
     const shot = sb?.shots.find((s) => s.id === req.params.shotId)
     if (!shot) return res.status(404).json({ error: '镜头不存在' })
 
-    const compiled = compileShotRenderPrompt({ brandGuide, picked, globalContext: sb.globalContext, shot, channel })
+    assertStoryboardCurrent(project)
+    const compiled = compileShotRenderPrompt({ brandGuide, picked, globalContext: sb.globalContext, shot, channel, inspiration: sb.inspiration })
     const preview = await generateShotPreview({
       projectId: project.id,
       shot,
@@ -758,7 +766,8 @@ app.get(
       project: { id: project.id, name: project.name, updatedAt: project.updatedAt },
       channel: channel ? { id: channel.id, name: channel.name, safeArea: channel.safeArea } : null,
       brief: project.brief,
-      concept: selectedConcept(project),
+      concept: project.concepts?.find(c => c.id === sb.conceptId) || selectedConcept(project),
+      inspiration: sb.inspiration,
       factsUsed: facts.confirmed.map((f) => ({ id: f.id, title: f.title, statement: f.statement, source: f.source })),
       globalContext: sb.globalContext,
       globalContextText: globalContextBlock(sb.globalContext),
@@ -773,7 +782,7 @@ app.get(
         subtitle: shot.subtitle,
         sfx: shot.sfx,
         transition: shot.transition,
-        ...compileShotRenderPrompt({ brandGuide, picked, globalContext: sb.globalContext, shot, channel }),
+        ...compileShotRenderPrompt({ brandGuide, picked, globalContext: sb.globalContext, shot, channel, inspiration: sb.inspiration }),
       })),
       variants: (project.variants || []).map((v) => ({
         id: v.id,
@@ -823,7 +832,8 @@ app.post(
       })
     }
 
-    const compiled = compileShotRenderPrompt({ brandGuide, picked, globalContext: sb.globalContext, shot, channel })
+    assertStoryboardCurrent(project)
+    const compiled = compileShotRenderPrompt({ brandGuide, picked, globalContext: sb.globalContext, shot, channel, inspiration: sb.inspiration })
     const prev = project.render.shots[shot.id] || { attempts: 0 }
 
     try {
@@ -1138,6 +1148,7 @@ app.post(
   '/api/projects/:id/render/assemble',
   wrap(async (req, res) => {
     const { project, picked, channel, brandGuide } = await loadContext(req.params.id)
+    assertStoryboardCurrent(project)
     const sb = project.storyboard
     if (!sb) return res.status(400).json({ error: '尚未生成分镜' })
 

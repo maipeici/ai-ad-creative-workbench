@@ -10,6 +10,7 @@
  *  3. 合规前置：极限词与绝对化表述在生成阶段即被禁止
  */
 
+import { inspirationBlock, normalizeReferenceUse } from './inspiration-guidance.js'
 const j = (v) => JSON.stringify(v, null, 2)
 
 function dedupe(arr) {
@@ -224,6 +225,7 @@ export function conceptBlock(concept) {
     `CTA: ${concept.ctaText}`,
     `Structure: ${(concept.beats || []).map((b) => `${b.role}:${b.name}(${b.approxSec}s)`).join(' -> ')}`,
     `Recommended duration: ${concept.durationSec}s`,
+    inspirationBlock(concept.inspiration),
   ].join('\n')
 }
 
@@ -327,6 +329,7 @@ export function storyboardMessages({ brandGuide, compliance, picked, assetLib, f
     '你对一致性极其严格：同一个人物、同一辆车、同一个场景在每个镜头里必须用完全相同的措辞描述。',
     '你清楚 AI 视频模型画不好中文文字和 App 界面，因此所有优惠金额、界面、Logo、CTA 你都会标为后期叠加。',
     '你会严格控制口播字数，保证在镜头时长内能自然说完。',
+    '若创意带有参考创作指导，必须将选中的方法落实为逐镜头 referenceUse。沿用已选创意的安全 CTA；参考视频与 Brief 中的优惠目标不能代替已确认活动事实。没有已确认活动事实时，口播、字幕、画面与 CTA 均不得出现领券、立减或价格承诺。',
     JSON_RULE,
   ].join('\n')
 
@@ -405,6 +408,7 @@ export function storyboardMessages({ brandGuide, compliance, picked, assetLib, f
           subtitle: 'string 中文字幕，无字幕则空字符串',
           sfx: 'string 中文音效说明',
           prompt: 'string ENGLISH full video prompt, no text rendering',
+          referenceUse: concept?.inspiration?.guidance?.length ? {suggestionIds:['selected method id'],sourceTiming:'原视频对应时间段',adaptation:'中文：本镜头如何参考该方法',visualPrompt:'ENGLISH adapted camera, action and pacing direction for THIS shot only; no source brand or claims'} : null,
           negativePrompt: 'string ENGLISH shot specific negatives only',
           renderMode: 'ai|overlay|asset',
           overlayItems: ['string 中文，需后期叠加的内容'],
@@ -470,6 +474,7 @@ export function shotRegenMessages({ brandGuide, compliance, picked, assetLib, fa
       subtitle: 'string 中文',
       sfx: 'string 中文',
       prompt: 'string ENGLISH',
+      referenceUse: shot.referenceUse || null,
       negativePrompt: 'string ENGLISH',
       renderMode: 'ai|overlay|asset',
       overlayItems: ['string 中文'],
@@ -564,12 +569,14 @@ export function variantMessages({ brandGuide, compliance, picked, assetLib, fact
  * 把全局上下文 + 分镜卡 + 品牌规范编译成送给视频模型的最终 Prompt。
  * 纯确定性字符串拼装，不依赖 LLM，保证可复现。
  */
-export function compileShotRenderPrompt({ brandGuide, picked, globalContext, shot, channel }) {
+export function compileShotRenderPrompt({ brandGuide, picked, globalContext, shot, channel, inspiration }) {
   const gc = globalContext || {}
   const sa = channel?.safeArea
+  const referenceUse = normalizeReferenceUse(shot.referenceUse, inspiration)
 
   const segments = [
     shot.prompt,
+    referenceUse ? `Adapted reference direction for this shot: ${referenceUse.visualPrompt}. Use the target brand's locked subjects only; never reproduce the source brand, logo, copied dialogue or soundtrack` : '',
     gc.person ? `Person lock: ${gc.person}` : '',
     gc.vehicle && !/no vehicle/i.test(gc.vehicle) ? `Vehicle lock: ${gc.vehicle}` : '',
     gc.scene ? `Scene lock: ${gc.scene}` : '',
@@ -604,6 +611,7 @@ export function compileShotRenderPrompt({ brandGuide, picked, globalContext, sho
 
   return {
     prompt,
+    referenceUse,
     negativePrompt,
     refImages,
     overlayAssets,

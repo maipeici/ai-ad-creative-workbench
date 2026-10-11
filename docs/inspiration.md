@@ -2,22 +2,23 @@
 
 入口：打开一个项目 → **广告创意 → 爆款参考**。
 
-当前版本基于自己导入的资料建立参考库。链接用于溯源，不会自动抓取、下载、识别原视频，也没有接入平台实时榜单。拆解基于你提供的脚本、口播或字幕；只有链接时，先补充至少 20 字文本。
+上传原视频即可自动拆解，无需先写脚本。当前支持 MP4 / MOV / WebM，最大 14 MB；可在导入弹窗替换已上传的视频。视频字节发送给已配置的 Vertex Gemini，模型识别画面、字幕、口播与声音。只有平台分享链接时，仍需上传原视频或补充至少 20 字文本；不会自动抓取平台页面，也未接入实时榜单。
 
 ## 完整流程
 
 1. 在品牌与素材中选好已确认事实，在投放需求中明确渠道、人群和场景。
-2. 点击 **导入视频参考**，填写标题、平台、行业，粘贴视频链接和脚本。可选填写创作者、关键词、发布日期及热度快照。
+2. 点击 **导入视频参考**，上传视频并填写标题、平台、行业。视频链接、补充脚本和热度快照可选；默认开启“保存后自动拆解”。
 3. 在 **我的参考库** 中按平台、行业、发布日期和关键词筛选，查看推荐原因、统计日期与来源说明。
-4. 点击 **拆解脚本**，查看每个段落的作用、原文依据和可迁移的方法。没有时间标注的内容不会被当作有准确时码的实测片段。
-5. 勾选希望复用的开场钩子、内容结构、产品呈现或 CTA 建议，点击 **一键复用到广告创意**。
-6. 系统追加一份适配当前品牌的创意，并保留参考来源和所选方法。在创意列表选择新方案，即可继续现有分镜流程。
+4. 查看自动识别脚本、分段画面/声音观察与爆款点。点击时间码可定位视频；爆款点区分实际观察依据和机制假设，不承诺效果因果。
+5. 勾选希望参考的钩子、结构、产品呈现、CTA、视觉或声音。选择“生成新的参考方案”，或“基于某份已有创意生成参考版”，点击 **一键导入创作方案**。
+6. 新方案自动选中并展示“参考创作指导”。点击“用此参考方案生成分镜”，模型把所选方法对应到具体镜头，记录来源时间段、中文改写说明及英文画面指令。未选的方法不会成为参考要求。
+7. 首帧图与视频生成继续使用逐镜头的参考方向。原片仅用于观察，不直接复用原片画面、声音、竞品台词或权益。
 
-已有创意、已选方案、分镜和成片会保留。只有项目尚未选择创意时，新方案才会自动选中。参考资料或项目需求发生变化后，需要重新拆解才能继续复用。
+原创意、分镜和成片均保留；导入的新方案会自动选中。已有分镜与当前方案不一致时，须重新生成分镜后才能继续生成视频。参考资料或项目需求变化后，需要重新拆解才能应用；已经生成的方案保留当时的参考快照，不会随参考库编辑悄悄变化。
 
 如果默认 CTA 包含领券，但当前没有已确认的活动事实，本次生成会使用下载体验等通用引导；不会自动修改保存的 Brief。生成结果仍含未绑定活动事实的优惠文案时，会阻止写入新创意。
 
-拆解和复用需要 `.env` 中配置可用的文本模型，复用现有 Vertex AI Gemini 或 OpenAI 兼容接口。模型未配置、失败或返回无效结果时会明确报错，不会用 Mock 结果冒充真实分析。无需另外安装依赖。
+直接视频拆解需要 `.env` 中现有 Vertex Gemini 配置；文本拆解与创意改写可复用 Gemini 或 OpenAI 兼容接口。模型未配置、失败或返回无效结果时明确报错。带参考指导的分镜也不会以 Mock 冒充成功；未映射全部所选参考点时保留原分镜并提示重试。无需另外安装依赖。14 MB 上传上限为 base64 编码和文本指令预留请求空间。
 
 ## 热度与投放效果
 
@@ -47,7 +48,7 @@
 | `contentType` | 否 | `organic` 自然内容（默认）或 `ad` 信息流广告 |
 | `sourceUrl` | 否 | 不含账号密码的 HTTPS 链接 |
 | `creator`、`tags` | 否 | 创作者及人群/场景关键词 |
-| `script` | 拆解时需要 | 至少 20 字，最多 24,000 字；CSV 多行内容需要双引号包裹 |
+| `script` | 仅文本拆解时需要 | 至少 20 字，最多 24,000 字；已上传视频可留空，CSV 多行内容需要双引号包裹 |
 | `views`、`likes`、`comments`、`shares`、`saves` | 否 | 非负整数；未知请留空 |
 | `ctr`、`cvr`、`cpa` | 否 | 仅 `ad` 支持；CTR/CVR 范围 0–100 |
 | `publishedAt` | 否 | `YYYY-MM-DD`，不能晚于今天 |
@@ -78,7 +79,7 @@ JSON 支持数组或 `{ "items": [...] }`，指标可以平铺，也可以放在
 
 ## 存储与接口
 
-参考库保存在 `data/runtime/inspirations.json`，拆解保存在对应项目的 `inspirationAnalyses` 字段，来源记录保存在新创意的 `inspiration` 字段。运行数据沿用 `.gitignore` 规则，不提交到 GitHub。
+参考库保存在 `data/runtime/inspirations.json`，上传视频保存在 `data/runtime/media/reference-*`，拆解保存在项目的 `inspirationAnalyses`。创意 `inspiration` 保存所选方法、分段观察和来源的不可变快照；分镜保存同一快照，逐镜头 `referenceUse` 包含方法 ID、来源时段、改写说明与画面方向。创意包导出也包含这些字段。运行数据与视频沿用 `.gitignore` 规则，不提交到 GitHub。
 
 | 接口 | 用途 |
 | --- | --- |
@@ -86,11 +87,14 @@ JSON 支持数组或 `{ "items": [...] }`，指标可以平铺，也可以放在
 | `POST /api/inspirations` | 创建单条参考 |
 | `POST /api/inspirations/import` | 批量导入 `{content, format}`；format 为 `csv` / `json` |
 | `PATCH /api/inspirations/:referenceId` | 更新资料；内置结构示例只读 |
+| `POST /api/inspirations/:referenceId/video` | multipart `file` 上传/替换原视频；服务器校验文件头、大小并记录哈希 |
 | `POST /api/projects/:id/inspirations/:referenceId/analyze` | 结合项目拆解脚本 |
-| `POST /api/projects/:id/inspirations/:referenceId/apply` | 传入 `{suggestionIds}`，追加新创意 |
+| `POST /api/projects/:id/inspirations/:referenceId/apply` | `{suggestionIds, targetConceptId?, selectAfterApply?}`，基于可选原创意生成参考版；界面传 `selectAfterApply:true` |
 
 后续数据服务可以将结果映射到相同的导入字段，继续使用现有筛选、拆解和复用流程。当前没有自动同步任务。
 
 Gemini 拆解请求额外携带 `responseSchema`，约束字段类型与建议编号；具体接口说明见 [Google Cloud 结构化输出文档](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/capabilities/control-generated-output)。保存前仍会校验原文引用、数据长度和建议编号；复用前重新核对项目上下文与事实 ID。
 
-专项检查：`node --test tests/inspirations.test.js tests/inspiration-routes.test.js`。
+视频输入使用 Gemini 的 `inlineData`；参考 [Google Cloud 视频理解文档](https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/capabilities/video-understanding)。
+
+专项检查：`node --test tests/inspirations.test.js tests/inspiration-routes.test.js tests/inspiration-video.test.js`。

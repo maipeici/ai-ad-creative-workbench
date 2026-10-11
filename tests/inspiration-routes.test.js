@@ -78,3 +78,16 @@ test('a changed brief during the model request cannot save a stale analysis', as
   assert.equal(f.read().inspirationAnalyses, undefined)
   assert.equal(f.read().brief.durationSec, 20)
 })
+
+test('one-click import selects the reference version and retains original concept and finished work', async () => {
+  const f=fixture(),before=f.read()
+  await f.call('post','/api/projects/:id/inspirations/:referenceId/analyze')
+  const result=await f.call('post','/api/projects/:id/inspirations/:referenceId/apply',{suggestionIds:['hook'],targetConceptId:'original',selectAfterApply:true})
+  assert.equal(result.project.selectedConceptId,result.concept.id)
+  assert.equal(result.concept.inspiration.adaptedFromConceptId,'original')
+  assert.equal(result.concept.inspiration.guidance[0].pattern,'场景先行')
+  assert.deepEqual(result.project.concepts[0],before.concepts[0])
+  assert.deepEqual(result.project.storyboard,before.storyboard)
+  assert.deepEqual(result.project.render,before.render)
+  await assert.rejects(f.call('post','/api/projects/:id/inspirations/:referenceId/apply',{suggestionIds:['hook'],targetConceptId:'missing'}),e=>e.status===409)
+})

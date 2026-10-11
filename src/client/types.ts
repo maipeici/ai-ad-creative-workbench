@@ -1,4 +1,4 @@
-import type { InspirationAttribution, InspirationAnalysis } from './inspiration-types'
+import type { InspirationAttribution, InspirationAnalysis, ShotReferenceUse } from './inspiration-types'
 
 export interface AssetItem {
   id: string
@@ -189,6 +189,7 @@ export interface GlobalContext {
 export type RenderMode = 'ai' | 'overlay' | 'asset'
 
 export interface Shot {
+  referenceUse?: ShotReferenceUse | null
   id: string
   index: number
   role: string
@@ -216,6 +217,8 @@ export interface Shot {
 }
 
 export interface Storyboard {
+  inspiration?: InspirationAttribution | null
+  conceptFingerprint?: string
   globalContext: GlobalContext
   shots: Shot[]
   conceptId?: string

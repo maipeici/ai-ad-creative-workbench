@@ -21,7 +21,7 @@ function modelBase(location = config.vertex.location) {
 /* ----------------------------- Gemini LLM ----------------------------- */
 
 /** 把 OpenAI 风格 messages 转成 Gemini contents + systemInstruction */
-function toGeminiPayload(messages, { json = true, responseSchema } = {}) {
+export function toGeminiPayload(messages, { json = true, responseSchema, videoPart } = {}) {
   const system = messages
     .filter((m) => m.role === 'system')
     .map((m) => m.content)
@@ -33,6 +33,11 @@ function toGeminiPayload(messages, { json = true, responseSchema } = {}) {
       parts: [{ text: m.content }],
     }))
 
+  if (videoPart) {
+    const user = contents.find(c => c.role === 'user')
+    if (!user) throw new Error('视频分析缺少用户消息')
+    user.parts.unshift(videoPart)
+  }
   return {
     contents,
     ...(system ? { systemInstruction: { parts: [{ text: system }] } } : {}),
@@ -55,6 +60,7 @@ export async function geminiChat(messages, options = {}) {
   const { geminiModel, location } = config.vertex
   const data = await gcpFetch(`${modelBase(location)}/${geminiModel}:generateContent`, {
     method: 'POST',
+    signal: AbortSignal.timeout(config.llm.timeout),
     body: JSON.stringify(toGeminiPayload(messages, options)),
   })
 

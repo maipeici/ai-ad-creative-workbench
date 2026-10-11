@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import ReferenceGuidance from '../components/ReferenceGuidance'
 import type { PhaseProps } from '../App'
 import { api } from '../api'
 import type { ShotRender } from '../types'
@@ -69,7 +70,8 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
   if (!sb) return <EmptyHint>还没有分镜，请先完成 Phase 4 / 5。</EmptyHint>
 
   const renders = project.render?.shots || {}
-  const approved = project.review?.approved
+  const staleConcept = Boolean(sb.conceptId && sb.conceptId !== project.selectedConceptId)
+  const approved = project.review?.approved && !staleConcept
   const pendingShots = sb.shots.filter(s => s.renderMode !== 'asset' && !renders[s.id]?.url && !['running', 'manual'].includes(renders[s.id]?.status || ''))
   const doneCount = sb.shots.filter((s) => renders[s.id]?.url).length
   const approvedCount = sb.shots.filter((s) => renders[s.id]?.approved).length
@@ -180,6 +182,8 @@ export default function Phase6Render({ project, meta, patch, setProject, notify,
 
   return (
     <>
+      <ReferenceGuidance reference={sb.inspiration} stage="video"/>
+      {staleConcept&&<div className="inspiration-notice">当前创意已切换，已有视频保留。请回到分镜阶段生成新方案的分镜。<button className="btn-ghost" onClick={()=>goto(4)}>前往分镜 →</button></div>}
       {!meta.ffmpeg && <div className="rounded-xl border border-amber-900/60 bg-amber-950/20 px-4 py-3 text-xs text-amber-200 leading-relaxed" role="status"><strong>视频合成待配置</strong><p className="mt-1 text-amber-200/70">本机尚未安装视频合成工具。已有成片可以播放和下载，新的字幕叠加与成片合成暂不可用。</p></div>}
       <Section
         title="生成设置"

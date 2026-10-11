@@ -54,6 +54,7 @@ async function chat(messages) {
 export async function llmJson(messages, mockFactory, options = {}) {
   const useVertex = config.vertex.enabled
   const useOpenai = config.llm.enabled
+  if (options.videoPart && !useVertex) throw Object.assign(new Error('当前文本接口不支持视频输入，请配置 Vertex Gemini。'), { status: 503 })
   if (!useVertex && !useOpenai) {
     return { data: mockFactory(), source: 'mock' }
   }
@@ -61,7 +62,7 @@ export async function llmJson(messages, mockFactory, options = {}) {
     const raw = useVertex ? await geminiChat(messages, options) : await chat(messages)
     return { data: extractJson(raw), source: useVertex ? 'gemini' : 'llm' }
   } catch (err) {
-    console.error('[llm] 调用失败，回退 mock:', err.message)
+    console.error('[llm] 调用失败，回退 mock:', err.message, err.cause?.code || '')
     return { data: mockFactory(), source: 'mock-fallback', error: err.message }
   }
 }

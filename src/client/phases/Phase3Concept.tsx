@@ -1,6 +1,7 @@
 import InspirationPanel from '../components/InspirationPanel'
+import ReferenceGuidance from '../components/ReferenceGuidance'
 import '../styles/inspiration.css'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { PhaseProps } from '../App'
 import { api } from '../api'
 import type { Concept } from '../types'
@@ -13,6 +14,9 @@ export default function Phase3Concept(props: PhaseProps) {
   const [pref, setPref] = useState('')
   const [count, setCount] = useState(3)
   const [editing, setEditing] = useState<string | null>(null)
+  const [appliedId,setAppliedId] = useState('')
+  const appliedCard = useRef<HTMLDivElement>(null)
+  useEffect(()=>{if(creativeTab==='concepts'&&appliedId)appliedCard.current?.scrollIntoView({block:'start',behavior:'smooth'})},[creativeTab,appliedId])
 
   const concepts = project.concepts || []
   const selected = concepts.find((c) => c.id === project.selectedConceptId) || null
@@ -47,11 +51,11 @@ export default function Phase3Concept(props: PhaseProps) {
   const scene = meta.brandGuide.sceneOptions.find((s) => s.id === project.brief.scene)
 
   const tabs = <div className="inspiration-mode" aria-label="广告创意工作区"><button className={creativeTab==='concepts'?'active':''} onClick={()=>setCreativeTab('concepts')}>创意方案</button><button className={creativeTab==='references'?'active':''} onClick={()=>setCreativeTab('references')}>爆款参考</button></div>
-  if (creativeTab === 'references') return <>{tabs}<InspirationPanel {...props} onApplied={()=>setCreativeTab('concepts')} /></>
+  if (creativeTab === 'references') return <>{tabs}<InspirationPanel {...props} onApplied={id=>{setAppliedId(id);setCreativeTab('concepts')}} /></>
   return (
     <>
       {tabs}
-      <div className="concept-entry"><div><strong>从同行、同平台的热门内容中寻找创意</strong><p>导入视频参考，拆解脚本结构，把可迁移的方法应用到当前品牌。</p></div><button className="btn-ghost" onClick={()=>setCreativeTab('references')}>浏览爆款参考 →</button></div>
+      <div className="concept-entry"><div><strong>用一条参考视频，开启完整创作</strong><p>上传视频 → 自动拆解爆款点 → 导入当前方案 → 生成参考分镜与视频。</p></div><button className="btn-ghost" onClick={()=>setCreativeTab('references')}>导入爆款视频 →</button></div>
       <Section
         title="广告创意生成控制台"
         desc="AI 基于品牌规范、已确认事实、合规词库与投放需求生成多个创意方案。只有已确认的事实会被用于卖点表达。"
@@ -104,6 +108,7 @@ export default function Phase3Concept(props: PhaseProps) {
             return (
               <div
                 key={c.id}
+                ref={c.id===appliedId?appliedCard:undefined}
                 className={`card p-4 transition-colors ${
                   blockers.length ? 'border-red-800/60' : on ? 'border-brand/60 bg-brand/[0.04]' : 'hover:border-ink-500'
                 }`}
@@ -134,7 +139,9 @@ export default function Phase3Concept(props: PhaseProps) {
                   </div>
                 </div>
 
-                {c.inspiration && <div className="inspiration-attribution"><strong>{c.inspiration.isDemo?'示例结构复用':'来源于参考视频'} · {c.inspiration.title}</strong><p>复用方法：{c.inspiration.summary}</p>{c.inspiration.sourceUrl && <a className="inspiration-link" href={c.inspiration.sourceUrl} target="_blank" rel="noopener noreferrer">查看原视频 ↗</a>}</div>}
+                {c.id===appliedId&&<p className="reference-applied" role="status">参考已导入 · 当前方案已选中</p>}
+                <ReferenceGuidance reference={c.inspiration}/>
+                {on&&c.inspiration&&<button className="btn-primary w-full" onClick={()=>goto(4)}>用此参考方案生成分镜 →</button>}
                 {blockers.length > 0 && (
                   <div className="mt-3 space-y-1">
                     {blockers.map((h, i) => (

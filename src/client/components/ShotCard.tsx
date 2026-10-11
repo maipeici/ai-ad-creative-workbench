@@ -80,6 +80,7 @@ export default function ShotCard({
       </div>
 
       <div className="p-3 space-y-2.5 flex-1">
+        {local.referenceUse&&<div className="reference-shot"><strong>参考原片 · {local.referenceUse.sourceTiming}</strong><p>{local.referenceUse.adaptation}</p></div>}
         <input
           className="w-full bg-transparent text-xs font-semibold text-slate-100 focus:outline-none"
           value={local.titleCn}
